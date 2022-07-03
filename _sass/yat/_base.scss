@@ -128,7 +128,7 @@ blockquote {
   color: $grey-color;
   border-left: 4px solid $grey-color-light;
   padding-left: $spacing-unit / 2;
-  @include relative-font-size(1.125);
+  @include relative-font-size(0.95);
   letter-spacing: -1px;
   font-style: italic;
 
@@ -144,7 +144,7 @@ blockquote {
  */
 pre,
 code {
-  @include relative-font-size(0.9375);
+  @include relative-font-size(0.85);
   color: $text-color;
 }
 
@@ -289,4 +289,3 @@ table {
   background-position: center center;
   overflow: hidden;
 }
-
