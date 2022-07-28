@@ -5,7 +5,7 @@ title: Style Transfer(1) - 'A Neural Algorithm of Artistic Style'로 Style trans
 categories: style_transfer
 tags: [style transfer, nst, cnn, feature map, gram matrix]
 # sidebar: []
-usemathjax: true
+use_math: true
 ---
 
 ## 0. Style Transfer란?

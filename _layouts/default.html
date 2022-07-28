@@ -3,10 +3,12 @@
 
   {%- include head.html -%}
 
-  {% if page.use_math %}
-    {% include mathjax_support.html %}
-  {% endif %}
   <body>
+
+    /* mathjax 추가 */
+    {% if page.use_math %}
+      {% include mathjax_support.html %}
+    {% endif %}
 
     {%- include views/header.html -%}
 
