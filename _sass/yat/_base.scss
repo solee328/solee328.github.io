@@ -190,7 +190,11 @@ pre {
   @extend %clearfix;
 }
 
-
+.emoji {
+  width: 1em;
+  height: 1em;
+  vertical-align: text-bottom;
+}
 
 /**
  * Clearfix
