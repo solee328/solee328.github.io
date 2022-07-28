@@ -3,6 +3,7 @@
 source "https://rubygems.org"
 gemspec
 
+gem 'jemoji'
 gem 'jekyll-paginate'
 gem 'jekyll-gist'
 gem 'jekyll-spaceship', git: 'https://github.com/jeffreytse/jekyll-spaceship'
