@@ -191,9 +191,10 @@ pre {
 }
 
 .emoji {
-  width: 1em;
-  height: 1em;
-  vertical-align: text-bottom;
+  display: block;
+  max-width: 100%;
+  margin: 0 0 1rem;
+  border-radius: 5px;
 }
 
 /**
