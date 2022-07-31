@@ -190,11 +190,11 @@ pre {
   @extend %clearfix;
 }
 
-.emoji {
-  display: block;
-  max-width: 100%;
-  margin: 0 0 1rem;
-  border-radius: 5px;
+img.emoji {
+  display: inline;
+  height: 1em;
+  width: 1em;
+  margin-bottom: 0.25em;
 }
 
 /**
