@@ -243,7 +243,9 @@ loss_total = loss_total / 2
 layer weight를 추가하고 epoch을 늘려 style 이미지가 더 반영된다고 느껴졌으나 결과 이미지에 전반적으로 밝게 튀는 노이즈들이 확인되었습니다.
 
  [Tensorflow core](https://www.tensorflow.org/tutorials/generative/style_transfer?hl=ko)에서 관련된 문제를 해결하는 것을 확인해 total variance loss(tv loss)를 사용해 이미지의 고주파 구성요소에 대한 regularization 과정을 추가했습니다.
-$$\mathcal L_{tv} = w_t \times (\sum^3 _{c=1}\sum^{H-1} _{i=1}\sum^W _{j=1}(x _{i+1, j, c} - x _{i, j, c})^2 + \sum^3 _{c=1}\sum^H _{i=1}\sum^{W-1} _{j=1}(x _{i, j+1, c} - x _{i, j, c})^2)$$
+$$
+\mathcal L_{tv} = w_t \times (\sum^3 _{c=1}\sum^{H-1} _{i=1}\sum^W _{j=1}(x _{i+1, j, c} - x _{i, j, c})^2 + \sum^3 _{c=1}\sum^H _{i=1}\sum^{W-1} _{j=1}(x _{i, j+1, c} - x _{i, j, c})^2)
+$$
 
 
 ```python
