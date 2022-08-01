@@ -188,7 +188,9 @@ layer 별 loss 값을 구한 뒤 $N_l^2$, $M_l^2$ 값으로 나누어 더해줌�
 
 
 ### 2.4. Total Loss
-$$\mathcal L_{total}(\vec p, \vec a, \vec x) = \alpha \mathcal L_{content}(\vec p, \vec x) + \beta \mathcal L_{style} (\vec a, \vec x)$$
+$$
+\mathcal L_{total}(\vec p, \vec a, \vec x) = \alpha \mathcal L_{content}(\vec p, \vec x) + \beta \mathcal L_{style} (\vec a, \vec x)
+$$
 최종 Loss 값은 앞에서 구한 style loss와 content loss를 더해주어야 합니다!  
 이때 $\alpha$와 $\beta$ 값 조절로 style 이미지와 content 이미지 중 어느 것에 중점을 둘지 조절할 수 있습니다.  
 논문에서는  $ \alpha / \beta$  의 비율은  $ 1 \times 10^{-3} $ 이나  $1 \times 10^{-4}$ 로 설정했다고 합니다.  
@@ -259,17 +261,17 @@ tv loss는 이미지를 입력받아 수직/수평으로 인접한 픽셀에 대
 
 ![weight_regularization_2500](/assets/images/posts/style_transfer_1/weight_regularization_2500.png)
 
-tv loss 적용 후 튀어 보이는 artifact가 줄어들여 결과 이미지가 부드러워져 선명도가 높아진 것을 확인할 수 있습니다:relaxed:
+tv loss 적용 후 튀어 보이는 artifact가 줄어들여 결과 이미지가 부드러워져 선명도가 높아진 것을 확인할 수 있습니다 :relaxed:
 
 ---
 
 ## 5. 최종 결과
 
-최적화 과정까지 진행 후 여러 style과 content 이미지를 넣어 확인한 결과들입니다:dog:  
+최적화 과정까지 진행 후 여러 style과 content 이미지를 넣어 확인한 결과들입니다 :dog:  
 
 ![1_1_regularization](/assets/images/posts/style_transfer_1/01 X 01_regularization.png){: width="80%"}
 ![2_1_regularization](/assets/images/posts/style_transfer_1/02 X 01_regularization.png){: width="80%"}
 ![3_1_regularization](/assets/images/posts/style_transfer_1/03 X 01_regularization.png){: width="80%"}
 
 
-최종 코드는 [github](https://github.com/solee328/post-code/blob/main/style_transfer/A_Neural_Style_Transfer.ipynb)에서 확인하실 수 있습니다:feet:  
+최종 코드는 [github](https://github.com/solee328/post-code/blob/main/style_transfer/A_Neural_Style_Transfer.ipynb)에서 확인하실 수 있습니다 :feet:  
