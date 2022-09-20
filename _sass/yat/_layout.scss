@@ -616,7 +616,8 @@ html {
         transition: 0.2s all;
 
         @include media-query($on-palm) {
-          @include relative-font-size(1.975);
+          // @include relative-font-size(1.975);
+          @include relative-font-size(2.25);
         }
       }
 
@@ -626,7 +627,8 @@ html {
         transition: 0.2s all;
 
         @include media-query($on-palm) {
-          @include relative-font-size(1.175);
+          // @include relative-font-size(1.175);
+          @include relative-font-size(1.75);
         }
       }
 
