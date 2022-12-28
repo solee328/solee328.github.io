@@ -72,6 +72,7 @@ $$
 \mathcal{L}_{L1}(G) = \mathbb{E} _{x, y, z}[\Vert y-G(x, z) \Vert_1]
 \tag{3}
 $$
+
 > L1 loss 수식으로 실제 정답인 $y$와 생성 모델 $G$의 출력 값 사이의 차이값에 절대값을 취해 결과 값과 정답 값의 오차 합을 계산해 최소화하는 방법입니다.
 
 
@@ -154,15 +155,15 @@ batch normalization은 test 시에는 학습 때 사용했던 mini batch에서 �
 - day $\rightarrow$ night
 - thermal $\rightarrow$ color
 - photo with missing pixels $\rightarrow$ inpainted photo
-
 <br>
+
 <div>
-  <img src="/assets/images/posts/pix2pix/paper/fig14.png" width="530" height="370">
+  <img src="/assets/images/posts/pix2pix/paper/fig14.PNG" width="530" height="370">
 </div>
 > Figure 14: ground truth와 비교한 facades labels $\rightarrow$ photo 의 결과
 
 <div>
-  <img src="/assets/images/posts/pix2pix/paper/fig15.png" width="530" height="270">
+  <img src="/assets/images/posts/pix2pix/paper/fig15.PNG" width="530" height="270">
 </div>
 > Figure 15: ground truth와 비교한 day $\rightarrow$ night의 결과
 
