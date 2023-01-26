@@ -237,7 +237,7 @@ class Discriminator(nn.Module):
 추가로 첫번째 Conv2d의 in_channel 값이 이미지 채널 값인 3이 아닌 6인 이유는 conditional gan을 사용하기 때문에 입력이 될 이미지와 조건이 되는 이미지 2장을 받아 합치기 때문에 두 이미지의 채널을 합쳐 3 + 3 = 6이 되기 때문입니다.
 
 <div>
-  <img src="/assets/images/posts/pix2pix/code/summary_d.png" width="450" height="400">
+  <img src="/assets/images/posts/pix2pix/code/summary_d.PNG" width="450" height="400">
 </div>
 이미지 2장을 Discriminator에 입력했을 때 70 x 70의 receptive field가 된다는 것을 summary로 확인했습니다.
 
