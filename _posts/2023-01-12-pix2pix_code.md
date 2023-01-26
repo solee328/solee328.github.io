@@ -8,9 +8,12 @@ tags: [gan, pix2pix, 생성 모델, 논문 구현]
 use_math: true
 ---
 
-pix2pix의 논문 구현 글로 논문의 내용을 따라 구현했습니다.<br>
-공식 코드로는 논문에 나온 <a href="https://github.com/phillipi/pix2pix" target="_blank">phillipi/pix2pix</a>와 PyTorch로 pix2pix와 CycleGAN을 구현한 <a href="https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix" target="_blank">junyanz의 pytorch-CycleGAN-and-pix2pix</a>가 있습니다.<br>
-데이터셋 설명 모델 설명을 코드와 함께 설명해드리겠습니다!
+pix2pix의 논문 구현 글로 이전 글인 <a href="https://solee328.github.io/gan/2022/12/27/pix2pix_paper.html" target="_blank">Pix2Pix(1) - 논문 리뷰</a>의 논문의 내용을 따라 구현해 보았습니다. 가능한 작은 데이터셋으로 논문을 구현하고 작은 데이터셋으로 얼만큼의 성능이 나오는지 확인해보겠습니다:)
+
+공식 코드로는 논문에 언급된 <a href="https://github.com/phillipi/pix2pix" target="_blank">phillipi/pix2pix</a>가 있으나 lua로 작성되어 있으며 PyTorch로 작성된 코드로는 Pix2Pix와 CycleGAN을 구현한 <a href="https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix" target="_blank">junyanz의 pytorch-CycleGAN-and-pix2pix</a>가 있습니다.
+<br><br>
+
+---
 
 ## 1. 데이터 셋
 
@@ -24,11 +27,14 @@ pix2pix의 논문 구현 글로 논문의 내용을 따라 구현했습니다.<b
 random jitter로는 이미지를 286 x 286으로 resize한 다음 256 x 256으로 random cropping해 사용하며 <a href="https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/issues/125" target="_blank">issues</a>를 보니 286 x 286으로 지정한 특별한 이유는 없다고 답변이 되어 있었습니다. random crop을 위해 원하는 크기보다 적당히 큰 정도면 될 것 같아요! mirroring은 flip을 의미합니다. augmentation의 대표적인 방법으로 데이터셋에 따라 horizontal flip 또는 vertical flip을 추가했다 이해했습니다.
 
 <div>
-  <img src="/assets/images/posts/pix2pix/code/data.png" width="550" height="300">
+  <img src="/assets/images/posts/pix2pix/code/data.png" width="500" height="280">
 </div>
->Facade dataset 예시
+>CMP Facade Database의 예시입니다.<br>
+다양한 건축 양식을 가진 건물 사진과 창문, 기둥과 같은 12개의 클래스로 라벨링된 라벨링 이미지가 페어를 이루고 있습니다.  
 
-저는 이중 2. Architectural labels $\rightarrow$ photo를 사용해 모델을 구현하고 400장이라는 적은 데이터 셋만으로 합리적인 결과를 생성할 수 있는지 확인해보겠습니다. 데이터셋은 <a href="https://cmp.felk.cvut.cz/~tylecr1/facade/" target="_blank">CMP Facade Database</a>에서 다운받을 수 있습니다. Base 데이터셋과 Extended 데이터셋이 있는데 저는 Base 데이터셋만을 이용해 학습하고 최종 모델 성능을 확인하기 위해 학습에 사용되지 않은 Extended 데이터셋에서 2~3장 정도를 뽑아 테스트해보겠습니다. Base 데이터셋은 378장이고 Extended 데이터셋은 228장으로 이루어져있는데 논문은 어떻게 섞어서 400장이 된건지 의문이 남았습니다...ㅎ
+저는 위의 3개의 데이터셋 중 2. Architectural labels $\rightarrow$ photo를 사용해 모델을 구현하고 400장이라는 적은 데이터 셋만으로 합리적인 결과를 생성할 수 있는지 확인해보겠습니다. 데이터셋은 <a href="https://cmp.felk.cvut.cz/~tylecr1/facade/" target="_blank">CMP Facade Database</a>에서 다운받을 수 있습니다.
+
+Base 데이터셋과 Extended 데이터셋이 있는데 Base 데이터셋은 378장이고 Extended 데이터셋은 228장으로 이루어져있으며 논문은 400장을 사용했다 합니다. 어떻게 섞어서 400장이 된건지는 적혀있지 않아 저는 Base 데이터셋만을 이용해 학습하고 최종 모델 성능을 확인하기 위해 학습에 사용되지 않은 Extended 데이터셋에서 2~3장 정도를 뽑아 테스트해보겠습니다.
 
 ```python
 # 이후 변경되는 코드입니다. 잘못된 부분을 찾으신 분께는 진심의 박수를 드립니다.
@@ -56,12 +62,11 @@ class Facade(Dataset):
 
 transform = transforms.Compose([
     transforms.Resize((286, 286)),
-    transforms.RandomCrop((256, 256)),
-    transforms.RandomHorizontalFlip(0.5),
+    transforms.RandomCrop((256, 256)),  # Random jitter
+    transforms.RandomHorizontalFlip(0.5),  # Mirroring
     transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
-
 
 dataset_Facade = Facade(path = data_path,
                         transform=transform)
@@ -71,23 +76,30 @@ dataloader = DataLoader(dataset=dataset_Facade,
                         shuffle=True)
 ```
 
-random jitter를 위한 resize, crop 그리고 mirroring을 위한 random horizontal flip을 transforms에 추가해 코드를 구현했습니다. generator의 마지막 activation은 tanh 출력 범위가 (-1, 1)이므로 Normalize의 채널 별 mean과 std를 모두 0.5로 설정해 이미지의 범위를 [-1, 1]로 맞춰주었습니다.
+Random jitter를 위해 이미지를 (286x286)으로 Resize 한 후 (256x256)으로 RandomCrop을 적용했습니다. 그리고 Mirroring을 위한 RandomHorizontalFlip을 transforms에 추가해 코드를 구현했습니다.
+
+Generator의 마지막 activation은 tanh로 출력 범위가 (-1, 1)이므로 Normalize의 채널 별 mean과 std를 모두 0.5로 설정해 이미지의 범위를 [-1, 1]로 맞춰주었습니다.
+<br><br>
 
 ---
 
 ## 2. 모델
 Generator와 Discriminator의 자세한 구조는 논문의 Appendix에서 확인할 수 있습니다.
 
-$Ck$는 k개의 필터를 가진 Convolution-BatchNorm-ReLU 레이어를 의미하고 $CDk$는 k개의 필터를 가진 Convolution-BatchNorm-Dropout-ReLU 레이어를 의미하며 이때 dropout rate는 50%입니다. 모든 convolution들은 stride 값은 2이고 4x4의 filter를 사용합니다. encoder(generator)와 discriminator에서 convolution으로 downsample되는 지수는 2이고 decoder(generator)에서 convolution으로 upsample되는 지수 또한 2입니다.
+논문에서는 $Ck$와 $CDk$로 논문의 구조를 설명합니다.<br>
+$Ck$는 k개의 필터를 가진 Convolution-BatchNorm-ReLU 레이어를 의미하고 $CDk$는 k개의 필터를 가진 Convolution-BatchNorm-Dropout-ReLU 레이어를 의미하며 이때 dropout rate는 50%입니다.
 
- convolution을 통해 downsample된다는 것은 이미지의 크기를 줄이는 것은 말하며 이때 downsample 지수가 2이므로 encoder와 discriminator에서 이미지가 convolution을 통과할 때마다 이미지의 크기는 절반이 됩니다. 반대로 decoder에서 이미지가 convolution을 통과하면 이미지의 크기는 2배가 됩니다. 더 자세한 내용은 아래의 코드와 함께 확인해보겠습니다.
+모든 convolution들은 stride 값은 2이고 4x4의 filter를 사용합니다. convolution을 통해 Encoder(Generator)와 Discriminator에서 convolution으로 downsample되는 지수는 2이고 Decoder(Generator)에서 convolution으로 upsample되는 지수 또한 2입니다.
+
+ convolution을 통해 downsample된다는 것은 이미지의 크기를 줄이는 것은 말하며 이때 downsample 지수가 2이므로 encoder와 discriminator에서 이미지가 convolution을 통과할 때마다 이미지의 크기는 절반이 됩니다. upsample 또한 지수가 2이므로 decoder에서 이미지가 convolution을 통과하면 이미지의 크기는 2배가 되어야 합니다. 더 자세한 내용은 아래의 코드와 함께 확인해보아요!
 
 ### 2.1. Generator
-Generator는 encoder-decoder 구조로 다음과 같이 이루어져 있습니다.<br>
+Generator는 Encoder-Decoder 구조로 다음과 같이 이루어져 있습니다.<br>
 **encoder** : $C64-C128-C256-C512-C512-C512-C512-C512$<br>
 **decoder** : $CD512-CD512-CD512-CD512-C256-C128-C64$
 
-추가로 generator는 Unet의 구조를 사용해 encoder의 레이어 $i$ 와 decoder의 레이어 $n-i$ 사이 skip connection을 연결해야 합니다.
+$Ck$와 $CDk$ 모두가 Generator에 사용되므로 dropout이 적용되는 곳과 적용되지 않는 곳, skip connection으로 합쳐져야 하는 부분 등을 편하게 적용시켜 줄 새로운 `BlockCK`라는 클래스를 작성했습니다.
+
 
 ```python
 class BlockCK(nn.Module):
@@ -123,13 +135,16 @@ class BlockCK(nn.Module):
     else:
       return torch.cat((self.model(x), skip), 1)
 ```
-Convolution-BatchNorm-ReLU인 $Ck$ 구조와 Convolution-BatchNorm-Dropout-ReLU인 $CDk$ 구조가 모두 사용되고 encoder의 첫번째 레이어인 $C64$에는 batchnorm이 적용되지 않는 것을 편하게 호출할 수 있도록 is_batchnorm과 is_dropout을 인자로 받아 유연하게 대응할 수 있도록 구현했습니다.
+Convolution-BatchNorm-ReLU인 $Ck$ 구조와 Convolution-BatchNorm-Dropout-ReLU인 $CDk$ 구조의 가장 큰 차이는 dropout 여부로 `is_dropout` 인자를 통해 넣을지 말지 정할 수 있도록 구현했습니다. 또한 Encoder의 첫번째 레이어인 $C64$에는 batchnorm이 적용되지 않는다 논문에 언급되어 있어 `is_batchnorm` 인자를 통해 유연하게 대응할 수 있도록 구현했습니다.
 
-또한 encoder의 모든 ReLU는 slope가 0.2로 설정된 LeakyReLU이고 decoder는 LeakyReLU가 아닌 ReLU이기 때문에 is_encoder 인자를 통해 encoder 에 해당하는 경우 conv + LeakyReLU를 decoder에 해당하는 경우 ConvTranspose + ReLU를 사용합니다.
+또한 Encoder의 모든 ReLU는 slope가 0.2로 설정된 LeakyReLU이고 decoder는 LeakyReLU가 아닌 ReLU이기 때문에 `is_encoder` 인자를 통해 Encoder 에 해당하는 경우 conv + LeakyReLU를 decoder에 해당하는 경우 ConvTranspose + ReLU를 사용하도록 합니다.
 
-기존 Unet은 downsampling으로 maxpooling을 사용해 이미지 크기를 절반으로 줄이지만 Pix2Pix에서는 4x4 Convolution을 사용한다 해서 크기가 절반으로 줄 수 있도록 stride=2, padding=1 옵션을 사용해 이미지 크기를 조절했습니다.
+기존 <a href="https://arxiv.org/abs/1505.04597" target="_blank">Unet</a>은 downsampling을 하기 위해 maxpooling을 사용해 이미지 크기를 절반으로 줄이지만 Pix2Pix에서는 4x4 Convolution을 사용하므로 이미지 크기가 절반으로 줄 수 있도록 stride=2, padding=1 옵션을 사용해 convolution을 통과할 때마다 이미지 크기가 절반이 되도록 조절했습니다.
 
-upsampling은 **transposedconv**를 사용합니다. convolution이 이미지 크기를 줄이고 채널 수를 조절하는 것에 주로 사용된다면 transposedconv는 이미지 크기를 늘리고 채널 수를 조절하는 것에 사용됩니다. up convolution, deconvolution, fractionally strided convolution 등 다양하게 불립니다. 하지만 deconvolution은 convolution의 역함수로 사실 틀린 명명법이라고 하니 이것만 주의하면 될 것 같습니다.
+upsampling은 ConvTranspose(transposed convolution)를 사용합니다. convolution이 이미지 크기를 줄이고 채널 수를 조절하는 것에 주로 사용된다면 ConvTranspose 이미지 크기를 늘리고 채널 수를 조절하는 것에 사용됩니다. ConvTranspose은 up convolution, deconvolution, fractionally strided convolution 등 다양하게 불리지만 deconvolution은 convolution의 연산을 역으로 돌리는 역함수와 같은 연산으로 사실 다른 연산이라고 하니 deconvolution은 틀린 명명법이라는 것을 주의하면 될 것 같습니다.
+
+마지막으로 Generator는 Unet의 구조를 사용하므로 Encoder의 레이어 $i$ 와 Decoder의 레이어 $n-i$ 사이 skip connection을 연결해야 합니다. 따라서 forward에서 `is_encoder`의 인자를 통해 Decoder 부분임을 확인한 후 skip connection으로 넘어온 인자와 연산 결과를 합쳐 skip connection을 구현했습니다.
+
 
 ```python
 class Generator(nn.Module):
@@ -179,7 +194,7 @@ class Generator(nn.Module):
 
     return tan
 ```
-원래는 self.down_8_C512 함수에도 batchnorm이 사용되는 것이 맞지만 instance normalization의 경우 처리할 map의 크기가 1x1 초과일 때만 가능합니다. 256x256 이미지 크기 기준으로 self.down_7_C512의 feature map의 크기가 ~~~~ 로 instance normalization을 적용할 수 없어 self.down_8_C512의 인자에서 is_batchnorm=False를 통해 normalization을 적용하지 않았습니다.
+위에서 구현한 `BlockCK` 모듈을 이용해 구현한 Generator입니다. 원래는 self.down_8_C512 에도 batchnorm이 사용되는 것으로 논문에 나와있지만 instance normalization의 경우 처리할 map의 크기가 1x1 초과일 때만 가능합니다. 256x256 이미지 크기 기준으로 이 Generator에 연산을 넣으면 self.down_7_C512의 feature map의 크기가 ~~~~ 로 instance normalization을 적용할 수 없어 self.down_8_C512의 인자에서 is_batchnorm=False를 통해 normalization을 적용하지 않았습니다.
 
 self.up_1_C64 이후에는 채널 수를 3으로 맞추고 이미지의 크기를 256x256으로 맞추기 위한 convolution과 이미지 픽셀 별 출력을 (-1, 1)로 해주는 tanh activation을 연결해 이미지를 생성합니다.
 
@@ -243,6 +258,7 @@ discriminator = Discriminator()
 generator.apply(init_weight)
 discriminator.apply(init_weight)
 ```
+<br><br>
 
 ---
 
@@ -341,21 +357,30 @@ for epoch in range(n_epochs):
 
 ```
 
-```
-결과 이미지
-```
+<div align="center">
+  <img src="/assets/images/posts/pix2pix/code/history_fail.mp4" width="600" height="300">
+</div>
+> 200 epoch 동안 학습하며 생성한 history_photo. 뭔가 열심히 만들고는 있는거 같은데 논문의 결과와는 차이가 있어보입니다...
 
+<br>
 
-<img src="/assets/images/posts/pix2pix/code/question.jpg" width="300" height="300">
+<div style="float:left;margin:0 10px 10px 0">
+  <img src="/assets/images/posts/pix2pix/code/fig14.png" width="300" height="300">
+</div>
+<div style="margin:0 10px 10px 0">
+  <img src="/assets/images/posts/pix2pix/code/question.jpg" width="300" height="300">
+</div>
+<br>
 
-무언가 잘못됨을 직감합니다. 무엇이 문제일까......어헝헝
+논문의 figure 14의 일부와 함께 보게 되면 많은 차이가....나네요..... 무언가 잘못됨을 직감합니다. 무엇이 문제일까......어헝헝
+<br><br>
 
 ---
 
 ## 4. 수정
 학습 결과는 나오지 않고 모델이 문제일까 조금씩 변형해보았지만 큰 차이가 있지 않았습니다. 설마 데이터셋 처리에서 문제가 발생했을거라는 생각을 못하고 애꿎은 모델만 만지다 전체적으로 다시 살펴보다 깨달았습니다ㅎ.....
 
-### 4.1. 데이터셋 수정
+### 4.1. 데이터 transform 수정
 ```python
 transform = transforms.Compose([
     transforms.Resize((286, 286)),
@@ -366,9 +391,7 @@ transform = transforms.Compose([
 ])
 ```
 
-```
-예시 이미지
-```
+<img src="/assets/images/posts/pix2pix/code/transform.png" width="550" height="300">
 
 transform에서 random jitter와 mirroring을 처리한 게 원인이였습니다. 기껏 페어 이미지 데이터셋을 사용했는데 RandomCrop으로 인해 페어 이미지 간의 crop 위치 차이가 발생하고 RandomHorizontalFlip으로 인해 페어 이미지 둘 중 하나의 이미지만 Flip 된다면 또 페어 이미지 간의 차이가 발생하게 되는 것이 문제로 이어졌습니다.
 
@@ -418,13 +441,7 @@ dataset_Facade = Facade(path = data_path,
 
 dataloader = DataLoader(dataset=dataset_Facade,
                         batch_size=batch_size,
-                        shuffle=True,
-                        drop_last=True)
-```
-
-
-```
-결과 이미지
+                        shuffle=True)
 ```
 
 새로운 코드로 다시 학습을 시켜봅시다!
