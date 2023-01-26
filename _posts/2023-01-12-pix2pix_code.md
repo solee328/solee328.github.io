@@ -8,7 +8,7 @@ tags: [gan, pix2pix, 생성 모델, 논문 구현]
 use_math: true
 ---
 
-pix2pix의 논문 구현 글로 이전 글인 <a href="https://solee328.github.io/gan/2022/12/27/pix2pix_paper.html" target="_blank">Pix2Pix(1) - 논문 리뷰</a>의 논문의 내용을 따라 구현해 보았습니다. 가능한 작은 데이터셋으로 논문을 구현하고 작은 데이터셋으로 얼만큼의 성능이 나오는지 확인해보겠습니다:)
+pix2pix의 논문 구현 글로 이전 글인 <a href="https://solee328.github.io/gan/2022/12/27/pix2pix_paper.html" target="_blank">Pix2Pix(1) - 논문 리뷰</a>의 논문의 내용을 따라 구현해 보았습니다. 가능한 작은 데이터셋으로 논문을 구현하고 작은 데이터셋으로 얼만큼의 성능이 나오는지 확인해보고자 합니다:)
 
 공식 코드로는 논문에 언급된 <a href="https://github.com/phillipi/pix2pix" target="_blank">phillipi/pix2pix</a>가 있으나 lua로 작성되어 있으며 PyTorch로 작성된 코드로는 Pix2Pix와 CycleGAN을 구현한 <a href="https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix" target="_blank">junyanz의 pytorch-CycleGAN-and-pix2pix</a>가 있습니다.
 <br><br>
@@ -86,19 +86,19 @@ Generator의 마지막 activation은 tanh로 출력 범위가 (-1, 1)이므로 N
 ## 2. 모델
 Generator와 Discriminator의 자세한 구조는 논문의 Appendix에서 확인할 수 있습니다.
 
-논문에서는 $Ck$와 $CDk$로 논문의 구조를 설명합니다.<br>
+논문에서는 $Ck$와 $CDk$로 모델의 구조를 설명합니다.<br>
 $Ck$는 k개의 필터를 가진 Convolution-BatchNorm-ReLU 레이어를 의미하고 $CDk$는 k개의 필터를 가진 Convolution-BatchNorm-Dropout-ReLU 레이어를 의미하며 이때 dropout rate는 50%입니다.
 
 모든 convolution들은 stride 값은 2이고 4x4의 filter를 사용합니다. convolution을 통해 Encoder(Generator)와 Discriminator에서 convolution으로 downsample되는 지수는 2이고 Decoder(Generator)에서 convolution으로 upsample되는 지수 또한 2입니다.
 
- convolution을 통해 downsample된다는 것은 이미지의 크기를 줄이는 것은 말하며 이때 downsample 지수가 2이므로 encoder와 discriminator에서 이미지가 convolution을 통과할 때마다 이미지의 크기는 절반이 됩니다. upsample 또한 지수가 2이므로 decoder에서 이미지가 convolution을 통과하면 이미지의 크기는 2배가 되어야 합니다. 더 자세한 내용은 아래의 코드와 함께 확인해보아요!
+ convolution을 통해 downsample된다는 것은 이미지의 크기를 줄이는 것은 말하며 이때 downsample 지수가 2이므로 Encoder와 discriminator에서 이미지가 convolution을 통과할 때마다 이미지의 크기는 절반이 됩니다. upsample 또한 지수가 2이므로 Decoder에서 이미지가 convolution을 통과하면 이미지의 크기는 2배가 되어야 합니다. 더 자세한 내용은 아래의 코드와 함께 확인해보아요!
 
 ### 2.1. Generator
 Generator는 Encoder-Decoder 구조로 다음과 같이 이루어져 있습니다.<br>
 **encoder** : $C64-C128-C256-C512-C512-C512-C512-C512$<br>
 **decoder** : $CD512-CD512-CD512-CD512-C256-C128-C64$
 
-$Ck$와 $CDk$ 모두가 Generator에 사용되므로 dropout이 적용되는 곳과 적용되지 않는 곳, skip connection으로 합쳐져야 하는 부분 등을 편하게 적용시켜 줄 새로운 `BlockCK`라는 클래스를 작성했습니다.
+Generator에 $Ck$와 $CDk$ 모두 사용되므로 dropout이 적용되는 곳과 적용되지 않는 곳, skip connection으로 합쳐져야 하는 부분 등을 편하게 적용시켜 줄 새로운 `BlockCK`라는 클래스를 작성했습니다.
 
 
 ```python
@@ -194,9 +194,9 @@ class Generator(nn.Module):
 
     return tan
 ```
-위에서 구현한 `BlockCK` 모듈을 이용해 구현한 Generator입니다. 원래는 self.down_8_C512 에도 batchnorm이 사용되는 것으로 논문에 나와있지만 instance normalization의 경우 처리할 map의 크기가 1x1 초과일 때만 가능합니다. 256x256 이미지 크기 기준으로 이 Generator에 연산을 넣으면 self.down_7_C512의 feature map의 크기가 ~~~~ 로 instance normalization을 적용할 수 없어 self.down_8_C512의 인자에서 is_batchnorm=False를 통해 normalization을 적용하지 않았습니다.
+위에서 구현한 `BlockCK` 모듈을 이용해 구현한 Generator입니다. 원래는 self.down_8_C512 에도 batchnorm이 사용되는 것으로 논문에 나와있지만 instance normalization의 경우 처리할 map의 (width x height)가 1 초과일 때만 가능합니다. 즉, (1x1)인 경우 instance normalize를 적용할 수 없습니다. 제가 구현한 Generator의 경우 256x256 이미지 크기 기준으로 이 Generator에서 연산을 할 경우 self.down_7_C512의 feature map의 크기가 (512x1x1) 로 instance normalization을 적용할 수 없어 self.down_8_C512의 인자에서 is_batchnorm=False를 통해 normalization을 적용하지 않도록 변경하였습니다.
 
-self.up_1_C64 이후에는 채널 수를 3으로 맞추고 이미지의 크기를 256x256으로 맞추기 위한 convolution과 이미지 픽셀 별 출력을 (-1, 1)로 해주는 tanh activation을 연결해 이미지를 생성합니다.
+self.up_1_C64 연산 이후에는 채널 수를 3으로 맞추고 이미지의 크기를 256x256으로 맞추기 위한 ConvTranspose가 적용된 후 tanh activation을 연결해 픽셀 별 출력 범위가 (-1, 1)로 변환된 이미지를 생성합니다.
 
 
 ### 2.2. Discriminator
@@ -206,7 +206,7 @@ discriminator의 구조는 receptive field 크기 별로 조금씩 다릅니다.
 **16 x 16** : $C64 - C128$<br>
 **286 x 286** : $C64 - C128 - C256 - C512 - C512 - C512$<br>
 
-
+Discriminator의 최종 feature map 크기가 receptive field가 됩니다. 논문에서 가장 좋은 점수를 받은 receptive field 크기는 16 x 16과 70 x 70이며 저는 70 x 70으로 구현해보았습니다.
 
 ```python
 class Discriminator(nn.Module):
@@ -232,14 +232,14 @@ class Discriminator(nn.Module):
   def forward(self, x, origin):
     return self.model(torch.cat((x, origin), 1))
 ```
-Discriminator의 최종 feature map 크기가 **receptive field**가 됩니다. 논문에서 가장 좋은 점수를 받은 receptive field 크기는 16 x 16과 70 x 70입니다. 마지막 convolution을 ConvTranspose2d를 사용해 70 x 70이 되도록 맞추었습니다. 마지막으로는 sigmoid activation을 적용해 (0, 1) 범위의 값을 출력할 수 있도록 맞춰줍니다.
+ 70 x 70의 구조인 $C64 - C128 - C256 - C512$ 이후 마지막 convolution을 ConvTranspose를 사용해 receptive field 크기가 70 x 70이 되도록 맞추었습니다. 마지막으로는 sigmoid activation을 적용해 (0, 1) 범위의 값을 출력할 수 있도록 맞춰줍니다.
 
-추가로 첫번째 Conv2d의 in_channel 값이 이미지 채널 값인 3이 아닌 6인 이유는 conditional gan을 사용해 입력이 될 이미지와 조건이 되는 이미지 2장을 받아 합치기 때문에 3 + 3 = 6이 되기 때문입니다.
+추가로 첫번째 Conv2d의 in_channel 값이 이미지 채널 값인 3이 아닌 6인 이유는 conditional gan을 사용하기 때문에 입력이 될 이미지와 조건이 되는 이미지 2장을 받아 합치기 때문에 두 이미지의 채널을 합쳐 3 + 3 = 6이 되기 때문입니다.
 
 <div>
   <img src="/assets/images/posts/pix2pix/code/summary_d.png" width="450" height="400">
 </div>
->discriminator 확인
+이미지 2장을 Discriminator에 입력했을 때 70 x 70의 receptive field가 된다는 것을 summary로 확인했습니다.
 
 ### 2.3. Weight Initialize
 weight의 mean은 0으로, std는 0.02인 Gaussian distribution(=normal distribution)으로 초기화했다고 합니다. 가중치 초기화를 위한 함수를 만들고 nn.Module.apply 함수를 이용해 모델에 적용해주었습니다.
@@ -265,10 +265,11 @@ discriminator.apply(init_weight)
 ## 3. 추가 설정 및 학습
 
 ### 3.1. 추가 설정
-optimizer는 generator와 distriminator 모두 Adam을 사용합니다. 다만 DCGAN에서 제안한 것처럼 beta1 = 0.5, beta2 = 0.999를 사용한 ADAM을 사용하며 learning rate = 0.0002를 사용합니다.
-batch size는 데이터셋 별로 차이가 있으나 Facade의 경우 batch size로 1을 사용했다 나와있어 저 또한 batch size를 1로 설정했으로 epoch은 논문과 똑같이 200 epoch으로 설정했습니다.
+optimizer는 Generator와 Distriminator 모두 Adam을 사용합니다. 다만 DCGAN에서 제안한 것처럼 beta1 = 0.5, beta2 = 0.999를 사용한 ADAM을 사용하며 learning rate = 0.0002로 설정합니다.
 
-loss는 gan loss와 l1 loss를 각각 torch.nn.BCELoss와 torch.nn.L1loss를 사용했습니다. ones와 zeros는 discriminator의 receptive field 크기와 같은 크기로 만든 후 이후 loss 계산에 사용합니다. update되는 변수가 아니므로 requires_grad = False로 지정해줍니다.
+batch size는 데이터셋 별로 차이가 있으나 CMP Facade DB의 경우 batch size로 1을 사용했다 나와있어 저 또한 batch size를 1로 설정했으며 epoch 또한 논문과 같은 200 epoch으로 설정했습니다.
+
+loss는 gan loss와 l1 loss로 각각 torch.nn.BCELoss와 torch.nn.L1loss를 사용했습니다. ones와 zeros는 Discriminator의 receptive field 크기와 같은 크기로 만든 후 이후 loss 계산에 사용합니다. 업데이트해야 하는 변수가 아니므로 requires_grad = False로 설정해주었습니다.
 
 ```python
 optimizer_G = torch.optim.Adam(generator.parameters(), lr=lr, betas=(beta1, beta2))
@@ -356,21 +357,24 @@ for epoch in range(n_epochs):
         (*divmod(time_end.seconds, 60), (epoch+1), loss[0], loss[1]))
 
 ```
+loss_G의 경우 loss_gan과 loss_l1을 섞어야 하는데 비율은 공식 코드인 <a href="https://github.com/phillipi/pix2pix/blob/master/train.lua#L53" target="_blank">phillipi/pix2pix/train.lua</a>를 참고했으며 labmda_l1 값으로는 100을 사용했습니다.
 
 <div align="center">
-  <img src="/assets/images/posts/pix2pix/code/history_fail.mp4" width="600" height="300">
+  <video muted controls width="600" height="300">
+    <source src="/assets/images/posts/pix2pix/code/history_fail.mp4" type="video/mp4">
+  </video>
 </div>
-> 200 epoch 동안 학습하며 생성한 history_photo. 뭔가 열심히 만들고는 있는거 같은데 논문의 결과와는 차이가 있어보입니다...
+> 200 epoch 동안 학습하며 생성한 history_photo.<br>
+뭔가 열심히 만들고는 있는거 같은데 논문의 결과와는 차이가 있어보입니다... 왜에.....
 
 <br>
 
-<div style="float:left;margin:0 10px 10px 0">
+<div style="float:left;margin:0 10px 20px 0">
   <img src="/assets/images/posts/pix2pix/code/fig14.png" width="300" height="300">
 </div>
-<div style="margin:0 10px 10px 0">
+<div style="margin:0 10px 20px 0">
   <img src="/assets/images/posts/pix2pix/code/question.jpg" width="300" height="300">
 </div>
-<br>
 
 논문의 figure 14의 일부와 함께 보게 되면 많은 차이가....나네요..... 무언가 잘못됨을 직감합니다. 무엇이 문제일까......어헝헝
 <br><br>
@@ -391,7 +395,7 @@ transform = transforms.Compose([
 ])
 ```
 
-<img src="/assets/images/posts/pix2pix/code/transform.png" width="550" height="300">
+<img src="/assets/images/posts/pix2pix/code/transform.png" width="600" height="350">
 
 transform에서 random jitter와 mirroring을 처리한 게 원인이였습니다. 기껏 페어 이미지 데이터셋을 사용했는데 RandomCrop으로 인해 페어 이미지 간의 crop 위치 차이가 발생하고 RandomHorizontalFlip으로 인해 페어 이미지 둘 중 하나의 이미지만 Flip 된다면 또 페어 이미지 간의 차이가 발생하게 되는 것이 문제로 이어졌습니다.
 
@@ -447,14 +451,30 @@ dataloader = DataLoader(dataset=dataset_Facade,
 새로운 코드로 다시 학습을 시켜봅시다!
 
 
-### 4.2. 재학습
+### 4.2. 재학습 결과
 
-```
-history graph
-```
+<div align="center">
+  <video muted controls width="600" height="300">
+    <source src="/assets/images/posts/pix2pix/code/history_success.mp4" type="video/mp4">
+  </video>
+</div>
 
-```
-history_result
-```
+야후! 이전보다 좋은 결과를 보여주고 있습니다.
 
-이전보다 좋은 결과를 보여주고 있습니다.
+<div style="margin:0 0 10px 0">
+  <img src="/assets/images/posts/pix2pix/code/history.png" width="550" height="270">
+</div>
+history graph에서도 generator(G)의 loss가 줄어들고 있는 모습을 확인할 수 있었습니다.
+
+<div style="margin:0 0 20px 0">
+  <img src="/assets/images/posts/pix2pix/code/test.png" width="600" height="320">
+</div>
+
+추가로 학습하지 않은 데이터 셋인 CMP facade DB extended에서 2장의 라벨링 파일을 학습한 모델로 테스트해보았습니다.
+클래스가 다양하고 여러 구조를 가진 이미지로 골랐는데 확실히 학습 데이터셋의 결과에 비하면 상대적으로 퀄리티가 조금 떨어지는 것처럼 보이긴 하지만 386장만으로 이정도 퀄리티가 나온다는 것도 조금 신기하기도 했습니다.
+
+---
+
+Pix2Pix 글은 여기서 끝입니다! 봐주셔서 감사합니다!!<br>
+이번 논문을 구현하면서는 transform에 대한 교훈이 가장 중요했던 것 같습니다.... 문제가 생겼을 때 모델이나 하이퍼 파라미터 종류만 수정하는 것 위주였는데 시간을 날리면서 깨우침을 얻은 기분입니다 :joy:<br>
+최종코드는 <a href="gan/Pix2Pix.ipynb" target="_blank">github</a>에서 확인하실 수 있습니다:)
