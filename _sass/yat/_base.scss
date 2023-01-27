@@ -63,6 +63,12 @@ img {
   vertical-align: middle;
 }
 
+img.emoji {
+  display: inline;
+  width: 1em;
+  height: 1em;
+  margin-bottom: 0.25em;
+}
 
 
 /**
@@ -190,11 +196,6 @@ pre {
   @extend %clearfix;
 }
 
-img.emoji {
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-}
 
 /**
  * Clearfix
