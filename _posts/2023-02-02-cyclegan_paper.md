@@ -11,6 +11,7 @@ use_math: true
 ## 소개
 
 이번 글은 CycleGAN 논문 리뷰로 기본적으로는 논문의 내용을 이해하기 위해 내용 번역을 논문 내용을 적고 내용 요약과 추가 설명이 필요하다 생각되는 세션에는 <font color='41 69 E1'>[정리]</font>로 설명을 적겠습니다.
+<br><br>
 
 ---
 
@@ -23,6 +24,9 @@ Image-to-Image 변환은 비전과 그래픽스 분야의 해결 과제 중 하�
 여기서 논문의 제목의 근간이 된 cycle consistency loss를 추가로 사용합니다. 매핑 $G$의 역 매핑인 $F$는 도메인 $Y$를 도메인 $X$로 변화시키는 $F : Y \rightarrow X$의 역할을 합니다.<br>
 $F(G(X))$는 도메인 변화가 $X \rightarrow Y \rightarrow X$가 될 것이며 다시 도메인 $X$가 된 데이터는 원본 데이터와 비슷하기를 바라는 $F(G(X)) \approx X$를 cycle consistency loss로 사용합니다.
 </font>
+<br><br>
+
+---
 
 ## 1. Introduction
 <div>
@@ -59,31 +63,170 @@ adversarial loss로 $p _{data}(y)$에 일치하는 $\hat{y}$에 대한 출력 �
 
 adversarial loss와 cycle consistency loss를 사용해 페어를 이루지 않은 데이터셋에서 image-to-image 변환이 가능하도록 합니다.
 </font>
+<br><br>
+
+---
 
 ## 2. Related work
 **Generative Adversarial Networks(GANs)**
 [16, 63]은 image generation[6, 39], image editing[66], representation learning[39, 43, 37]에서 인상적인 결과를 달성했습니다. 최근의 방법은 text2image[41], image inpainting[38], future prediction[36]과 같은 조건부 이미지 생성 뿐만 아니라 비디오[54], 3D 데이터[57]와 같은 다른 도메인에 대해서도 동일한 아이디어를 채택합니다. GANs의 성공 핵심은 생성된 이미지가 원칙적으로 실제 사진과 구별할 수 없도록 하는 adversarial loss에 대한 아이디어입니다. 이 loss는 많은 컴퓨터 그래픽이 최적화하려는 목표이기 때문에 특히 이미지 생성 작업에 강력하게 작용합니다. 우리는 변환된 이미지가 대상 도메인과 구별할 수 없도록 매핑을 학습하기 위해 adversarial loss를 채택해 사용합니다.
 
 **Image-to-Image Translation**
-Image-to-Image 변환의 아이디어는
-
+Image-to-Image 변환의 아이디어는 단일 입력-출력 페어 이미지에 non-parametric texture model을 사용한 Hertzmann의 Image Analogire[19] 연구까지 거슬러 올라갑니다. 보다 최근의 접근 방식은 CNN을 사용하여 parametric translation function을 학습하기 위해 입력-출력 데이터 셋을 사용합니다(예시 : [33]). 우리의 접근 방식은 Isola의 'pix2pix' 프레임 워크를 기반으로 하며[22], 이건은 조건부 adversarial generation nerwork[16]을 사용하여 입력에서 출력 이미지로의 매핑을 학습합니다. 비슷한 아이디어들이 sketch로부터 photographs를 생성하는 [44] 또는 attribute와 semantic layout으로부터 photographs를 생성하는 [25]와 같은 작업들에 적용되었습니다. 하지만 이전의 연구들과는 다르게 우리는 페어를 이루는 학습 데이터 없이 매핑하는 방법을 학습하고자 합니다.
 
 **Unpaired Image-to-Image Translation**
+페어를 이루지 않는 환경을 다루는 데 목표는 $X$와 $Y$라는 두 데이터 도메인을 연관시키는 것입니다. Rosales[42]는 source image에서 계산된 patch 기반의 Markov random field와 여러 style image에서 얻은 likelihood term을 기반으로 하는 Bayesian framework를 제안합니다. 더 최근에는 CoGAN[32]과 cross-modal scene network[1]가 weight-sharing 전략을 사용해 도메인 간의 공통된 representation을 학습했습니다. 우리의 방법과 동시에 Liu[31]은 variational autoencoders[27]와 generative adversarial networks[16]의 조합으로 프레임워크를 확장했습니다. 다른 계열에서 동시의 연구들[46, 49, 2]은 입력과 출력이 'style'은 다를 수 있지만 특정 'content' feature를 공유하도록 장려합니다. 또한 이러한 방법은 class label space[2], image pixel space[46], image feature space[49]와 같이 사전 정의된 메트릭 공간에서 입력에 가까운 출력을 강제하는 추가적인 term과 함께 adversarial network를 사용합니다.
 
+위의 접근 방식과 달리, 우리의 공식은 입력과 출력 사이의 작업 별 사전 정의된 유사성 함수에 의존하지 않으며 입력과 출력이 동일한 저차원 임베딩 공간에 있어야 한다고 가정하지도 않습니다. 이는 우리의 방법은 많은 비전 및 그래픽 작업을 위한 범용 솔루션으로 만듭니다. 우리는 Section 5.1.에서 이전의 몇가지 연구들과 현재 접근법을 직접 비교합니다.
 
-**Cycle Consistenc**
-
+**Cycle Consistency**
+`구조를 가진 데이터`를 정규화하는 방법으로 transitivity를 사용하는 아이디어는 오랜 역사를 가지고 있습니다. visual tracking에서 단순한 forward-backward consistency를 시행하는 것은 수십 년 동안 표준적으로 사용한 방법이였습니다[24, 48]. 연어 영역에서 "back translation, reconciliation"을 통해 번역을 검증하고 개선하는 것은 인간 번역가[3] (재미있게도 MarkTwain[51]을 포함합니다)와 기계[17]에 의해 사용되는 기술힙니다. 보다 최근에는 motion[61], 3D shape matching[21], co-segmentation[55], dense semantic alignment[65, 64], depth estimation[14]의 구조에서 cycle consistency가 사용되었습니다.
 
 **Neural Style Transfer**
+[13, 23, 52, 12]는 image-to-image 변환을 수행하는 또 다른 방법으로 사전 학습된 deep feature의 gram matrix와 일치하는 것을 기반으로 한 하나의 이미지의 콘텐츠를 다른 이미지의 스타일(일반적으로 그림)과 결합하여 새로운 이미지를 합성합니다.
 
 
-## 3.
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+논문의 목적인 image-to-image 변환 관련 연구로는 gram matrix를 사용해 이미지를 합성하는 Neural Style Transfer와 조건부 adversarial 모델을 사용하는 연구들이 있었습니다.<br>
+조건부 adversarial 모델 관련 연구들은 페어 데이터 셋을 사용했거나 페어를 이루지 않은 데이터 셋을 사용하더라도 연구 주제에 따라 연구 주제에 적합하도록 정의된 유사성 함수에 의존했습니다.<br>
+본 논문은 페어를 이루지 않는 학습 데이터 셋을 사용하며 연구 주제에 따라 유사성 함수를 따로 설정하지 않아도 되는 범용 솔루션을 제안합니다.<br><br>
+
+논문은 실제 데이터와 구별할 수 없도록 만드는 GANs의 adversarial loss와 Cycle consistency loss를 사용합니다.
+</font>
+<br><br>
+
+---
+
+## 3. Formulation
+<div>
+  <img src="/assets/images/posts/cyclegan/paper/fig3.PNG" width="600" height="180">
+</div>
+> Figure 3: (a) 우리의 모델은 두 매핑 $G : X \rightarrow Y$와 $F : Y \rightarrow X$를 포함하고 adversarial discriminator인 $D_Y$와 $D_X$와 연관되어 있습니다. $D_Y$는 $G$가 $X$를 도메인 $Y$와 구별할 수 없는 결과로 변환하도록 장려하며 $D_X$와 $F$는 그 반대입니다. 매핑을 더욱 정교하게 하기 위해, 우리는 한 도메인에서 다른 도메인으로 변환하고 다시 되돌리면 우리가 시작한 곳에 도달해야 한다는 직관을 가진 두 가지 cycle consistency loss를 소개합니다. (b) forward cycle-consistency loss : $x \rightarrow G(X) \rightarrow F(G(x)) \approx x$, (c)backward cycle-consistency loss : $y \rightarrow F(y) \rightarrow G(F(y)) \approx y$
+
+우리의 목표는 학습 데이터로 $x_i \in X$인 $\lbrace x_i \rbrace ^N _{i=1}$ 와 $y_j \in Y$인 $\lbrace y_j \rbrace ^M _{j=1}$를 가진 두 도메인 $X$와 $Y$ 사이를 매핑하는 함수를 학습하는 것입니다. 우리는 데이터 분포를 $x \sim p _{data}(x)$와 $y \sim p _{data}(y)$로 나타냅니다. Figure 3에서 표현된 것처럼 우리의 모델은 두 매핑 $G : X \rightarrow Y$와 $F : Y \rightarrow X$를 포함합니다. 추가로 우리는 2개의 adversarial discriminator인 $D_X$와 $D_Y$를 소개합니다. $D_X$는 이미지 $\lbrace x \rbrace$와 변환된 이미지 $\lbrace F(y) \rbrace$를 구별하는 것이 목적이고 같은 방법으로 $D_Y$는 이미지 $\lbrace y \rbrace$와 $\lbrace  G(x) \rbrace$를 구별하는 것이 목적입니다. 우리의 목적은 생성된 이미지의 분포와 target 도메인의 데이터 분포를 매칭하기 위한 adversarial loss[16]와 학습된 매핑 $G$와 $F$가 서로 부정하는 것을 막기 위한 cycle consistency loss, 총 두 종류의 term을 담고 있습니다.
+
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+도메인 $X$에서 도메인 $Y$로 변환하기 위한 매핑 $G$, 도메인 $Y$에서 도메인 $X$로 변환하기 위한 매핑 $F$를 adversarial loss를 이용해 학습합니다.<br>
+또한 두 매핑은 두 도메인 $X$와 $Y$ 간의 변환이므로 데이터 $x$에게 $G$와 $F$를 적용한 $F(G(x))$는 다시 도메인 $X$에 대한 데이터가 되기를 바라는 forward cycle consistency loss와 데이터 $y$에게 $F$와 $G$를 적용한 $G(F(x))$는 다시 도메인 $Y$에 대한 데이터가 되기를 바라는 backward cycle consistency loss를 cycle consistency loss로 적용해 학습합니다.
+</font>
+
+### 3.1. Adversarial Loss
+우리는 adversarial loss[16]을 두 매핑 함수 모두에 적용합니다. 우리는 매핑 함수 $G : X \rightarrow Y$와 판별 모델 $D_Y$를 목적 함수로 아래와 같이 표현합니다.
+
+$$
+\mathcal{L} _{GAN}(G, D_Y, X, Y) = \mathbb{E} _{y \sim p _{data}(y)}[log D_Y(y)] + \mathbb{E} _{x \sim p _{data}(x)}[log(1-D_Y(G(x)))]
+\tag{1}
+$$
+
+$G$는 도메인 $Y$의 이미지들과 비슷해보이도록 이미지 $G(x)$를 생성하고 $D_Y$는 생성된 이미지 $G(x)$와 실제 이미지 $y$를 구별하는 것에 목적을 둡니다. $G$는 목적함수를 최소화하며 이에 대항하는 $D$는 목적함수를 최대화합니다. 즉, $\min_G \max _{D_Y} \mathcal{L} _{GAN} (G, D_Y, X, Y)$입니다. 우리는 매핑 함수 $F : Y \rightarrow X$ 뿐 만 아니라 이에 대한 판별 모델 $D_X$에 대해서도 유사한 adversarial loss를 도입합니다. 즉, $\min_F \max _{D_Y} \mathcal{L} _{GAN} (F, D_X, Y, X)$입니다.
+
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+GAN의 adversarial loss와 같은 식으로 $G$와 $D$의 기능 또한 같지만 매핑이 2가지라는 것에 차이가 있습니다.<br><br>
+
+생성 모델 $G$는 데이터 $x$를 도메인 $Y$의 분포와 비슷하도록 만들고 판별 모델 $D_Y$는 도메인 $Y$의 데이터인지 아닌지 $G(x)$에 대해서 판별합니다. 역 매핑에 대해서도 마찬가지로 생성 모델 $F$는 데이터 $y$를 도메인 $X$의 분포와 비슷하도록 만들고 판별 모델 $D_X$는 $F(y)$가 도메인 $X$의 데이터인지 판별합니다.
+</font>
+
+### 3.2. Cycle Consistency Loss
+이론적으로 adversarial 학습은 각각 대상 도메인 $Y$와 $X$로 동일하게 분포된 출력을 생성하는 매핑 $G$와 $F$를 학습할 수 있습니다[15]. 그러나 복잡한 관계를 표현할 수 있는 정보를 담을 용량이 충분한 네트워크는 target 분포와 일치하는 출력 분포를 유도할 수 있지만 동일한 입력 이미지 셋을 target 도메인의 임의의 이미지에 매핑할 수 있습니다. 따라서 adversarial loss 만으로는 학습된 개별 함수가 개별 입력 $x_i$를 원하는 출력 $y_i$에 매핑할 수 있다고 보장할 수 없습니다. 가능한 매핑 함수의 공간을 줄이기 위해, 우리는 학습된 매핑 함수는 cycle-consistency 여야 한다고 주장합니다. Figure 3의 (b)에서 보여준 것처럼 도메인 $X$의 각각의 이미지 $x$에 대해서 이미지 변환 사이클은 원본 이미지 $x$로 다시 돌릴 수 있어야 합니다. 즉, $x \rightarrow G(x) \rightarrow F(G(X)) \approx x$입니다. 우리는 이것을 forward cycle consistency라 부릅니다. 유가하게 표현되는 Figure 3 (c)는 도메인 $Y$의 각각의 이미지 $y$에 대해서 $G$와 $F$는 backward cycle consistency : $y \rightarrow F(y) \rightarrow G(F(y)) \approx y$를 만족해야 합니다. 우리는 cycle consistency loss를 사용해 이를 장려합니다.
+
+$$
+\mathcal{L} _{cyc} (G, F) = \mathbb{E} _{x \sim p _{data}(x)}[\| F(G(x))-x \|_1] + \mathbb{E} _{y \sim p _{data}(y)}[\| G(F(x))-y \|_1]
+\tag{2}
+$$
+
+선행 연구들에서 시도했던 것처럼 우리 또한 loss에 L1 norm을 $F(G(x))$와 $x$, $G(F(y))$와 $y$ 사이의 adversarial loss로 대체하려 시도했지만 향상된 성능을 관찰하진 못했습니다.
 
 
-## 4.
+<div>
+  <img src="/assets/images/posts/cyclegan/paper/fig4.png" width="350" height="350">
+</div>
+> Figure 4: 다양한 실험에서의 입력 이미지 $x$, 출력 이미지 $G(x)$ 그리고 재구성된 이미지 $F(G(x))$. 위에서부터 아래까지 순서대로 photo $\leftrightarrow$ Cezanne, horses $\leftrightarrow$ zebras, winter Yosemite $\leftrightarrow$ summer Yosemite, aerial photos $\leftrightarrow$ google maps
+
+cycle consistency loss로 인한 결과를 Figure 4에서 확인할 수 있습니다. 재구성된 $F(G(x))$는 입력 이미지 $x$와 유사하게 매칭됩니다.
+
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+생성 모델 $G$가 $\lbrace x_i \rbrace$를 도메인 $Y$의 분포와 일치하도록 변환한 $G(x)$가 원하는 출력인 $\lbrace y_i \rbrace$에 일치하지 않을 수 있습니다. 대표적인 예시로는 생성 모델이 어떤 입력에서도 같은 출력을 내놓는 Mode Collapse 가 있습니다.
+이 문제를 해결하기 위해 생성한 $G(x)$를 생성 모델 $F$에 입력해 다시 도메인 $X$로 변환한 $F(G(x))$와 원본 데이터인 $x$와 L1 loss를 사용해 최대한 일치하도록 만드는 cycle consistency loss를 도입합니다.<br><br>
+
+매핑 함수가 2개이니 cycle consistency loss도 2개로 구별할 수 있습니다.<br>
+forward cycle consistency는 source 데이터 $x$와 $F(G(x))$와의 L1 loss를 계산하며 backward cycle consistency는 target 데이터 $y$와 $F(G(y))$와의 L1 loss를 계산합니다.
+</font>
 
 
-## 5.
+### 3.3. Full Objective
+우리의 목적 함수는 아래와 같습니다.
+
+$$
+\mathcal{L}(G, F, D_X, D_Y) = \mathcal{L} _{GAN} (G, D_Y, X, Y) +  \mathcal{L} _{GAN} (F, D_X, Y, X) + \lambda \mathcal{L} _{cyc}(G, F)
+\tag{3}
+$$
+
+여기서 $\lambda$는 두 목적의 상대적 중요성을 제어합니다. 우리는 아래를 해결하는 것을 목표로 합니다.
+
+$$
+G ^* , F ^* = arg \min _{G, F} \max _{D_x, D_Y} \mathcal{L}(G, F, D_X, D_Y)
+\tag{4}
+$$
+
+우리의 모델은 "autoencoders"[20]를 학습하는 것으로 볼 수 있습니다. 우리는 하나의 autoencoder $F \circ G : X \rightarrow X$와 다른 antoencoder $G \circ F : Y \rightarrow Y$를 함께 학습합니다. 그러나 이런 autoencoder들은 각각 이미지를 다른 도메인으로 변환하는 중간 표현을 통해 이미지를 자신에게 매핑하는 특별한 내부 구조를 가지고 있습니다. 이러한 설정은 임의의 target 분포와 일치하도록 autoencoder의 bottleneck 레이어를 학습하기 위해 adversarial loss를 사용하는 "adversarial autoencoder"[34]의 특별한 경우로 볼 수 있습니다. 이 경우 $X \rightarrow X$를 수행하는 autoencoder의 target 분포는 도메인 $Y$의 분포입니다.
+
+Section 5.1.4 에서는 adversarial loss $\mathcal{L} _{GAN}$을 단독으로 사용한 것과 cycle consistency loss $\mathcal{L} _{cyc}$를 단독으로 사용한 것을 포함해 목적 함수의 일부와 전체 목적 함수를 비교하고, 두 목적이 고품질 결과에 도달하는 데 중요한 역할을 한다는 것을 경험적으로 보여줍니다. 또한 우리는 한 방향의 cycle loss만 가지고 우리의 방법을 평가하고 단일 주시로는 제한되지 않는 문제에 대한 학습을 정규화하기에 충분하지 않다는 것을 보여줍니다.
+
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+최종 목적 함수는 Equation 3으로 위에서 설명된 GAN loss(adversarial loss)와 cyc loss(cycle consistency loss)를 사용합니다.
+<br><br>
+
+autoencoder는 input $x$ $\rightarrow$ encoder $\rightarrow$ $z$ $\rightarrow$ decoder $\rightarrow$ output $x$의 구조를 가집니다. 여기서 encoder를 $G$, decoder를 $F$로 이해한다면 입력 값이 $G$(encoder)를 통해 다른 값으로 변하고 다시 $F$(decoder)를 통해 원래의 값으로 돌아오는 모양이 되며 CycleGAN의 모델과 같은 모양이라 볼 수 있게 됩니다.<br>
+중간 표현인 $z$가 bottleneck 레이어를 통해 나오게 되는데 이 $z$가 도메인 $Y$, input $x$와 output $x$를 도메인 $X$로 본다면 autoencoder로 도메인 변화가 $X \rightarrow Y \rightarrow X$가 되므로 논문과 일치한다 할 수 있습니다.
+<br><br>
+
+adversarial loss만 사용한 경우, cycle consistency loss만 사용한 경우, adversarial + forward cycle consistency loss를 사용한 경우, adversarial + backward cycle consistency loss를 사용한 경우, adversarial + cycle consistency loss를 사용한 경우를 실험한 결과를 Section 5.1.4에서 확인할 수 있습니다.
+
+</font>
+<br><br>
+
+---
+
+## 4. Implementation
+**Network Architecture**
+우리는 neural style transfer와 super resolution에 대해 인상적인 결과를 보여준 Johnson[23]의 생성 네트워크를 채택합니다. 이 네트워크는 3개의 convolution, 여러 residual blocks[18], $\frac{1}{2}$의 stride를 가진 2개의 fractionally-strided convolution 그리고 feature map을 RGB에 매핑하는 convolution 하나를 포함합니다. 128x128 이미지에는 6개의 block을 사용하고 256x256 이상의 고해상도 학습 이미지에는 9개의 block을 사용합니다. Johnson[23]과 비슷하게 우리는 instance normalization[53]을 사용합니다. 판별 모델 네트워크의 경우 70x70 PatchGAN[22, 30, 29]를 사용하며 70x70 부분 이미지 패치가 실제인지 가짜인지를 분류합니다. 이런 패치 수준 판별 모델 아키텍처를 전체 이미지 판별 모델보다 매개 변수가 적으며, fully convolutional fashion[22] 방식으로 임의의 크기의 이미지에서 작용할 수 있습니다.
+
+**Training details**
+우리는 모델 학습 절차를 안정화하기 위해 최근 연구의 2가지 기술을 적용합니다. 첫번째로 $\mathcal{L} _{GAN}$ (Equation 1)의 경우 negative log likelihood 목적을 least-squares loss[53]로 대체합니다. 이 손실은 훈련 중에 더 안정적이고 더 높은 품질의 결과를 생성합니다. 특히 GAN loss $\mathcal{L} _{GAN}(G, D, X, Y)$를 위해 우리는 $\mathbb{E} _{x \sim p _{data}(x)}[(D(G(x)) - 1) ^2]$를 최소화하도록 $G$를 학습하고 $\mathbb{E} _{y \sim p _{data}(y)}[(D(y) - 1) ^2] + \mathbb{E} _{x \sim p _{data}(x)}[D(G(x)) ^2]$를 최소화하기 위해 $D$를 학습합니다.
+
+두번째로 model oscillation[15]를 줄이기 위해, 우리는 Shrivastava의 전략[46]을 따르고 마지막 생성 모델이 생성한 하나의 이미지가 아닌 생성된 이미지 히스토리를 사용해 판별 모델을 업데이트한다. 우리는 이전에 생성된 50개의 이미지를 저장하는 이미지 버퍼를 가지고 있는다.
+
+모든 실험에서, 우리는 Equation 3의 $\lambda = 10$으로 설정했다. 우리는 배치 크기가 1인 Adam solver[26]을 사용한다. 모든 네트워크는 0.0002의 학습률을 가지고 학습되었다. 우리는 처음 100 epoch 동안 학습률을 유지하고 다음 100 epoch 동안 학습률을 0으로 감소시킨다. 데이터 셋, 아키텍처 및 학습 순서에 대한 자세한 내용은 부록(Section 7)을 참고하라.
 
 
-## 6.
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+
+</font>
+<br><br>
+
+---
+
+## 5. Results
+### 5.1. Evaluation
+#### 5.1.1 Evaluation Metrics
+#### 5.1.2 Baselines
+#### 5.1.3 Comparison against Baselines
+#### 5.1.4 Analysis of the loss function
+#### 5.1.5 Image reconstruction quality
+#### 5.1.6 Additional results on paired datasets
+
+### 5.2 Applications
+<br><br>
+
+---
+
+## 6. Limitations and Discussion
+<br><br>
+
+---
