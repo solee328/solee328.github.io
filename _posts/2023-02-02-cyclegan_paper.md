@@ -213,20 +213,161 @@ adversarial loss만 사용한 경우, cycle consistency loss만 사용한 경우
 ---
 
 ## 5. Results
+우리는 input-output 페어를 이루고 있는 데이터 셋에 페어를 이루지 않은 image-to-image 변환에 대해서 최근의 연구들과 우리의 접근 방식을 비교합니다. 이후 adversarial loss와 cycle consistency loss의 중요성을 연구하고 전체 loss에 대해 변형된 방법들과 비교합니다. 미자믹으로, 우리는 페어를 이룬 데이터가 존재하지 않는 광범위한 응용 프로그램에서 알고리즘의 일반성을 입증합니다. 우리는 우리의 방법을 간략하게 CycleGAN이라 부릅니다. <a href="https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix" target=_blank>PyTorch</a> 및 <a href="https://github.com/junyanz/CycleGAN" target=_blank>Torch</a> 코드, 모델, 전체 결과는 우리의 <a href="https://junyanz.github.io/CycleGAN/" target=_blank>웹사이트</a>에서 확인할 수 있습니다.
+
 ### 5.1. Evaluation
+pix2pix[22]와 동일한 데이터 셋 및 메트릭을 사용해 우리의 방법을 질적으로나 양적으로 여러 기준 모델들과 비교합니다. 작업에는 Cityscapes 데이터 셋에서의 semantic labels $\leftrightarrow$ photo와 Google Maps에서 스크랩한 데이터의 map $\leftrightarrow$ aerial photo가 포함됩니다. 또한 우리는 전체 loss 함수에 대한 `ablation study`를 수행합니다.
+
+
+<details>
+<summary>ablation study</summary>
+<span style="color:gray">
+  ddd
+  <br><br>
+
+  참고<br>
+  - Fintecuriosity님의 <a href="https://fintecuriosity-11.tistory.com/73" target="_blank">[데이터 사이언스]"Ablation study"란 무엇인가?</a><br>
+  <br>
+</span>
+</details>
+
+
 #### 5.1.1 Evaluation Metrics
+**AMT perceptual studies**
+
+
+**FCN score**
+
+
+**Semantic segmentation metrics**
+
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+
+</font>
+
 #### 5.1.2 Baselines
+**CoGAN[32]**
+
+
+**SimGAN[46]**
+
+
+**Feature loss + GAN**
+
+**BiGAN / ALI{9, 7}**
+
+
+**pix2pix[22]**
+
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+
+</font>
+
 #### 5.1.3 Comparison against Baselines
+<div>
+  <img src="/assets/images/posts/cyclegan/paper/fig5.png" width="600" height="280">
+</div>
+> Figure 5:
+
+<div>
+  <img src="/assets/images/posts/cyclegan/paper/fig6.png" width="600" height="280">
+</div>
+> Figure 6:
+
+
+<div>
+  <img src="/assets/images/posts/cyclegan/paper/table1.png" width="600" height="280">
+</div>
+> Table 1:
+
+<div>
+  <img src="/assets/images/posts/cyclegan/paper/table2.png" width="600" height="280">
+</div>
+> Table 2:
+
+<div>
+  <img src="/assets/images/posts/cyclegan/paper/table3.png" width="600" height="280">
+</div>
+> Table 3:
+
+
+
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+
+</font>
+
 #### 5.1.4 Analysis of the loss function
+<div>
+  <img src="/assets/images/posts/cyclegan/paper/table4.png" width="600" height="280">
+</div>
+> Table 4:
+
+<div>
+  <img src="/assets/images/posts/cyclegan/paper/table5.png" width="600" height="280">
+</div>
+> Table 5:
+
+
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+
+</font>
+
 #### 5.1.5 Image reconstruction quality
+
+
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+
+</font>
+
 #### 5.1.6 Additional results on paired datasets
 
+
+
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+
+</font>
+
 ### 5.2 Applications
+
+
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+
+</font>
+
 <br><br>
 
 ---
 
 ## 6. Limitations and Discussion
+<div>
+  <img src="/assets/images/posts/cyclegan/paper/fig17.png" width="600" height="280">
+</div>
+> Figure 17: 우리의 방법에서 전형적인 실패 사례들. 왼쪽 : 개 $\rightarrow$ 고양이 변환 작업에서 CycleGAN은 입력에서 최소한의 변경만 만들어 낼 수 있었습니다. 오른쪽 : CycleGAN은 말 $\rightarrow$ 얼룩말 예제에서도 실패 사례가 나왔는데 모델이 학습 중 승마에 대한 이미지를 보지 못했지 때문입니다.
+
+우리의 방법이 많은 경우레 설득력 있는 결과를 얻을 수 있었지만, 결과들이 모든 곳에서 긍정적인 결과인 것과는 거리가 있습니다. Figure 17은 몇 가지 실패 사례를 보여줍니다. 위에서 언급한 것들처럼 색상과 질감 변화를 수반하는 변환 작업에서 우리의 방법은 종종 성공적이였습니다. 우리는 기하학적 변화가 필요한 작업을 탐구했지만 거의 성공하지 못했습니다. 예를 들어 개 $\rightarrow$ 고양이(Figure 17, 좌측) 변환 작업에서 모델은 입력을 최소한의 변경만 하는 것으로 퇴화합니다. 이 실패는 외관 변경에 대한 우수한 성능을 위해 조정된 생성 모델 구조로 인해 발생할 수 있습니다. 더 다양하고 극단적인 변화, 특히 기하하적 변화를 다루는 것은 향후 작업에 중요한 문제입니다.
+
+일부 실패 사례는 학습 데이터 셋의 분포 특성으로 인해 발생합니다. 예를 들어, 우리의 방법은 말 $\rightarrow$ 얼룩말 예시(Figure 17, 우측)에서 혼란스러워하는 모습을 보였는데, 이는 모델이 말이나 얼룩말을 타는 사람의 이미지를 포함하지 않은 ImageNet의 *wild horse*와 *zebra*에 대해 학습되었기 때문입니다.
+
+우리는 또한 페어 데이터로 달성할 수 있는 결과와 페어를 이루지 않는 방법으로 달성된 결과 사이의 지속적인 격차를 관찰했습니다. 어떤 경우에는 이 간격을 좁히기가 매우 어렵거나 심지어 불가능할 수도 있었습니다. 예를 들어, 우리의 방법은 때때로 photo $\rightarrow$ label 의 작업의 출력에서 나무나 빌딩의 label을 바꾸었습니다. 이 모호성을 해결하려면 어떤 형태로든 약간 semantic supervision이 필요할 수도 있습니다. 약한 지도 또는 준-지도 데이터를 통합하면 훨씬 더 강력한 변환 모델이 나올 수 있으며 준-지도 데이터를 여전히 완전 지도 시스템(fully-supercised system) 비용의 일부에 불과합니다.
+
+그럼에도 불구하고, 많은 경우에 페어를 이루지 않은 데이터는 충분히 이용 가능하며 사용되어야 합니다. 본 논문은 "감독되지 않은" 환경에서 가능한 작업의 경계를 확장합니다.
+
+<font color='41 69 E1'>
+<b>[정리]</b><br>
+색상, 질감 변화의 작업에는 적합하지만 외관 자체가 변화하는 것에는 적합하지 않다. 또한 학습한 이미지 데이터 셋에 없던 객체가 이미지에 나타난다면 모델이 혼란스러워 하며 결과가 좋지 않다.<br><br>
+
+semantic segmentation과 같은 작업에서는 페어를 이룬 데이터를 사용한 결과를 따라잡을 수 없었다. 이를 해결하기 위해서는 준-지도 데이터 사용을 통해 가능할 것으로 생각되며 준-지도 데이터를 사용한다고 하더라도 풀-지도 데이터에 비하면 비용이 싸다.<br><br>
+
+하지만 많은 경우에 페어를 이루지 않은 데이터를 사용해 모델이 좋은 결과를 내고 있다. 본 논문은 비 지도 환경에서 가능한 작업의 경계를 확장했다.
+</font>
+
 <br><br>
 
 ---
