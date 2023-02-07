@@ -47,7 +47,7 @@ $F(G(X))$는 도메인 변화가 $X \rightarrow Y \rightarrow X$가 될 것이�
 </div>
 > Figure 2: 페어를 이루는 학습 데이터(왼쪽)은 $x_i$와 $y_i$ 사이에 관계가 존재하는 pix2pix에서 사용하며 학습 예제로 $\{ x_i, y_i\} ^N _{i=1}$로 이루어져 있습니다. 우리는 대신 $x_i$와 $y_i$ 간의 매칭되는 정보가 주어지지 않은 source 데이터 셋 $\{ x_i \} ^N _{i=1} (x_i \in X)$와 target 데이터 셋 $\{ y_j \} ^M _{j=1} (y_j \in Y)$로 이루어진 페어를 이루지 않는 학습 데이터(오른쪽)을 사용합니다.
 
-이 문제는 주어진 장면의 한 표현인 $x$에서 다른 표현 $y$로 이미지를 변환하는 grayscale to color, image to semantic labels, edge-map to photograph와 같은 <a href="https://arxiv.org/abs/1611.07004" target="_blank">image-to-image 변환</a>으로 더 광범위하게 설명될 수 있습니다. 컴퓨터 비전, 이미지 처리, 컴퓨터 그래픽스에 대한 수년간의 연구는 지도학습 아래에서 페어 이미지 $\{ x_i, y_i \} ^N _{i=1}$가 가능한 강력한 변환 시스템을 만들었습니다(Figure 2, left). 하지만 학습을 위한 페어 데이터를 얻는 것은 어렵고 비용이 많이 들 수 있습니다. 예를 들어, semantic segmentation과 같은 작업을 위한 데이터 셋을 오직 몇 개만 존재하며 상대적으로 수가 적습니다. 예술적 스타일 변환과 같은 그래픽 작업을 위한 입출력 페어 데이터를 얻는 것은 원하는 출력이 매우 복잡하며 일반적으로 저작권이 필요하기 때문에 훨씬 더 어려울 수 있습니다. 객체 변환(예시 : 얼룩말 $\leftrightarrow$ 말, Figure 1, top-middle)과 같은 많은 과제들의 경우 원하는 출력이 잘 정의되기 힘듭니다.
+이 문제는 주어진 장면의 한 표현인 $x$에서 다른 표현 $y$로 이미지를 변환하는 grayscale to color, image to semantic labels, edge-map to photograph와 같은 <a href="https://arxiv.org/abs/1611.07004" target="_blank">image-to-image 변환(pix2pix)</a>으로 더 광범위하게 설명될 수 있습니다. 컴퓨터 비전, 이미지 처리, 컴퓨터 그래픽스에 대한 수년간의 연구는 지도학습 아래에서 페어 이미지 $\{ x_i, y_i \} ^N _{i=1}$가 가능한 강력한 변환 시스템을 만들었습니다(Figure 2, left). 하지만 학습을 위한 페어 데이터를 얻는 것은 어렵고 비용이 많이 들 수 있습니다. 예를 들어, semantic segmentation과 같은 작업을 위한 데이터 셋을 오직 몇 개만 존재하며 상대적으로 수가 적습니다. 예술적 스타일 변환과 같은 그래픽 작업을 위한 입출력 페어 데이터를 얻는 것은 원하는 출력이 매우 복잡하며 일반적으로 저작권이 필요하기 때문에 훨씬 더 어려울 수 있습니다. 객체 변환(예시 : 얼룩말 $\leftrightarrow$ 말, Figure 1, top-middle)과 같은 많은 과제들의 경우 원하는 출력이 잘 정의되기 힘듭니다.
 
 따라서 우리는 페어를 이루는 입력-출력 예제 없이 도메인 간 변환을 학습할 수 있는 알고리즘을 찾습니다(Figure 2, right). 우리는 도메인 사이에 어떤 기본 관계가 있다고 가정합니다 예를 들어 도메인은 동일한 기본 장면의 두 가지 다른 렌더링이라고 가정하고 그 관계를 배우고자 합니다. 지도 학습에서 페어 데이터를 사용한 예시가 부족할 수 있지만 우리는 도메인 $X$의 이미지 셋과 다른 이미지 셋인 도메인 $Y$에 대한 데이터 셋이 제공되는 상태에서 지도학습을 이용할 수 있습니다. 우리는 $y$와 $\hat{y}$를 구별하도록 학습된 모델이 출력 $\hat{y} = G(x), x \in X$와 이미지 $y \in Y$를 구별할 수 없도록 매핑 $G : X \rightarrow Y$를 학습합니다. 이론적으로, 매핑 $G$는 분포 $p _{data}(y)$와 일치하는 $\hat{y}$에 대한 출력 분포를 유도할 수 있습니다. 따라서 최적의 $G$는 도메인 $X$를 $Y$와 동일하게 분포된 도메인 $\hat{Y}$로 변환합니다. 그러나 이러한 변환은 입력 $x$와 출력 $y$가 유의미하게 페어를 이룬다는 것을 보장하지 않으며 $\hat{y}$에 대해 동일한 분포를 유도하는 무한히 많은 매핑 $G$가 존재합니다. 더욱이 실제로 우리는 adversarial 목적 함수를 분리하여 최적화하는 것이 어렵다는 것을 알게 되었다. 일반적인 방법은 종종 모든 입력 이미지가 동일한 출력 이미지에 매핑되고 최적화가 이뤄지지 않는 mode collapse로 잘 알려진 문제를 초래합니다.
 
@@ -68,22 +68,22 @@ adversarial loss와 cycle consistency loss를 사용해 페어를 이루지 않�
 ---
 
 ## 2. Related work
-**Generative Adversarial Networks(GANs)**
-[16, 63]은 image generation[6, 39], image editing[66], representation learning[39, 43, 37]에서 인상적인 결과를 달성했습니다. 최근의 방법은 text2image[41], image inpainting[38], future prediction[36]과 같은 조건부 이미지 생성 뿐만 아니라 비디오[54], 3D 데이터[57]와 같은 다른 도메인에 대해서도 동일한 아이디어를 채택합니다. GANs의 성공 핵심은 생성된 이미지가 원칙적으로 실제 사진과 구별할 수 없도록 하는 adversarial loss에 대한 아이디어입니다. 이 loss는 많은 컴퓨터 그래픽이 최적화하려는 목표이기 때문에 특히 이미지 생성 작업에 강력하게 작용합니다. 우리는 변환된 이미지가 대상 도메인과 구별할 수 없도록 매핑을 학습하기 위해 adversarial loss를 채택해 사용합니다.
+**Generative Adversarial Networks(GANs)**<br>
+<a href="https://arxiv.org/abs/1406.2661" target="_blank">GAN</a>은 <a href="https://arxiv.org/abs/1506.05751" target="_blank">image generation</a>, <a href="https://arxiv.org/abs/1609.03552" target="_blank">image editing</a>, <a href="https://arxiv.org/abs/1511.06434" target="_blank">representation learning</a>에서 인상적인 결과를 달성했습니다. 최근의 방법은 <a href="https://arxiv.org/abs/1605.05396" target="_blank">text2image</a>, <a href="https://arxiv.org/abs/1604.07379" target="_blank">image inpainting</a>, <a href="https://arxiv.org/abs/1511.05440" target="_blank">future prediction</a>과 같은 조건부 이미지 생성 뿐만 아니라 <a href="https://arxiv.org/abs/1609.02612" target="_blank">비디오</a>, <a href="https://arxiv.org/abs/1610.07584" target="_blank">3D 데이터</a>와 같은 다른 도메인에 대해서도 동일한 아이디어를 채택합니다. GANs의 성공 핵심은 생성된 이미지가 원칙적으로 실제 사진과 구별할 수 없도록 하는 adversarial loss에 대한 아이디어입니다. 이 loss는 많은 컴퓨터 그래픽이 최적화하려는 목표이기 때문에 특히 이미지 생성 작업에 강력하게 작용합니다. 우리는 변환된 이미지가 대상 도메인과 구별할 수 없도록 매핑을 학습하기 위해 adversarial loss를 채택해 사용합니다.
 
-**Image-to-Image Translation**
-Image-to-Image 변환의 아이디어는 단일 입력-출력 페어 이미지에 non-parametric texture model을 사용한 Hertzmann의 Image Analogire[19] 연구까지 거슬러 올라갑니다. 보다 최근의 접근 방식은 CNN을 사용하여 parametric translation function을 학습하기 위해 입력-출력 데이터 셋을 사용합니다(예시 : [33]). 우리의 접근 방식은 Isola의 'pix2pix' 프레임 워크를 기반으로 하며[22], 이건은 조건부 adversarial generation nerwork[16]을 사용하여 입력에서 출력 이미지로의 매핑을 학습합니다. 비슷한 아이디어들이 sketch로부터 photographs를 생성하는 [44] 또는 attribute와 semantic layout으로부터 photographs를 생성하는 [25]와 같은 작업들에 적용되었습니다. 하지만 이전의 연구들과는 다르게 우리는 페어를 이루는 학습 데이터 없이 매핑하는 방법을 학습하고자 합니다.
+**Image-to-Image Translation**<br>
+Image-to-Image 변환의 아이디어는 단일 입력-출력 페어 이미지에 non-parametric texture model을 사용한 <a href="https://www.researchgate.net/publication/2406594_Image_Analogies" target="_blank">Hertzmann의 Image Analogies</a> 연구까지 거슬러 올라갑니다. 보다 최근의 접근 방식은 CNN을 사용하여 parametric translation function을 학습하기 위해 입력-출력 데이터 셋을 사용합니다. 우리의 접근 방식은 <a href="https://arxiv.org/abs/1611.07004" target="_blank">Isola의 'pix2pix'</a> 프레임 워크를 기반으로 하며, 이건은 조건부 <a href="https://arxiv.org/abs/1406.2661" target="_blank">adversarial generation nerwork</a>을 사용하여 입력에서 출력 이미지로의 매핑을 학습합니다. 비슷한 아이디어들이 sketch로부터 photographs를 생성하는 <a href="https://arxiv.org/abs/1612.00835" target="_blank">작업</a> 또는 attribute와 semantic layout으로부터 photographs를 생성하는 <a href="https://arxiv.org/abs/1612.00215" target="_blank">작업</a>과 같은 과제들에 적용되었습니다. 하지만 이전의 연구들과는 다르게 우리는 페어를 이루는 학습 데이터 없이 매핑하는 방법을 학습하고자 합니다.
 
-**Unpaired Image-to-Image Translation**
-페어를 이루지 않는 환경을 다루는 데 목표는 $X$와 $Y$라는 두 데이터 도메인을 연관시키는 것입니다. Rosales[42]는 source image에서 계산된 patch 기반의 Markov random field와 여러 style image에서 얻은 likelihood term을 기반으로 하는 Bayesian framework를 제안합니다. 더 최근에는 CoGAN[32]과 cross-modal scene network[1]가 weight-sharing 전략을 사용해 도메인 간의 공통된 representation을 학습했습니다. 우리의 방법과 동시에 Liu[31]은 variational autoencoders[27]와 generative adversarial networks[16]의 조합으로 프레임워크를 확장했습니다. 다른 계열에서 동시의 연구들[46, 49, 2]은 입력과 출력이 'style'은 다를 수 있지만 특정 'content' feature를 공유하도록 장려합니다. 또한 이러한 방법은 class label space[2], image pixel space[46], image feature space[49]와 같이 사전 정의된 메트릭 공간에서 입력에 가까운 출력을 강제하는 추가적인 term과 함께 adversarial network를 사용합니다.
+**Unpaired Image-to-Image Translation**<br>
+페어를 이루지 않는 환경을 다루는 데 목표는 $X$와 $Y$라는 두 데이터 도메인을 연관시키는 것입니다. <a href="https://arxiv.org/abs/1703.00848" target="_blank">Rosales</a>는 source image에서 계산된 patch 기반의 Markov random field와 여러 style image에서 얻은 likelihood term을 기반으로 하는 Bayesian framework를 제안합니다. 더 최근에는 <a href="https://arxiv.org/abs/1606.07536" target="_blank">CoGAN</a>과 <a href="https://arxiv.org/abs/1610.09003" target="_blank">cross-modal scene network</a>가 weight-sharing 전략을 사용해 도메인 간의 공통된 representation을 학습했습니다. 우리의 방법과 동시에 <a href="https://arxiv.org/abs/1703.00848" target="_blank">Liu</a>는 <a href="https://arxiv.org/abs/1312.6114" target="_blank">variational autoencoders</a>와 <a href="https://arxiv.org/abs/1406.2661" target="_blank">generative adversarial networks</a>의 조합으로 프레임워크를 확장했습니다. 다른 계열에서 동시의 연구들은 입력과 출력이 'style'은 다를 수 있지만 특정 'content' feature를 공유하도록 장려하는 연구들도 있었습니다. 또한 이러한 방법은 <a href="https://arxiv.org/abs/1612.05424" target="_blank">class label space</a>, <a href="https://arxiv.org/abs/1612.07828" target="_blank">image pixel space</a>, <a href="https://arxiv.org/abs/1611.02200" target="_blank">image feature space</a>와 같이 사전 정의된 메트릭 공간에서 입력에 가까운 출력을 강제하는 추가적인 term과 함께 adversarial network를 사용합니다.
 
 위의 접근 방식과 달리, 우리의 공식은 입력과 출력 사이의 작업 별 사전 정의된 유사성 함수에 의존하지 않으며 입력과 출력이 동일한 저차원 임베딩 공간에 있어야 한다고 가정하지도 않습니다. 이는 우리의 방법은 많은 비전 및 그래픽 작업을 위한 범용 솔루션으로 만듭니다. 우리는 Section 5.1.에서 이전의 몇가지 연구들과 현재 접근법을 직접 비교합니다.
 
-**Cycle Consistency**
-`구조를 가진 데이터`를 정규화하는 방법으로 transitivity를 사용하는 아이디어는 오랜 역사를 가지고 있습니다. visual tracking에서 단순한 forward-backward consistency를 시행하는 것은 수십 년 동안 표준적으로 사용한 방법이였습니다[24, 48]. 연어 영역에서 "back translation, reconciliation"을 통해 번역을 검증하고 개선하는 것은 인간 번역가[3] (재미있게도 MarkTwain[51]을 포함합니다)와 기계[17]에 의해 사용되는 기술힙니다. 보다 최근에는 motion[61], 3D shape matching[21], co-segmentation[55], dense semantic alignment[65, 64], depth estimation[14]의 구조에서 cycle consistency가 사용되었습니다.
+**Cycle Consistency**<br>
+`구조를 가진 데이터`를 정규화하는 방법으로 transitivity를 사용하는 아이디어는 오랜 역사를 가지고 있습니다. visual tracking에서 단순한 forward-backward consistency를 시행하는 것은 수십 년 동안 표준적으로 사용한 방법이였습니다. 연어 영역에서 "back translation, reconciliation"을 통해 번역을 검증하고 개선하는 것은 <a href="https://journals.sagepub.com/doi/10.1177/135910457000100301" target="_blank">인간 번역가</a> (재미있게도 MarkTwain[51]을 포함합니다)와 <a href="https://arxiv.org/abs/1611.00179" target="_blank">기계</a>에 의해 사용되는 기술힙니다. 보다 최근에는 <a href="https://ieeexplore.ieee.org/document/5539801" target="_blank">motion</a>, <a href="https://dl.acm.org/doi/10.5555/2600289.2600314" target="_blank">3D shape matching</a>, <a href="https://ieeexplore.ieee.org/document/6751215" target="_blank">co-segmentation</a>, <a href="https://ieeexplore.ieee.org/document/7298723" target="_blank">dense semantic alignment</a>, <a href="https://arxiv.org/abs/1609.03677" target="_blank">depth estimation</a>의 구조에서 cycle consistency가 사용되었습니다.
 
-**Neural Style Transfer**
-[13, 23, 52, 12]는 image-to-image 변환을 수행하는 또 다른 방법으로 사전 학습된 deep feature의 gram matrix와 일치하는 것을 기반으로 한 하나의 이미지의 콘텐츠를 다른 이미지의 스타일(일반적으로 그림)과 결합하여 새로운 이미지를 합성합니다.
+**Neural Style Transfer**<br>
+<a href="https://ieeexplore.ieee.org/document/7780634" target="_blank">Neural Style Transfer</a>는 image-to-image 변환을 수행하는 또 다른 방법으로 사전 학습된 deep feature의 gram matrix와 일치하는 것을 기반으로 한 하나의 이미지의 콘텐츠를 다른 이미지의 스타일(일반적으로 그림)과 결합하여 새로운 이미지를 합성합니다.
 
 
 <font color='41 69 E1'>
@@ -113,7 +113,7 @@ Image-to-Image 변환의 아이디어는 단일 입력-출력 페어 이미지�
 </font>
 
 ### 3.1. Adversarial Loss
-우리는 adversarial loss[16]을 두 매핑 함수 모두에 적용합니다. 우리는 매핑 함수 $G : X \rightarrow Y$와 판별 모델 $D_Y$를 목적 함수로 아래와 같이 표현합니다.
+우리는 <a href="https://arxiv.org/abs/1406.2661" target="_blank">adversarial loss</a>을 두 매핑 함수 모두에 적용합니다. 우리는 매핑 함수 $G : X \rightarrow Y$와 판별 모델 $D_Y$를 목적 함수로 아래와 같이 표현합니다.
 
 $$
 \mathcal{L} _{GAN}(G, D_Y, X, Y) = \mathbb{E} _{y \sim p _{data}(y)}[log D_Y(y)] + \mathbb{E} _{x \sim p _{data}(x)}[log(1-D_Y(G(x)))]
@@ -130,7 +130,7 @@ GAN의 adversarial loss와 같은 식으로 $G$와 $D$의 기능 또한 같지�
 </font>
 
 ### 3.2. Cycle Consistency Loss
-이론적으로 adversarial 학습은 각각 대상 도메인 $Y$와 $X$로 동일하게 분포된 출력을 생성하는 매핑 $G$와 $F$를 학습할 수 있습니다[15]. 그러나 복잡한 관계를 표현할 수 있는 정보를 담을 용량이 충분한 네트워크는 target 분포와 일치하는 출력 분포를 유도할 수 있지만 동일한 입력 이미지 셋을 target 도메인의 임의의 이미지에 매핑할 수 있습니다. 따라서 adversarial loss 만으로는 학습된 개별 함수가 개별 입력 $x_i$를 원하는 출력 $y_i$에 매핑할 수 있다고 보장할 수 없습니다. 가능한 매핑 함수의 공간을 줄이기 위해, 우리는 학습된 매핑 함수는 cycle-consistency 여야 한다고 주장합니다. Figure 3의 (b)에서 보여준 것처럼 도메인 $X$의 각각의 이미지 $x$에 대해서 이미지 변환 사이클은 원본 이미지 $x$로 다시 돌릴 수 있어야 합니다. 즉, $x \rightarrow G(x) \rightarrow F(G(X)) \approx x$입니다. 우리는 이것을 forward cycle consistency라 부릅니다. 유가하게 표현되는 Figure 3 (c)는 도메인 $Y$의 각각의 이미지 $y$에 대해서 $G$와 $F$는 backward cycle consistency : $y \rightarrow F(y) \rightarrow G(F(y)) \approx y$를 만족해야 합니다. 우리는 cycle consistency loss를 사용해 이를 장려합니다.
+이론적으로 adversarial 학습은 각각 대상 도메인 $Y$와 $X$로 동일하게 분포된 출력을 생성하는 매핑 $G$와 $F$를 학습할 수 있습니다. 그러나 복잡한 관계를 표현할 수 있는 정보를 담을 용량이 충분한 네트워크는 target 분포와 일치하는 출력 분포를 유도할 수 있지만 동일한 입력 이미지 셋을 target 도메인의 임의의 이미지에 매핑할 수 있습니다. 따라서 adversarial loss 만으로는 학습된 개별 함수가 개별 입력 $x_i$를 원하는 출력 $y_i$에 매핑할 수 있다고 보장할 수 없습니다. 가능한 매핑 함수의 공간을 줄이기 위해, 우리는 학습된 매핑 함수는 cycle-consistency 여야 한다고 주장합니다. Figure 3의 (b)에서 보여준 것처럼 도메인 $X$의 각각의 이미지 $x$에 대해서 이미지 변환 사이클은 원본 이미지 $x$로 다시 돌릴 수 있어야 합니다. 즉, $x \rightarrow G(x) \rightarrow F(G(X)) \approx x$입니다. 우리는 이것을 forward cycle consistency라 부릅니다. 유가하게 표현되는 Figure 3 (c)는 도메인 $Y$의 각각의 이미지 $y$에 대해서 $G$와 $F$는 backward cycle consistency : $y \rightarrow F(y) \rightarrow G(F(y)) \approx y$를 만족해야 합니다. 우리는 cycle consistency loss를 사용해 이를 장려합니다.
 
 $$
 \mathcal{L} _{cyc} (G, F) = \mathbb{E} _{x \sim p _{data}(x)}[\| F(G(x))-x \|_1] + \mathbb{E} _{y \sim p _{data}(y)}[\| G(F(x))-y \|_1]
@@ -166,13 +166,14 @@ $$
 $$
 
 여기서 $\lambda$는 두 목적의 상대적 중요성을 제어합니다. 우리는 아래를 해결하는 것을 목표로 합니다.
+<br><br>
 
 $$
 G ^* , F ^* = arg \min _{G, F} \max _{D_x, D_Y} \mathcal{L}(G, F, D_X, D_Y)
 \tag{4}
 $$
 
-우리의 모델은 "autoencoders"[20]를 학습하는 것으로 볼 수 있습니다. 우리는 하나의 autoencoder $F \circ G : X \rightarrow X$와 다른 antoencoder $G \circ F : Y \rightarrow Y$를 함께 학습합니다. 그러나 이런 autoencoder들은 각각 이미지를 다른 도메인으로 변환하는 중간 표현을 통해 이미지를 자신에게 매핑하는 특별한 내부 구조를 가지고 있습니다. 이러한 설정은 임의의 target 분포와 일치하도록 autoencoder의 bottleneck 레이어를 학습하기 위해 adversarial loss를 사용하는 "adversarial autoencoder"[34]의 특별한 경우로 볼 수 있습니다. 이 경우 $X \rightarrow X$를 수행하는 autoencoder의 target 분포는 도메인 $Y$의 분포입니다.
+우리의 모델은 "<a href="https://www.science.org/doi/10.1126/science.1127647" target="_blank">autoencoders</a>"를 학습하는 것으로 볼 수 있습니다. 우리는 하나의 autoencoder $F \circ G : X \rightarrow X$와 다른 antoencoder $G \circ F : Y \rightarrow Y$를 함께 학습합니다. 그러나 이런 autoencoder들은 각각 이미지를 다른 도메인으로 변환하는 중간 표현을 통해 이미지를 자신에게 매핑하는 특별한 내부 구조를 가지고 있습니다. 이러한 설정은 임의의 target 분포와 일치하도록 autoencoder의 bottleneck 레이어를 학습하기 위해 adversarial loss를 사용하는 "<a href="https://arxiv.org/abs/1511.05644" target="_blank">adversarial autoencoder</a>"의 특별한 경우로 볼 수 있습니다. 이 경우 $X \rightarrow X$를 수행하는 autoencoder의 target 분포는 도메인 $Y$의 분포입니다.
 
 Section 5.1.4 에서는 adversarial loss $\mathcal{L} _{GAN}$을 단독으로 사용한 것과 cycle consistency loss $\mathcal{L} _{cyc}$를 단독으로 사용한 것을 포함해 목적 함수의 일부와 전체 목적 함수를 비교하고, 두 목적이 고품질 결과에 도달하는 데 중요한 역할을 한다는 것을 경험적으로 보여줍니다. 또한 우리는 한 방향의 cycle loss만 가지고 우리의 방법을 평가하고 단일 주시로는 제한되지 않는 문제에 대한 학습을 정규화하기에 충분하지 않다는 것을 보여줍니다.
 
@@ -194,21 +195,21 @@ adversarial loss만 사용한 경우, cycle consistency loss만 사용한 경우
 
 ## 4. Implementation
 **Network Architecture**<br>
-우리는 neural style transfer와 super resolution에 대해 인상적인 결과를 보여준 Johnson의 <a href="https://arxiv.org/abs/1603.08155" target="_blank">Perceptual Losses for Real-Time Style Transfer and Super-Resolution</a> 생성 네트워크를 사용합니다. 이 네트워크는 3개의 convolution, 여러 residual blocks[18], $\frac{1}{2}$의 stride를 가진 2개의 fractionally-strided convolution 그리고 feature map을 RGB에 매핑하는 convolution 하나를 포함합니다. 128x128 이미지에는 6개의 block을 사용하고 256x256 이상의 고해상도 학습 이미지에는 9개의 block을 사용합니다. Johnson[23]과 비슷하게 우리는 instance normalization[53]을 사용합니다. 판별 모델 네트워크의 경우 70x70 PatchGAN[22, 30, 29]를 사용하며 70x70 부분 이미지 패치가 실제인지 가짜인지를 분류합니다. 이런 패치 수준 판별 모델 아키텍처를 전체 이미지 판별 모델보다 매개 변수가 적으며, fully convolutional fashion[22] 방식으로 임의의 크기의 이미지에서 작용할 수 있습니다.
+우리는 neural style transfer와 super resolution에 대해 인상적인 결과를 보여준 <a href="https://arxiv.org/abs/1603.08155" target="_blank">Johnson</a>의 생성 네트워크를 사용합니다. 이 네트워크는 3개의 convolution, 여러 residual blocks[18], $\frac{1}{2}$의 stride를 가진 2개의 fractionally-strided convolution 그리고 feature map을 RGB에 매핑하는 convolution 하나를 포함합니다. 128x128 이미지에는 6개의 block을 사용하고 256x256 이상의 고해상도 학습 이미지에는 9개의 block을 사용합니다. <a href="https://arxiv.org/abs/1603.08155" target="_blank">Johnson</a>과 비슷하게 우리는 <a href="https://arxiv.org/abs/1607.08022" target="_blank">instance normalization</a>을 사용합니다. 판별 모델 네트워크의 경우 70x70 PatchGAN를 사용하며 70x70 부분 이미지 패치가 실제인지 가짜인지를 분류합니다. 이런 패치 수준 판별 모델 아키텍처를 전체 이미지 판별 모델보다 매개 변수가 적으며, <a href="https://arxiv.org/abs/1611.07004" target="_blank">fully convolutional fashion</a> 방식으로 임의의 크기의 이미지에서 작용할 수 있습니다.
 
 **Training details**<br>
-우리는 모델 학습 절차를 안정화하기 위해 최근 연구의 2가지 기술을 적용합니다. 첫번째로 $\mathcal{L} _{GAN}$ (Equation 1)의 경우 negative log likelihood 목적을 least-squares loss[35]로 대체합니다. 이 손실은 훈련 중에 더 안정적이고 더 높은 품질의 결과를 생성합니다. 특히 GAN loss $\mathcal{L} _{GAN}(G, D, X, Y)$를 위해 우리는 $\mathbb{E} _{x \sim p _{data}(x)}[(D(G(x)) - 1) ^2]$를 최소화하도록 $G$를 학습하고 $\mathbb{E} _{y \sim p _{data}(y)}[(D(y) - 1) ^2] + \mathbb{E} _{x \sim p _{data}(x)}[D(G(x)) ^2]$를 최소화하기 위해 $D$를 학습합니다.
+우리는 모델 학습 절차를 안정화하기 위해 최근 연구의 2가지 기술을 적용합니다. 첫번째로 $\mathcal{L} _{GAN}$ (Equation 1)의 경우 negative log likelihood 목적을 <a href="https://arxiv.org/abs/1611.04076" target="_blank">least-squares loss</a>로 대체합니다. 이 손실은 훈련 중에 더 안정적이고 더 높은 품질의 결과를 생성합니다. 특히 GAN loss $\mathcal{L} _{GAN}(G, D, X, Y)$를 위해 우리는 $\mathbb{E} _{x \sim p _{data}(x)}[(D(G(x)) - 1) ^2]$를 최소화하도록 $G$를 학습하고 $\mathbb{E} _{y \sim p _{data}(y)}[(D(y) - 1) ^2] + \mathbb{E} _{x \sim p _{data}(x)}[D(G(x)) ^2]$를 최소화하기 위해 $D$를 학습합니다.
 
-두번째로 model oscillation[15]를 줄이기 위해, 우리는 Shrivastava의 전략[46]을 따르고 마지막 생성 모델이 생성한 하나의 이미지가 아닌 생성된 이미지 히스토리를 사용해 판별 모델을 업데이트한다. 우리는 이전에 생성된 50개의 이미지를 저장하는 이미지 버퍼를 가지고 있는다.
+두번째로 <a href="https://arxiv.org/abs/1701.00160" target="_blank">model oscillation</a>를 줄이기 위해, 우리는 <a href="https://arxiv.org/abs/1612.07828" target="_blank">Shrivastava의 전략</a>을 따르고 마지막 생성 모델이 생성한 하나의 이미지가 아닌 생성된 이미지 히스토리를 사용해 판별 모델을 업데이트합니다. 우리는 이전에 생성된 50개의 이미지를 저장하는 이미지 버퍼를 가지고 있습니다.
 
-모든 실험에서, 우리는 Equation 3의 $\lambda = 10$으로 설정했다. 우리는 배치 크기가 1인 Adam solver[26]을 사용한다. 모든 네트워크는 0.0002의 학습률을 가지고 학습되었다. 우리는 처음 100 epoch 동안 학습률을 유지하고 다음 100 epoch 동안 학습률을 0으로 감소시킨다. 데이터 셋, 아키텍처 및 학습 순서에 대한 자세한 내용은 부록(Section 7)을 참고하라.
+모든 실험에서, 우리는 Equation 3의 $\lambda = 10$으로 설정했다. 우리는 배치 크기가 1인 <a href="https://arxiv.org/abs/1412.6980" target="_blank">Adam solver</a>을 사용합니다. 모든 네트워크는 0.0002의 학습률을 가지고 학습되었습니다. 우리는 처음 100 epoch 동안 학습률을 유지하고 다음 100 epoch 동안 학습률을 0으로 감소시킵니다
 
 
 <font color='41 69 E1'>
 <b>[정리]</b><br>
 생성 모델은 <a href="https://arxiv.org/abs/1603.08155" target="_blank">Perceptual Losses for Real-Time Style Transfer and Super-Resolution</a>의 생성 네트워크를 사용하며 판별 모델은 pix2pix에서도 사용한 PatchGAN을 사용합니다.<br><br>
 
-기존의 GAN에서는 cross entropy를 사용하는 게 일반적이였지만 본 논문에서는 LSGAN의 least square loss를 사용합니다. 또한
+기존의 GAN에서는 cross entropy를 사용하는 게 일반적이였지만 본 논문에서는 LSGAN의 least square loss를 사용합니다. 또한 이미지 버퍼를 사용한 것과 learning rate scheduler를 사용하는 것이 특징입니다.
 </font>
 <br><br>
 
@@ -218,13 +219,13 @@ adversarial loss만 사용한 경우, cycle consistency loss만 사용한 경우
 우리는 input-output 페어를 이루고 있는 데이터 셋에 페어를 이루지 않은 image-to-image 변환에 대해서 최근의 연구들과 우리의 접근 방식을 비교합니다. 이후 adversarial loss와 cycle consistency loss의 중요성을 연구하고 전체 loss에 대해 변형된 방법들과 비교합니다. 미자믹으로, 우리는 페어를 이룬 데이터가 존재하지 않는 광범위한 응용 프로그램에서 알고리즘의 일반성을 입증합니다. 우리는 우리의 방법을 간략하게 CycleGAN이라 부릅니다. <a href="https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix" target=_blank>PyTorch</a> 및 <a href="https://github.com/junyanz/CycleGAN" target=_blank>Torch</a> 코드, 모델, 전체 결과는 우리의 <a href="https://junyanz.github.io/CycleGAN/" target=_blank>웹사이트</a>에서 확인할 수 있습니다.
 
 ### 5.1. Evaluation
-pix2pix[22]와 동일한 데이터 셋 및 메트릭을 사용해 우리의 방법을 질적으로나 양적으로 여러 기준 모델들과 비교합니다. 작업에는 Cityscapes 데이터 셋에서의 semantic labels $\leftrightarrow$ photo와 Google Maps에서 스크랩한 데이터의 map $\leftrightarrow$ aerial photo가 포함됩니다. 또한 우리는 전체 loss 함수에 대한 `ablation study`를 수행합니다.
+<a href="https://arxiv.org/abs/1611.07004" target="_blank">pix2pix</a>와 동일한 데이터 셋 및 메트릭을 사용해 우리의 방법을 질적으로나 양적으로 여러 기준 모델들과 비교합니다. 작업에는 Cityscapes 데이터 셋에서의 semantic labels $\leftrightarrow$ photo와 Google Maps에서 스크랩한 데이터의 map $\leftrightarrow$ aerial photo가 포함됩니다. 또한 우리는 전체 loss 함수에 대한 `ablation study`를 수행합니다.
 
 
 <details>
 <summary>ablation study</summary>
 <span style="color:gray">
-  ddd
+  모델이나 알고리즘를 이루고 있는 골조를 이루고 있는 부분들을 테스트하는 방법합니다. 예시로 모델이 a, b, c로 구분할 수 있다면 {a, b, c, ab, bc, abc}를 테스트해 모델의 성능에서 각각의 부분의 성능과 영향력을 평가하는 실험을 의미합니다.
   <br><br>
 
   참고<br>
@@ -236,53 +237,59 @@ pix2pix[22]와 동일한 데이터 셋 및 메트릭을 사용해 우리의 방�
 
 #### 5.1.1 Evaluation Metrics
 **AMT perceptual studies**<br>
-map $\leftrightarrow$ aerial photo 연구에서 우리는 Amazon Mechanical Turk(AMT)에 대한 "real vs fake" 지각 연구를 통해 우리 결과에 대한 현실성을 평가합니다. 우리는 Isola[22]와 동일한 지각 연구 프로토콜을 따릅니다. 단, 테스트한 알고리즘 당 25명의 참가자로부터만 데이터를 수집합니다. 참가자들에게는 실제 사진이나 지도, 가짜(알고리즘이나 기준 모델에 의해 생성된 이미지) 등 일련의 이미지를 보여주고 실제라고 생각하는 생각하는 이미지를 클릭하도록 요청되었습니다. 각 세션의 처음 10번의 시행은 연습으로 참가자의 응답에 대한 정답 피드백이 주어집니다. 이후 나머지 40번의 시행은 각 알고리즘에는 피드백이 주어지지 않으며 참가자들을 속이는 비율을
-계산하는 데 사용됩니다. 참가자는 하나의 알고리즘만 테스트할 수 있습니다. 우리가 보고하는 수치는 우리의 ground truth 이미지가 약간 다르게 처리되었고 우리가 테스트한 참가자들이 [22]에서 테스트한 것과 다르게 분포할 수 있기 때문에 [22]의 숫자와 직접 비교할 수는 없습니다. 따라서 우리의 수치는 [22]에 대한 것이 아니라 동일 조건에서 실행된 기준 모델들과 우리의 방법을 비교하는 데만 사용되어야 합니다.
+map $\leftrightarrow$ aerial photo 연구에서 우리는 Amazon Mechanical Turk(AMT)에 대한 "real vs fake" 지각 연구를 통해 우리 결과에 대한 현실성을 평가합니다. 우리는 <a href="https://arxiv.org/abs/1611.07004" target="_blank">pix2pix</a>와 동일한 지각 연구 프로토콜을 따릅니다. 단, 테스트한 알고리즘 당 25명의 참가자로부터만 데이터를 수집합니다. 참가자들에게는 실제 사진이나 지도, 가짜(알고리즘이나 기준 모델에 의해 생성된 이미지) 등 일련의 이미지를 보여주고 실제라고 생각하는 생각하는 이미지를 클릭하도록 요청되었습니다. 각 세션의 처음 10번의 시행은 연습으로 참가자의 응답에 대한 정답 피드백이 주어집니다. 이후 나머지 40번의 시행은 각 알고리즘에는 피드백이 주어지지 않으며 참가자들을 속이는 비율을
+계산하는 데 사용됩니다. 참가자는 하나의 알고리즘만 테스트할 수 있습니다. 우리가 보고하는 수치는 우리의 ground truth 이미지가 약간 다르게 처리되었고 우리가 테스트한 참가자들이 <a href="https://arxiv.org/abs/1611.07004" target="_blank">pix2pix</a>에서 테스트한 것과 다르게 분포할 수 있기 때문에 [22]의 숫자와 직접 비교할 수는 없습니다. 따라서 우리의 수치는 <a href="https://arxiv.org/abs/1611.07004" target="_blank">pix2pix</a>에 대한 것이 아니라 동일 조건에서 실행된 기준 모델들과 우리의 방법을 비교하는 데만 사용되어야 합니다.
 
 **FCN score**<br>
-지각 연구가 그래픽의 현실성을 평가하는 기준일 수 있지만, 우리는 사람이 평가하는 실험이 필요하지 않는 자동 정량적 측정을 추구합니다.  이를 위해 [22]의 "FCN score"를 채택하고, 이를 사용하여 Cityscapes label $\rightarrow$ photo 실험을 평가합니다. FCN 방법은 사용 가능한 semantic segmentation 알고리즘([33])에 따라 생성된 사진이 얼마나 해석 가능한지 평가합니다. FCN은 생성된 사진에 대한 label map을 예측해 아래에 설명된 standard semantic segmentation 방법을 사용해 입력된 ground truth label과 비교합니다. 직관적으로 "도로 위의 자동차" label map에서 사진을 생성했을 때 생성된 사진에 FCN(semantic segmentation)이 "도로 위의 자동차"를 감지한다면 성공한 것이 됩니다.
+지각 연구가 그래픽의 현실성을 평가하는 기준일 수 있지만, 우리는 사람이 평가하는 실험이 필요하지 않는 자동 정량적 측정을 추구합니다.  이를 위해 <a href="https://arxiv.org/abs/1611.07004" target="_blank">pix2pix</a>의 "FCN score"를 채택하고, 이를 사용하여 Cityscapes label $\rightarrow$ photo 실험을 평가합니다. FCN 방법은 사용 가능한 <a href="https://arxiv.org/abs/1411.4038" target="_blank">semantic segmentation 알고리즘</a>에 따라 생성된 사진이 얼마나 해석 가능한지 평가합니다. FCN은 생성된 사진에 대한 label map을 예측해 아래에 설명된 standard semantic segmentation 방법을 사용해 입력된 ground truth label과 비교합니다. 직관적으로 "도로 위의 자동차" label map에서 사진을 생성했을 때 생성된 사진에 FCN(semantic segmentation)이 "도로 위의 자동차"를 감지한다면 성공한 것이 됩니다.
 
 **Semantic segmentation metrics**<br>
-photo $\rightarrow$ label의 성능을 평가하기 위해, 우리는 데이터 셋 당 정확도, 클래스 당 정확도, 평균 class intersection-Over-Union(class IOU)[4]을 포함한 Cityscapes 벤치마크[4]의 표준 방법을 사용합니다.
+photo $\rightarrow$ label의 성능을 평가하기 위해, 우리는 데이터 셋 당 정확도, 클래스 당 정확도, 평균 class intersection-Over-Union(class IOU)을 포함한 <a href="https://arxiv.org/abs/1604.01685" target="_blank">Cityscapes 벤치마크</a>의 표준 방법을 사용합니다.
 
 <font color='41 69 E1'>
 <b>[정리]</b><br>
+pix2pix에서 소개했던 AMT과 FCN score와 같은 방법을 사용합니다.<br><br>
 
+AMT는 사람이 주어진 이미지를 보고 진짜인지 가짜인지 판단하는 실험으로 생성된 이미지가 얼마나 많은 사람들에게 진짜 이미지처럼 보여 사람들을 속일 수 있는지에 대한 퍼센트를 분석합니다. 처음 10장의 이미지에 대해서는 해당 이미지가 진짜 이미지인지 생성된 이미지인지에 대한 피드백을 준 후 이후 40장에 대한 실험자들의 답변이 실험 결과로 분석됩니다.<br><br>
+
+FCN은 기존의 semantic segmentation 모델을 사용해 생성 이미지 내의 object들을 얼마나 정확하게 클래스 별로 픽셀에 나타내는 지를 실험합니다. 생성된 이미지과 현실의 이미지와 유사할 수록 segmentation 모델 또한 더 정확하게 이미지 내의 object 들을 segmentation 할 수 있을 것이라는 아이디어로 segmentation 결과의 class 별 정확도, IOU 등을 분석합니다
 </font>
 
 #### 5.1.2 Baselines
-**CoGAN[32]**<br>
+**<a href="https://arxiv.org/abs/1606.07536" target="_blank">CoGAN</a>**<br>
 이 방법은 shared latent representation을 위해 처음 몇 개의 레이어에 묶인 가중치를 사용해 도메인 $X$에 대해 하나의 GAN 생성모델과 도메인 $Y$에 대해 하나의 GAN 생성 모델을 학습합니다. $X$에서 $Y$로의 변환은 이미지 $X$를 생성하는 latent representation을 찾은 다음 이 latent representation을 스타일 $Y$로 렌더링해 달성할 수 있습니다.
 
-**SimGAN[46]**<br>
-우리의 방법과 비슷하게 Shrivastava[46]은  $X$에서 $Y$로의 변환을 학습하기 위해 adversarial loss를 사용합니다. 정규화 term $\|x-G(x)\|_1$은 픽셀 수준에서 큰 변화를 일으키는 데 불이익을 주는 데 사용됩니다.
+**<a href="https://arxiv.org/abs/1612.07828" target="_blank">SimGAN</a>**<br>
+우리의 방법과 비슷하게 <a href="https://arxiv.org/abs/1612.07828" target="_blank">SimGAN</a>은  $X$에서 $Y$로의 변환을 학습하기 위해 adversarial loss를 사용합니다. 정규화 term $\|x-G(x)\|_1$은 픽셀 수준에서 큰 변화를 일으키는 데 불이익을 주는 데 사용됩니다.
 
 **Feature loss + GAN**<br>
-우리는 L1 loss가 RGB 픽셀 값이 아닌 사전 학습된 네트워크(VGG-16 relu4_2 [47])를 사용해 deep image feature에 대해 계산되는 SimGAN[46]의 변형을 테스트합니다. 이와 같이 deep feature 공간에서의 거리 계산은 때때로 “perceptial loss”를 사용하는 것으로 언급되기도 합니다[8, 23].
+우리는 L1 loss가 RGB 픽셀 값이 아닌 사전 학습된 네트워크(<a href="https://arxiv.org/abs/1409.1556" target="_blank">VGG-16 relu4_2</a>)를 사용해 deep image feature에 대해 계산되는 <a href="https://arxiv.org/abs/1612.07828" target="_blank">SimGAN</a>의 변형을 테스트합니다. 이와 같이 deep feature 공간에서의 거리 계산은 때때로 “perceptial loss”를 사용하는 것으로 언급되기도 합니다.
 
-**BiGAN / ALI{9, 7}**<br>
-조건이 주어지지 않은 GANs[16]는 랜덤 노이즈 $z$를 이미지 $x$에 매핑하는 생성 모델 $G : Z \rightarrow X$를 학습합니다. BiGAN[9] 및 ALI[7]은 역 매핑 함수 $F : X \rightarrow Z$도 학습할 것을 제안한다. 기존에는 잠재 벡터 $z$를 이미지 $x$에 매핑하기 위해 설계되었지만 우리는 소스 이미지 $x$를 대상 이미지 $y$에 매핑하기 위해 동일한 목적함수를 사용했습니다.
+**<a href="https://arxiv.org/abs/1606.00704" target="_blank">BiGAN</a> / <a href="https://arxiv.org/abs/1605.09782" target="_blank">ALI</a>**<br>
+조건이 주어지지 않은 <a href="https://arxiv.org/abs/1406.2661" target="_blank">GANs</a>는 랜덤 노이즈 $z$를 이미지 $x$에 매핑하는 생성 모델 $G : Z \rightarrow X$를 학습합니다. <a href="https://arxiv.org/abs/1606.00704" target="_blank">BiGAN</a> 및 <a href="https://arxiv.org/abs/1605.09782" target="_blank">ALI</a>은 역 매핑 함수 $F : X \rightarrow Z$도 학습할 것을 제안한다. 기존에는 잠재 벡터 $z$를 이미지 $x$에 매핑하기 위해 설계되었지만 우리는 소스 이미지 $x$를 대상 이미지 $y$에 매핑하기 위해 동일한 목적함수를 사용했습니다.
 
-**pix2pix[22]**<br>
-우리는 또한 페어를 이룬 데이터에 대해 학습된 pix2pix[22]와 비교하여 페어 데이터를 사용하지 않고 이 “upper bound”에 얼마나 근접할 수 있는지 확인했습니다. 공정한 비교를 위해 우리는 CoGAN[32]를 제외한 모든 베이스라인들은 같은 아키텍처와 디테일로 구현했습니다. CoGAN은 image-to-image 네트워크과 호환되지 않는 shared latent representation에서 이미지를 생성하는 생성 모델을 기반으로 합니다. 대신 CoGAN의 공개된 구현을 사용했습니다.
+**<a href="https://arxiv.org/abs/1611.07004" target="_blank">pix2pix</a>**<br>
+우리는 또한 페어를 이룬 데이터에 대해 학습된 <a href="https://arxiv.org/abs/1611.07004" target="_blank">pix2pix</a>와 비교하여 페어 데이터를 사용하지 않고 이 “upper bound”에 얼마나 근접할 수 있는지 확인했습니다. 공정한 비교를 위해 우리는 <a href="https://arxiv.org/abs/1606.07536" target="_blank">CoGAN</a>를 제외한 모든 베이스라인들은 같은 아키텍처와 디테일로 구현했습니다. CoGAN은 image-to-image 네트워크과 호환되지 않는 shared latent representation에서 이미지를 생성하는 생성 모델을 기반으로 합니다. 대신 CoGAN의 공개된 구현을 사용했습니다.
 
 <font color='41 69 E1'>
 <b>[정리]</b><br>
+기준이 되는 모델들에 대한 간략한 설명들입니다.<br><br>
 
+여기서 pix2pix가 페어 데이터를 사용하는 모델로 상한선(upper-bound)의 역할을 합니다. 페어 데이터를 사용하지 않고 페어 데이터를 사용하는 pix2pix를 얼마만큼 따라잡을 수 있는 지가 주요하게 봐야할 부분 중 하나입니다.
 </font>
 
 #### 5.1.3 Comparison against Baselines
 <div>
   <img src="/assets/images/posts/cyclegan/paper/fig5.png" width="600" height="150">
 </div>
-> Figure 5:Cityscapes 이미지들로 학습된 labels $\leftrightarrow$ photos을 위한 여러 방법들. 왼쪽부터 오른쪽까지 순서대로 : 입력 이미지, BiGAN/ALI[7, 9], CoGAN[32], feature loss + GAN, SimGAN[46], CycleGAN(ours), 페어를 이룬 데이터로 학습된 pix2pix[22], ground truth 이미지
+> Figure 5:Cityscapes 이미지들로 학습된 labels $\leftrightarrow$ photos을 위한 여러 방법들. 왼쪽부터 오른쪽까지 순서대로 : 입력 이미지, BiGAN/ALI, CoGAN, feature loss + GAN, SimGAN, CycleGAN(ours), 페어를 이룬 데이터로 학습된 pix2pix, ground truth 이미지
 
 <div>
   <img src="/assets/images/posts/cyclegan/paper/fig6.png" width="600" height="280">
 </div>
-> Figure 6: Google Maps의 aerial photos $\leftrightarrow$ maps에 대한 여러 방법들. 왼쪽부터 오른쪽까지 순서대로 : BiGAN/ALI[7, 9], CoGAN[32], feature loss + GAN, SimGAN[46], CycleGAN(ours), 페어를 이룬 데이터로 학습된 pix2pix[22], ground truth 이미지
+> Figure 6: Google Maps의 aerial photos $\leftrightarrow$ maps에 대한 여러 방법들. 왼쪽부터 오른쪽까지 순서대로 : BiGAN/ALI, CoGAN, feature loss + GAN, SimGAN, CycleGAN(ours), 페어를 이룬 데이터로 학습된 pix2pix, ground truth 이미지
 
-Figure 5와 Figure 6에서 볼 수 있듯이, 우리는 어떤 베이스라인에서도 설득력 있는 결과를 얻을 수 없었습니다. 반면, 우리의 방법은 종종 완전히 감독학습된 pix2pix와 유사한 품질의 변환을 생성할 수 있습니다.
+Figure 5와 Figure 6에서 볼 수 있듯이, 우리는 어떤 기준 모델에서도 설득력 있는 결과를 얻을 수 없었습니다. 반면, 우리의 방법은 종종 완전히 감독학습된 pix2pix와 유사한 품질의 변환을 생성할 수 있습니다.
 
 <div>
   <img src="/assets/images/posts/cyclegan/paper/table1.png" width="300" height="100">
@@ -301,14 +308,14 @@ Figure 5와 Figure 6에서 볼 수 있듯이, 우리는 어떤 베이스라인�
 > Table 3: Cityscapes의 photo $\rightarrow$ labels 에 판별 성능
 
 
-Table 1은 AMT 인식 실험과 관련된 성능을 보고합니다. 여기서, 우리는 우리의 방법이 256x256 해상도에서 maps → aerial photos 과 aerial photos → maps 모두 참가자들의 약 4분의 1의 실험에서 속일 수 있다는 것을 알 수 있었습니다. 모든 베이스라인들은 참가자들을 거의 속이지 못했습니다. 우리는 또한 CycleGAN과 pix2pix를 512x512 해상도로 학습하고 비교할 만한 성능을 관찰했다 : maps → aerial photos : CycleGAN : 37.5% +- 3.6% 그리고 pix2pix : 33.9% +- 3.1% ; aerial photos → maps : CycleGAN : 16.5% +- 4.1 % 그리고 pix2pix : 8.5% +- 2.6%
+Table 1은 AMT 인식 실험과 관련된 성능을 보고합니다. 여기서, 우리는 우리의 방법이 256x256 해상도에서 maps → aerial photos 과 aerial photos → maps 모두 참가자들의 약 4분의 1의 실험에서 속일 수 있다는 것을 알 수 있었습니다. 모든 기준 모델들은 참가자들을 거의 속이지 못했습니다. 우리는 또한 CycleGAN과 pix2pix를 512x512 해상도로 학습하고 비교할 만한 성능을 관찰했다 : maps → aerial photos : CycleGAN : 37.5% +- 3.6% 그리고 pix2pix : 33.9% +- 3.1% ; aerial photos → maps : CycleGAN : 16.5% +- 4.1 % 그리고 pix2pix : 8.5% +- 2.6%
 
 Table 2는 Cityscapes에 대해 labels → photo의 성능을 평가하고 Table 3은 반대 매핑(photos → labels)를 평가합니다. 두 경우 모두, 우리의 방법은 다시 모든 베이스라인들을 능가합니다.
 
 
 <font color='41 69 E1'>
 <b>[정리]</b><br>
-
+Cityscapes 데이터 셋에서 실험한 labels $\leftrightarrow$ photos와 Google Maps 데이터 셋에서 실험한 aerial photos $\leftrightarrow$ maps 에서 모두 다른 기준 모델들을 크게 뛰어넘는 성능을 보여주었습니다. 하지만 두 데이터셋은 페어 데이터 셋이며 페어 데이터로 학습한 pix2pix를 따라잡지는 못함을 보여줍니다.
 </font>
 
 #### 5.1.4 Analysis of the loss function
@@ -326,13 +333,13 @@ Table 2는 Cityscapes에 대해 labels → photo의 성능을 평가하고 Table
 <div>
   <img src="/assets/images/posts/cyclegan/paper/fig7.png" width="500" height="165">
 </div>
-> Figure 7: Cityscapes에서 학습된 label $\leftrightarrow$ photos 매핑을 위한 우리의 방식의 다양한 변형. 왼쪽에서 오른쪽으로 순서대로 : input, cycle-consistency loss alone, adversarial loss alone, GAN + forward cycle-consistency loss $(F(G(x)) \approx x)$, GAN + backward cycle-consistency loss $(G(F(x)) \approx y)$, CycleGAN(우리의 full method), ground truth. Cycle alone과 GAN + Backward 모두 대상 도메인과 유사한 이미지를 생성하지 못한다. GAN 단독 및 GAN + forward는 mode collapse로 인해 입력 사진과 상관 없이 동일한 label map을 생성한다.
+> Figure 7: Cityscapes에서 학습된 label $\leftrightarrow$ photos 매핑을 위한 우리의 방식의 다양한 변형. 왼쪽에서 오른쪽으로 순서대로 : input, cycle-consistency loss alone, adversarial loss alone, GAN + forward cycle-consistency loss $(F(G(x)) \approx x)$, GAN + backward cycle-consistency loss $(G(F(x)) \approx y)$, CycleGAN(우리의 full method), ground truth. Cycle alone과 GAN + Backward 모두 대상 도메인과 유사한 이미지를 생성하지 못합니다. GAN 단독 및 GAN + forward는 mode collapse로 인해 입력 사진과 상관 없이 동일한 label map을 생성합니다.
 
-Table 4와 Table 5에서, 우리는 우리의 최종 loss와 ablations들을 비교한다. GAN loss를 제거하는 것은 cycle-consistency loss를 제거하는 것과 마찬가지로 결과를 상당히 저하시킨다. 따라서 우리는 두 term 모두 결과에 중요하다고 결론짓는다. 우리는 또한 한 방향으로의 cycle loss로 우리의 방법을 평가했으며 : GAN + forward cycle loss $\mathbb{E}_{x \sim p_{data}(x)}[\| F(G(x))-x\|_1]$ 또는 GAN + backward cycle loss $\mathbb{E}_{y \sim p_{data}(y)}[\| G(F(y))-y\|_1]$(Equation 2) 특히 제거된 매핑의 방향에서 대한 학습 불안정성을 유발하고 mode collapse를 유방하는 경우가 많다는 것을 발견했다. Figure 7은 몇 가지 질적인 예시를 보여준다.
+Table 4와 Table 5에서, 우리는 우리의 최종 loss와 ablations들을 비교합니다. GAN loss를 제거하는 것은 cycle-consistency loss를 제거하는 것과 마찬가지로 결과를 상당히 저하시킵니다. 따라서 우리는 두 term 모두 결과에 중요하다고 결론짓습니다. 우리는 또한 한 방향으로의 cycle loss로 우리의 방법을 평가했으며 : GAN + forward cycle loss $\mathbb{E} _{x \sim p _{data}(x)}[\| F(G(x))-x\|_1]$ 또는 GAN + backward cycle loss $\mathbb{E} _{y \sim p _{data}(y)}[\| G(F(y))-y\|_1]$(Equation 2) 특히 제거된 매핑의 방향에서 대한 학습 불안정성을 유발하고 mode collapse를 유방하는 경우가 많다는 것을 발견했습니다. Figure 7은 몇 가지 질적인 예시를 보여줍니다.
 
 <font color='41 69 E1'>
 <b>[정리]</b><br>
-
+loss function은 크게 GAN loss와 cycle consistency loss로 나눠져 있으며 Ablation study 결과 두 loss 모두 사용했을 때 가장 성능이 높았음을 확인할 수 있습니다. 또한 cycle consistency loss는 forward와 backward로 나눠지는데 단일방향만 사용한다면 mode collapse가 발생하는 등 학습이 불안정해졌다 합니다.
 </font>
 
 #### 5.1.5 Image reconstruction quality
@@ -342,9 +349,9 @@ Figure 4에서는 재구성된 이미지 $F(G(x))$의 몇 가지 무작위 예�
 <div>
   <img src="/assets/images/posts/cyclegan/paper/fig8.png" width="320" height="300">
 </div>
-> Figure 8: labels $\leftrightarrow$ photos과 edges $\leftrightarrow$ shoes 와 같은 pix2pix[22]에서 사용된 페어 데이터셋에 대한 CycleGAN의 결과 예시
+> Figure 8: labels $\leftrightarrow$ photos과 edges $\leftrightarrow$ shoes 와 같은 <a href="https://arxiv.org/abs/1611.07004" target="_blank">pix2pix</a>에서 사용된 페어 데이터셋에 대한 CycleGAN의 결과 예시
 
-Figure 8은 CMP Facade Database[40]의 labels $\leftrightarrow$ photos와 UT Zappos50K dataset[60]의 edges $\leftrightarrow$ shoes와 같은 “pix2pix”[22]에서 사용된 페어 데이터셋에 대한 몇몇 결과 계시를 보여줍니다. 우리의 결과 이미지 품질은 완전히 감독된 pix2pix에 의해 생성된 것에 가깝두며 우리의 방법은 페어를 이룬 감독 없이 매핑을 학습합니다.
+Figure 8은 CMP Facade Database[40]의 labels $\leftrightarrow$ photos와 <a href="https://ieeexplore.ieee.org/document/6909426" target="_blank">UT Zappos50K dataset</a>의 edges $\leftrightarrow$ shoes와 같은 “<a href="https://arxiv.org/abs/1611.07004" target="_blank">pix2pix</a>”에서 사용된 페어 데이터셋에 대한 몇몇 결과 계시를 보여줍니다. 우리의 결과 이미지 품질은 완전히 감독된 pix2pix에 의해 생성된 것에 가깝두며 우리의 방법은 페어를 이룬 감독 없이 매핑을 학습합니다.
 
 
 ### 5.2 Applications
@@ -361,7 +368,7 @@ Figure 8은 CMP Facade Database[40]의 labels $\leftrightarrow$ photos와 UT Zap
 </div>
 > Figure 11: style transfer 2 : 입력 이미지는 Monet, Van Gogh, Cezanne, Ukiyo-e의 예술적 스타일로 입력 이미지를 변환합니다.
 
-우리는 Flickr와 WikiArt에서 다운로드한 풍경 사진에 대해 모델을 학습시킵니다. “neural style transfer”[13]에 대한 최근의 연구와 달리, 우리의 방법은 선택된 단일 예술 작품의 스타일을 이전하는 대신 전체 예술 작품의 스타일을 모방하는 방법을 배웁니다. 따라서, 우리는 단지 별이 빛나는 밤의 스타일이 아닌, Van Gogh의 스타일로 사진을 생성하는 것을 배울 수 있습니다. 각 아티스트/스타일에 대한 데이터 셋의 크기는 Cezanne, Monet, Van Gogh, Ukiyo-e의 경우 526, 1073, 400, 562이었습니다.
+우리는 Flickr와 WikiArt에서 다운로드한 풍경 사진에 대해 모델을 학습시킵니다. “<a href="https://ieeexplore.ieee.org/document/7780634" target="_blank">neural style transfer</a>”에 대한 최근의 연구와 달리, 우리의 방법은 선택된 단일 예술 작품의 스타일을 이전하는 대신 전체 예술 작품의 스타일을 모방하는 방법을 배웁니다. 따라서, 우리는 단지 별이 빛나는 밤의 스타일이 아닌, Van Gogh의 스타일로 사진을 생성하는 것을 배울 수 있습니다. 각 아티스트/스타일에 대한 데이터 셋의 크기는 Cezanne, Monet, Van Gogh, Ukiyo-e의 경우 526, 1073, 400, 562이었습니다.
 
 <br><br>
 **Object transfiguration**<br>
@@ -370,7 +377,7 @@ Figure 8은 CMP Facade Database[40]의 labels $\leftrightarrow$ photos와 UT Zap
 </div>
 > Figure 13: 우리의 방법을 몇 가지 변환 문제에 적용했습니다. 이 이미지들은 비교적 성공적인 결과로 선택되었으며 보다 포괄적이고 무작위적인 결과는 당사 웹 사이트를 참조해주세요. 위의 두 행에서, 우리는 야생 말 클래스의 939개의 이미지와 Imagenet[5]의 얼룩말 클래스 1177이미지에 대해 학습해 말과 얼룩말 사이의 개체 변환에 대한 결과를 보여줍니다. 말 $\rightarrow$ 얼룩말의 데모 비디오도 확인해 보세요. 가운데 두 줄은 Flickr의 요세미티의 겨울과 여름 사진에 대해 학습된 계절 변환에 대한 결과를 보여줍니다. 아래의 두 행에서, 우리는 ImageNet의 996개의 사과 이미지와 1020개의 오렌지 이미지에 대한 우리의 방법을 학습시켰습니다.
 
-이 모델은 ImageNet[5]에서 다른 객체 클래스로 변환하도록 학습합니다(각 클래스에는 약 1000개의 학습 이미지가 포함됨). Turmukhambetov[50]은 한 개체를 동일한 범주의 다른 개체로 변환하는 하위 공간 모델을 제안하는 반면, 우리의 방법은 시각적으로 유사한 두 범주 간의 개체 변환에 중점을 둡니다.
+이 모델은 <a href="https://ieeexplore.ieee.org/document/5206848" target="_blank">ImageNet</a>[5]에서 다른 객체 클래스로 변환하도록 학습합니다(각 클래스에는 약 1000개의 학습 이미지가 포함됨). <a href="https://ieeexplore.ieee.org/document/7299043" target="_blank">Turmukhambetov</a>은 한 개체를 동일한 범주의 다른 개체로 변환하는 하위 공간 모델을 제안하는 반면, 우리의 방법은 시각적으로 유사한 두 범주 간의 개체 변환에 중점을 둡니다.
 
 <br><br>
 **Season transfer**<br>
@@ -383,7 +390,7 @@ Figure 8은 CMP Facade Database[40]의 labels $\leftrightarrow$ photos와 UT Zap
 </div>
 > Figure 12: Monet의 그림을 사진 스타일로 매핑한 비교적 성공적인 결과입니다.
 
-painting $\rightarrow$ photo 의 경우, 입력과 출력 사이의 색상 구성을 보존하기 위한 매핑을 장려하기 위해 추가 loss를 도입하는 것이 도움이 된다는 것을 발견했습니다. 특히, 우리는 Taigman[49]의 기법을 채택했으며 대상 도메인의 실제 샘플이 생성 모델에 대한 입력으로 제공될 때 생성 모델이 identity 매핑에 가까워지도록 정규화합니다. 즉, $\mathcal{L} _{\mathrm{identity}}(G, F) = \mathbb{E} _{y \sim p _{data}(y)}[\|G(y)-y\|_1] + \mathbb{E} _{x \sim p _{data}(x)}[\|F(x)-x\|_1]$ 입니다.
+painting $\rightarrow$ photo 의 경우, 입력과 출력 사이의 색상 구성을 보존하기 위한 매핑을 장려하기 위해 추가 loss를 도입하는 것이 도움이 된다는 것을 발견했습니다. 특히, 우리는 <a href="https://arxiv.org/abs/1611.02200" target="_blank">Taigman</a>의 기법을 채택했으며 대상 도메인의 실제 샘플이 생성 모델에 대한 입력으로 제공될 때 생성 모델이 identity 매핑에 가까워지도록 정규화합니다. 즉, $\mathcal{L} _{\mathrm{identity}}(G, F) = \mathbb{E} _{y \sim p _{data}(y)}[\|G(y)-y\|_1] + \mathbb{E} _{x \sim p _{data}(x)}[\|F(x)-x\|_1]$ 입니다.
 <br><br>
 
 
@@ -410,20 +417,20 @@ Figure 12에서 우리는 모네의 그림을 사진으로 변환하는 추가 �
 <div>
   <img src="/assets/images/posts/cyclegan/paper/fig15.png" width="600" height="400">
 </div>
-> Figure 15: 우리는 우리의 방법을 photo stylization에 대해 neural style transfer[13]과 비교합니다. 왼쪽부터 오른쪽까지 순서대로 : input, 2개의 다른 대표적인 예술 작품을 스타일 이미지로 사용한 Gatys의 결과[13], 아티스트의 전체 컬렉션을 사용한 Gatys의 결과[13], CycleGAN
+> Figure 15: 우리는 우리의 방법을 photo stylization에 대해 <a href="https://ieeexplore.ieee.org/document/7780634" target="_blank">neural style transfer</a>와 비교합니다. 왼쪽부터 오른쪽까지 순서대로 : input, 2개의 다른 대표적인 예술 작품을 스타일 이미지로 사용한 <a href="https://ieeexplore.ieee.org/document/7780634" target="_blank">Gatys</a>의 결과, 아티스트의 전체 컬렉션을 사용한 <a href="https://ieeexplore.ieee.org/document/7780634" target="_blank">Gatys</a>의 결과, CycleGAN
 
-Figure 15에서, 우리는 photo stylization에 대한 neural style transfer[13]과 우리의 결과를 비교합니다. 각 행에 대해 우리는 우선 [13]의 스타일 이미지로 두 개의 대표적인 예술 작품을 사용합니다. 반면에 우리의 방법 전체 컬렉션 스타일의 사진을 생상할 수 있습니다. 전체 컬렉션의 neural style transfer와 비교하기 위해, 우리는 대상 도메인에 걸쳐 average Gram Matrix를 계산하고 이 matrix를 사용해 Gatys[13]과 함께 “average style”로 변환합니다.
+Figure 15에서, 우리는 photo stylization에 대한 <a href="https://ieeexplore.ieee.org/document/7780634" target="_blank">neural style transfer</a>과 우리의 결과를 비교합니다. 각 행에 대해 우리는 우선 <a href="https://ieeexplore.ieee.org/document/7780634" target="_blank">neural style transfer</a>의 스타일 이미지로 두 개의 대표적인 예술 작품을 사용합니다. 반면에 우리의 방법 전체 컬렉션 스타일의 사진을 생상할 수 있습니다. 전체 컬렉션의 neural style transfer와 비교하기 위해, 우리는 대상 도메인에 걸쳐 average Gram Matrix를 계산하고 이 matrix를 사용해 <a href="https://ieeexplore.ieee.org/document/7780634" target="_blank">Gatys</a>과 함께 “average style”로 변환합니다.
 
 <div>
   <img src="/assets/images/posts/cyclegan/paper/fig16.png" width="600" height="400">
 </div>
-> Figure 16: 우리는 우리의 방법을 다양한 애플리케이션에서 neural style transfer[13]과 비교합니다. 위에서 아래로 : 사과 → 오렌지, 말 → 얼룩말, 모네 → 사진. 왼쪽에서 오른쪽으로 : 입력 이미지, 두 개의 서로 다른 이미지를 스타일 이미지로 사용한 Gatys[13]의 결과, 대상 도메인의 모든 이미지를 사용한 Gatys[13]의 결과, CycleGAN
+> Figure 16: 우리는 우리의 방법을 다양한 애플리케이션에서 <a href="https://ieeexplore.ieee.org/document/7780634" target="_blank">neural style transfer</a>과 비교합니다. 위에서 아래로 : 사과 → 오렌지, 말 → 얼룩말, 모네 → 사진. 왼쪽에서 오른쪽으로 : 입력 이미지, 두 개의 서로 다른 이미지를 스타일 이미지로 사용한 <a href="https://ieeexplore.ieee.org/document/7780634" target="_blank">Gatys</a>의 결과, 대상 도메인의 모든 이미지를 사용한 <a href="https://ieeexplore.ieee.org/document/7780634" target="_blank">Gatys</a>의 결과, CycleGAN
 
-Figure 16은 다른 변환 작업들에 대한 유사한 비교를 보여줍니다. 우리는 Gatys[13]는 원하는 출력과 밀접하게 일치하는 대상 스타일 이미지를 찾아야 하지만 여전히 사실적인 결과를 생성하지 못하는 경우가 많은 반면, 우리의 방법은 대상 도메인과 유사하게 자연스럽게 보이는 결과를 생성하는 데 성공한다는 것을 관찰했습니다.
+Figure 16은 다른 변환 작업들에 대한 유사한 비교를 보여줍니다. 우리는 <a href="https://ieeexplore.ieee.org/document/7780634" target="_blank">Gatys</a>는 원하는 출력과 밀접하게 일치하는 대상 스타일 이미지를 찾아야 하지만 여전히 사실적인 결과를 생성하지 못하는 경우가 많은 반면, 우리의 방법은 대상 도메인과 유사하게 자연스럽게 보이는 결과를 생성하는 데 성공한다는 것을 관찰했습니다.
 
 <font color='41 69 E1'>
 <b>[정리]</b><br>
-
+style Transfer, object transfiguration, photo generation, photo enhancement 다양한 과제들에서 성공적인 모습을 확인할 수 있습니다.
 </font>
 
 <br><br>
@@ -436,7 +443,7 @@ Figure 16은 다른 변환 작업들에 대한 유사한 비교를 보여줍니�
 </div>
 > Figure 17: 우리의 방법에서 전형적인 실패 사례들. 왼쪽 : 개 $\rightarrow$ 고양이 변환 작업에서 CycleGAN은 입력에서 최소한의 변경만 만들어 낼 수 있었습니다. 오른쪽 : CycleGAN은 말 $\rightarrow$ 얼룩말 예제에서도 실패 사례가 나왔는데 모델이 학습 중 승마에 대한 이미지를 보지 못했지 때문입니다.
 
-우리의 방법이 많은 경우레 설득력 있는 결과를 얻을 수 있었지만, 결과들이 모든 곳에서 긍정적인 결과인 것과는 거리가 있습니다. Figure 17은 몇 가지 실패 사례를 보여줍니다. 위에서 언급한 것들처럼 색상과 질감 변화를 수반하는 변환 작업에서 우리의 방법은 종종 성공적이였습니다. 우리는 기하학적 변화가 필요한 작업을 탐구했지만 거의 성공하지 못했습니다. 예를 들어 개 $\rightarrow$ 고양이(Figure 17, 좌측) 변환 작업에서 모델은 입력을 최소한의 변경만 하는 것으로 퇴화합니다. 이 실패는 외관 변경에 대한 우수한 성능을 위해 조정된 생성 모델 구조로 인해 발생할 수 있습니다. 더 다양하고 극단적인 변화, 특히 기하하적 변화를 다루는 것은 향후 작업에 중요한 문제입니다.
+우리의 방법이 많은 경우에 설득력 있는 결과를 얻을 수 있었지만, 결과들이 모든 곳에서 긍정적인 결과인 것과는 거리가 있습니다. Figure 17은 몇 가지 실패 사례를 보여줍니다. 위에서 언급한 것들처럼 색상과 질감 변화를 수반하는 변환 작업에서 우리의 방법은 종종 성공적이였습니다. 우리는 기하학적 변화가 필요한 작업을 탐구했지만 거의 성공하지 못했습니다. 예를 들어 개 $\rightarrow$ 고양이(Figure 17, 좌측) 변환 작업에서 모델은 입력을 최소한의 변경만 하는 것으로 퇴화합니다. 이 실패는 외관 변경에 대한 우수한 성능을 위해 조정된 생성 모델 구조로 인해 발생할 수 있습니다. 더 다양하고 극단적인 변화, 특히 기하하적 변화를 다루는 것은 향후 작업에 중요한 문제입니다.
 
 일부 실패 사례는 학습 데이터 셋의 분포 특성으로 인해 발생합니다. 예를 들어, 우리의 방법은 말 $\rightarrow$ 얼룩말 예시(Figure 17, 우측)에서 혼란스러워하는 모습을 보였는데, 이는 모델이 말이나 얼룩말을 타는 사람의 이미지를 포함하지 않은 ImageNet의 *wild horse*와 *zebra*에 대해 학습되었기 때문입니다.
 
@@ -446,11 +453,11 @@ Figure 16은 다른 변환 작업들에 대한 유사한 비교를 보여줍니�
 
 <font color='41 69 E1'>
 <b>[정리]</b><br>
-색상, 질감 변화의 작업에는 적합하지만 외관 자체가 변화하는 것에는 적합하지 않다. 또한 학습한 이미지 데이터 셋에 없던 객체가 이미지에 나타난다면 모델이 혼란스러워 하며 결과가 좋지 않다.<br><br>
+색상, 질감 변화의 작업에는 성공적이였지만 외관 자체가 변화하는 것에는 성공하지 못했습니다. 또한 학습한 이미지 데이터 셋에 없던 객체가 이미지에 나타난다면 모델이 혼란스러워 하며 결과가 좋지 않음을 확인했습니다.<br><br>
 
-semantic segmentation과 같은 작업에서는 페어를 이룬 데이터를 사용한 결과를 따라잡을 수 없었다. 이를 해결하기 위해서는 준-지도 데이터 사용을 통해 가능할 것으로 생각되며 준-지도 데이터를 사용한다고 하더라도 풀-지도 데이터에 비하면 비용이 싸다.<br><br>
+semantic segmentation과 같은 작업에서는 pix2pix 같이 페어를 이룬 데이터를 사용한 모델의 성능을 따라잡을 수 없었지만  준-지도 데이터 사용을 통해 성능 향상이 가능할 것으로 생각되며 준-지도 데이터를 사용한다고 하더라도 풀-지도 데이터에 비하면 비용이 쌉니다.<br><br>
 
-하지만 많은 경우에 페어를 이루지 않은 데이터를 사용해 모델이 좋은 결과를 내고 있다. 본 논문은 비 지도 환경에서 가능한 작업의 경계를 확장했다.
+하지만 많은 경우에 페어를 이루지 않은 데이터를 사용해 모델이 좋은 결과를 내고 있으며 본 논문은 비 지도 환경에서 가능한 작업의 경계를 확장했다 할 수 있습니다.
 </font>
 
 <br><br>
