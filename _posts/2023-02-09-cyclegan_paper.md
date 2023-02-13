@@ -475,5 +475,5 @@ semantic segmentation과 같은 작업에서는 pix2pix 같이 페어를 이룬 
 
 ---
 
-모델의 구조가 소개되어 있는 Appendix 부분은 다음 글인 CycleGAN 논문 구현에서 소개해드리겠습니다.<br>
+모델의 구조가 소개되어 있는 Appendix 부분은 다음 글인 CycleGAN 논문 구현에서 구현 코드와 함께 소개해드리겠습니다.<br>
 끝까지 봐주셔서 감사합니다 :)
