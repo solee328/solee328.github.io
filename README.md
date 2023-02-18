@@ -22,3 +22,8 @@ GAN(Generative Adversarial Networks)
 Conditional GAN(Conditional Generative Adversarial Nets)
 [<a href="https://solee328.github.io/gan/2022/11/01/cgan.html" target="_blank">code post</a>]
 [<a href="https://github.com/solee328/post-code/blob/main/gan/Conditional_Gan.ipynb" target="_blank">code</a>]
+
+Pix2Pix(Image-to-Image Translation with Conditional Adversarial Networks)
+[<a href="https://solee328.github.io/gan/2022/12/27/pix2pix_paper.html" target="_blank">paper post</a>]
+[<a href="https://solee328.github.io/gan/2023/01/27/pix2pix_code.html" target="_blank">code post</a>]
+[<a href="https://github.com/solee328/post-code/blob/main/gan/Pix2Pix.ipynb" target="_blank">code</a>]
