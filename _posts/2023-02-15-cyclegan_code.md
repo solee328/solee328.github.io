@@ -70,17 +70,67 @@ dataloader = DataLoader(dataset=dataset_Facade,
 ---
 
 ## 2. 모델
-### 2.1. Weight
 
+
+### 2.1. Weight Initialize
+모델의 모든 가중치는 가우시안 분포 N(0, 0.02)로 초기화합니다. 모듈의 이름을 확인해 Convolution과 관련된 모듈일 경우 `nn.init.normal_`함수로 N(0, 0.02)로 초기화했습니다.
 ```python
 def init_weight(module):
     classname = module.__class__.__name__
 
     if classname.find('Conv') != -1:
         nn.init.normal_(module.weight, mean=0.0, std=0.02)
+
+generator_G.apply(init_weight)
+generator_F.apply(init_weight)
+discriminator_X.apply(init_weight)
+discriminator_Y.apply(init_weight)
 ```
 
 ### 2.2. Generator
+
+Generator는 <a href="https://arxiv.org/abs/1603.08155" target="_blank">Perceptual Losses for Real-Time Style Transfer and Super-Resolution</a> 모델을 사용합니다. 해상도에 따라 사용하는 residual block의 수가 달라지는데 128x128 크기의 이미지 데이터에서는 6개의 residual block을 사용하고 256x256 크기 또는 더 높은 해상도의 이미지 데이터에서는 9개의 residual block을 사용합니다.
+
+모델의 구조는 $c7s1-k$, $dk$, $Rk$, $uk$로 나타낼 수 있으며 $k$는 필터의 수를 나타냅니다. 각 Convolution에는 padding이 적용되는데 artifact를 줄이기 위해 Reflection padding을 사용했다 합니다.
+- $c7s1-k$ : k filter와 1 stride를 가진 7x7 Convolution - InstanceNorm - ReLU
+- $dk$ : k filter와 2 stride를 가진 3x3 Convolution - InstanceNorm - ReLU
+- $Rk$ : [k filter를 가진 3x3 Convolution - InstanceNorm - ReLU] x 2
+- $uk$ : k filter와 1/2 stride를 가진 3x3 fractional strided Convolution - InstanceNorm - ReLU
+
+Facade 데이터 셋은 256x256으로 Resize해 사용하므로 저는 9개의 Residual block(Rk)를 사용하며 9 residual block으로 이루어진 네트워크는 $c7s1-64, d128, d256, R256 * 9, u128, u64, c7s1-3$입니다.
+<br><br>
+
+
+```python
+class Generator(nn.Module):
+  def __init__(self):
+    super(Generator, self).__init__()
+
+    self.model = nn.Sequential(
+      XK(3, 64, name='ck'),
+      XK(64, 128, name='dk'),
+      XK(128, 256, name='dk'),
+      XK(256, 256, name='Rk'),
+      XK(256, 256, name='Rk'),
+      XK(256, 256, name='Rk'),
+      XK(256, 256, name='Rk'),
+      XK(256, 256, name='Rk'),
+      XK(256, 256, name='Rk'),
+      XK(256, 256, name='Rk'),
+      XK(256, 256, name='Rk'),
+      XK(256, 256, name='Rk'),
+      XK(256, 128, name='uk'),
+      XK(128, 64, name='uk'),
+      XK(64, 3, name='ck', drop=True),
+      nn.Tanh()
+    )
+
+  def forward(self, x):
+    return self.model(x)
+```
+9 residual block으로 이루어진 네트워크인 $c7s1-64, d128, d256, R256 * 9, u128, u64, c7s1-3$인 Generator입니다. `XK(64, 3, name='ck', drop=True)`에만 `drop` 인자가 있는데 마지막 레이어에서 InstanceNorm과 ReLU가 사용되면 생기는 artifact를 방지하기 위해 인자로 해당 레이어에서는 Convolution만이 모델에 추가되어야 합니다. 마지막으로는 이미지 생성을 위한 `nn.Tanh()`를 추가합니다.
+<br><br>
+
 
 ```python
 class XK(nn.Module):
@@ -115,36 +165,14 @@ class XK(nn.Module):
   def forward(self, x):
     return self.model(x)
 ```
-```python
-class Generator(nn.Module):
-  def __init__(self):
-    super(Generator, self).__init__()
 
-    self.model = nn.Sequential(
-      XK(3, 64, name='ck'),
-      XK(64, 128, name='dk'),
-      XK(128, 256, name='dk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 128, name='uk'),
-      XK(128, 64, name='uk'),
-      XK(64, 3, name='ck', drop=True),
-      nn.Tanh()
-    )
+각 구조 별로 대응되도록 XK 클래스를 만들었습니다. 모든 구조에서 InstanceNorm과 ReLU가 사용되는 것은 동일하므로 `name`으로 넘어오는 구조 명에 따라 사용되는 Convolution만 변경됩니다. Residual block인 $RK$의 경우 Convolution - InstanceNorm - ReLU가 2번 반복되므로 `name`이 $RK$인 경우 모델에 [conv, norm, relu]를 반복해 넣어줍니다. 추가로 마지막 레이어에서 InstanceNorm과 ReLU가 사용되면 생기는 artifact를 방지하기 위해 마지막 레이어에서 `drop` 인자가 넘어오게 되면 Convolution만이 모델에 추가되도록 구현했습니다.
 
-  def forward(self, x):
-    return self.model(x)
-```
 
 ### 2.3. Discriminator
-Discriminator는 Pix2Pix와 마찬가지로 70x70 PatchGAN을 사용합니다. 이전 글인 Pix2Pix
+Discriminator는 Pix2Pix와 마찬가지로 70x70 PatchGAN을 사용합니다. 이전 글인 <a href="https://solee328.github.io/gan/2023/01/27/pix2pix_code.html" target="_blank">Pix2Pix code</a>에서 사용한 Discriminator와 같은 Discriminator를 사용했습니다.
+
+
 
 ```python
 class Discriminator(nn.Module):
@@ -245,7 +273,7 @@ $$
 \min_G V _{LSGAN}(G) \frac{1}{2}\mathbb{E} _{z \sim p_z(z)}[(D(G(z))-c)^2]
 $$
 
-첫번째 수식에서 a는 G가 생성한 가짜 데이터 라벨, b는 실제 데이터 라벨을 의미합니다. 첫번째 수식은 D의 학습에 대한 식으로 실제 데이터인 b(1)이 입력된다면 1로 결과를 출력하고 가짜 데이터인 a(0)이 입력된다면 0으로 결과를 출력해 식을 최소화하도록 합니다. 두번째 수식에서 c는 D가 실제라고 믿기를 바라는 G가 생성한 가짜 데이터를 의미합니다. G는 D가 속을 수 있도록 실제 데이터이길 바라는 c(1)와 D의 결과가 최대한 1에 가깝게 출력되도록 식을 최소화합니다. 수식이 Mean squared Loss와 모양이 같은 것을 볼 수 있으며 따라서 코드로는 nn.MSELoss()를 사용해 구현했습니다.
+첫번째 수식에서 a는 G가 생성한 가짜 데이터 라벨, b는 실제 데이터 라벨을 의미합니다. 첫번째 수식은 D의 학습에 대한 식으로 실제 데이터인 b(1)이 입력된다면 1로 결과를 출력하고 가짜 데이터인 a(0)이 입력된다면 0으로 결과를 출력해 식을 최소화하도록 합니다. 두번째 수식에서 c는 D가 실제라고 믿기를 바라는 G가 생성한 가짜 데이터를 의미합니다. G는 D가 속을 수 있도록 실제 데이터이길 바라는 c(1)와 D의 결과가 최대한 1에 가깝게 출력되도록 식을 최소화합니다. 수식이 Mean squared Loss와 모양이 같은 것을 볼 수 있으며 따라서 코드로는 `nn.MSELoss()`를 사용해 구현했습니다.
 
 <a href="https://jaejunyoo.blogspot.com/2017/03/lsgan-1.html" target="_blank">Jaejun Yoo님의 초짜 대학원생의 입장에서 이해하는 LSGAN</a>에서 LSGAN의 장점에 대해 자세한 설명이 있으니 함께 보시는 걸 추천드립니다. :thumbsup:
 
@@ -275,7 +303,7 @@ $$
 
 
 
-### 5. 추가
-### 5.1. identity loss / cycle consistency loss
 
 ---
+
+전체 코드는 <a href="https://github.com/solee328/post-code/blob/main/gan/CycleGAN.ipynb" target="_blank">github</a>에서 확인하실 수 있습니다:)
