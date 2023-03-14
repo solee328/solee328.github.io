@@ -3,7 +3,7 @@
 // Define defaults for each variable.
 
 $base-font-family: Helvetica, Arial, Oswald, sans-serif, !default;
-$base-font-size: 14px !default;
+$base-font-size: 14.5px !default;
 $base-font-weight: 400 !default;
 $small-font-size:  $base-font-size * 0.875 !default;
 $base-line-height: 1.6 !default;
@@ -37,7 +37,7 @@ $banner-background: rgba(0,0,0,0.8) !default;
 // $content-width:    800px !default;
 
 $on-palm:          600px !default;
-$on-laptop:        800px !default;
+$on-laptop:        900px !default;
 
 // Use media queries like this:
 // @include media-query($on-palm) {
