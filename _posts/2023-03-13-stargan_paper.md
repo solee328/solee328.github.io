@@ -19,9 +19,9 @@ use_math: true
 <div>
   <img src="/assets/images/posts/stargan/paper/fig1.png" width="600" height="300">
 </div>
-> Figure 1. RaFD 데이터셋에서 학습한 지식을 CelebA 데이터셋에 적용한 멀티 도메인 이미지 간 변환 결과.
+> Figure 1. RaFD 데이터셋에서 학습한 지식을 CelebA 데이터셋에 적용한 다중 도메인 이미지 간 변환 결과.
 
-Multi-domain image-to-image 변환 모델인 StarGAN입니다. 이전까지 포스팅했던 생성 모델 논문들은 2개의 도메인을 사용했었고 그 사이만 변환이 가능했었습니다. 따라서 또 다른 도메인으로 이미지를 변환하기 위해서는 다시 모델을 학습해야 했습니다. 이런 한계를 극복하기 위해 StarGAN은 여러 데이터셋을 사용해 멀티 도메인 변환이 가능한 것이 특징으로 위의 Fig1 과 같이 RaFD에 있던 표정에 대한 라벨을 CelebA 데이터셋에 적용한 것이 가능합니다.
+Multi-domain image-to-image 변환 모델인 StarGAN입니다. 이전까지 포스팅했던 생성 모델 논문들은 2개의 도메인을 사용했었고 그 사이만 변환이 가능했었습니다. 따라서 또 다른 도메인으로 이미지를 변환하기 위해서는 다시 모델을 학습해야 했습니다. 이런 한계를 극복하기 위해 StarGAN은 여러 데이터셋을 사용해 다중 도메인 변환이 가능한 것이 특징으로 위의 Fig1 과 같이 RaFD에 있던 표정에 대한 라벨을 CelebA 데이터셋에 적용한 것이 가능합니다.
 
 <br>
 
@@ -295,7 +295,7 @@ Figure 5.에서 볼 수 있듯이 StarGAN은 입력된 개인의 주체성과 �
 
 
 ### 다중 데이터셋 학습
-CelebA와 RaFD 데이터 셋을 모두 학습한 StarGAN 모델을 StarGAN-JNT, RaFD만을 학습한 StarGAN 모델을 StarGAN-SNG로 표기해 마스크 벡터를 이용해 멀티 데이터 셋을 학습한 결과를 보여줍니다.
+CelebA와 RaFD 데이터 셋을 모두 학습한 StarGAN 모델을 StarGAN-JNT, RaFD만을 학습한 StarGAN 모델을 StarGAN-SNG로 표기해 마스크 벡터를 이용해 다중 데이터 셋을 학습한 결과를 보여줍니다.
 
 #### 다중 데이터셋 비교
 <div>
