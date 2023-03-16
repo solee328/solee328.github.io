@@ -59,9 +59,9 @@ CelebA에서 검은색 머리, 금색 머리, 갈색 머리, 성별 남, 성별 
 </div>
 > Figure 3. 판별 모델 $D$와 생성 모델 $G$ 두 모듈로 구성된 StarGAN 개요.
 
-(a)는 판별 모델 학습 과정을 보여줍니다. 진짜 이미지던 가짜 이미지던 이미지를 입력받으면 해당 이미지가 진짜인지 가짜인지 판별합니다. 여기까지는 이전의 모델들과 큰 차이가 없지만 StarGAN에서는 domain classification이 추가됩니다. 판별 모델은 입력 받은 이미지가 어떤 도메인을 가지고 있는지 예측하며 이를 domain classification이라 합니다. 실제 데이터셋에는 라벨 값이 함께 있으며 생성 모델이 생성한 이미지에도 어떤 이미지로 변환할지 라벨 값을 넣어 이미지를 변환하므로 판별 모델을 학습할 때 판별 모델이 예측한 도메인과 실제 도메인 또는 라벨로 넣어준 도메인 값과의 차이를 classification loss로 계산해 사용합니다.
+(a)는 판별 모델 학습 과정을 보여줍니다. 진짜 이미지던 가짜 이미지던 이미지를 입력받으면 해당 이미지가 진짜인지 가짜인지 판별합니다. 여기까지는 이전의 모델들과 큰 차이가 없지만 StarGAN에서는 domain classification이 추가됩니다. 판별 모델은 입력 받은 이미지가 어떤 도메인을 가지고 있는지 예측하며 이를 domain classification이라 합니다. 실제 데이터셋에는 라벨 값이 함께 있으며 생성 모델이 생성한 이미지에도 어떤 이미지로 변환할지 라벨 값을 넣어 이미지를 변환하기 때문에 진짜 데이터와 가짜 데이터 모두 라벨을 확인할 수 있습니다. 판별 모델을 학습할 때 판별 모델이 예측한 도메인과 실제 도메인 라벨 또는 생성모델이 생성한 이미지의 도메인 라벨과의 차이를 classification loss로 계산해 사용합니다.
 
-(b)는 생성 모델이 이미지를 생성하는 과정입니다. 이미지와 함께 condition으로 Target domain에 해당하는 라벨을 입력 값으로 받습니다. 예시로 검은 머리를 가진 젊은 여성의 사진을 나이 든 여성의 사진으로 바꾸고 싶은 경우 사진과 함께 라벨로 [1, 0, 0, 0, 0] (순서대로 검은색 머리, 금색 머리, 갈색 머리, 성별 여/남, 나이 늙음/젊음)을 넣어주면 됩니다. 생성 모델은 이미지를 입력으로 주어진 라벨에 맞는 이미지로 변환한 가짜 이미지를 생성하게 됩니다.
+(b)는 생성 모델이 이미지를 생성하는 과정입니다. 이미지와 함께 condition으로 목표 도메인(Target domain)에 해당하는 라벨을 입력 값으로 받습니다. 예시로 검은 머리를 가진 젊은 여성의 사진을 나이 든 여성의 사진으로 바꾸고 싶은 경우 사진과 함께 라벨로 [1, 0, 0, 0, 0] (순서대로 검은색 머리, 금색 머리, 갈색 머리, 성별 여/남, 나이 늙음/젊음)을 넣어주면 됩니다. 생성 모델은 이미지를 입력으로 주어진 라벨에 맞는 이미지로 변환한 가짜 이미지를 생성하게 됩니다.
 
 (c)는 CycleGAN에서 소개했던 <a href="https://solee328.github.io/gan/2023/02/09/cyclegan_paper.html#h-32-cycle-consistency-loss" target="_blank">cycle consistency loss</a>와 같은 의미를 가지고 있습니다. (b)에서 생성한 가짜 이미지에 원본 이미지에 해당 하는 검은 머리, 성별 여, 나이 젊음에 대한 라벨([1, 0, 0, 0, 1])을 주어 원본 이미지와 유사한 Reconstructed 이미지를 만듭니다. Reconstructed 이미지와 원본 이미지 간의 차이를 계산해 Reconstruced Loss로 사용합니다.
 
@@ -80,15 +80,15 @@ $$
 \mathcal{L} _{adv} = \mathbb{E} _x [logD _{src}(x)] + \mathbb{E} _{x, c}[log(1-D _{src}(G(x, c)))]
 $$
 
-$G$는 이미지 $x$와 원하는 도메인인 타겟 도메인에 해당하는 라벨 $c$를 입력으로 받아 이미지 $G(x, c)$를 생성하고 $D$는 실제 이미지와 가짜 이미지를 구별하고자 합니다.
+$G$는 이미지 $x$와 원하는 도메인인 목표 도메인에 해당하는 라벨 $c$를 입력으로 받아 이미지 $G(x, c)$를 생성하고 $D$는 실제 이미지와 가짜 이미지를 구별하고자 합니다.
 
-StarGAN의 $D$에는 2가지 기능이 있는데 이미지가 실제 데이터셋에서 온 것인지 $G$가 생성한 가짜 이미지에서 온 것인지 구별하느 $D _{src}$와 이미지의 도메인이 무엇인지 구별하는 $D _{cls}$가 있습니다. Adversarial loss에서 $D$는 이미지를 구별하는 것이 목적이기 때문에 $D _{src}$로 표기되어 있습니다.
+StarGAN의 $D$에는 2가지 기능이 있는데 이미지가 실제 데이터셋에서 온 것인지 $G$가 생성한 가짜 이미지에서 온 것인지 구별하는 $D _{src}$와 이미지의 도메인이 진짜인지 가짜인지 구별하는 $D _{cls}$가 있습니다. Adversarial loss에서 $D$는 이미지를 구별하는 것이 목적이기 때문에 $D _{src}$로 표기되어 있습니다.
 
 StarGAN의 학습에서는 학습 프로세스를 안정화하고 더 높은 품질의 이미지를 생성하기 위해 <a href="https://arxiv.org/abs/1704.00028" target="_blank">gradient penalty</a>가 있는 <a href="https://arxiv.org/abs/1701.07875" target="_blank">Wasserstein GAN</a>을 적용합니다.
 
-GAN에서 KLD와 JSD로 증명을 했었다면 WGAN에서는 EMD(Earth Mover Distance) 또는 Wasserstein distance라 불리는 새로운 방법으로 Generative adversarial loss로 사용함을 제안했습니다. 하지만 Wasserstein distance는 공간이 넓어 탐색하기 힘들며 최소값이 존재한다는 보장도 없었습니다. 이때 Kantorovich-Rubinstein Duality Theorem을 적용해 식을 정리한다면 WGAN 수식을 1-Lipschitz function에 공간에 위치해야 한다는 전제 조건 하에 표현이 가능했습니다.
+GAN에서 KLD와 JSD로 증명을 했었다면 WGAN에서는 EMD(Earth Mover Distance) 또는 Wasserstein distance라 불리는 새로운 방법으로 Generative adversarial loss로 사용하는 것을 제안했습니다. 하지만 Wasserstein distance는 공간이 넓어 탐색하기 힘들며 최소값이 존재한다는 보장도 없었습니다. 이때 Kantorovich-Rubinstein Duality Theorem을 적용해 식을 정리한다면 WGAN 수식이 1-Lipschitz function에 공간에 위치해야 한다는 전제 조건 하에 Adversarial loss로 표현이 가능했습니다.
 
-1-Lipschitz 전제 조건을 만족하기 위해 Weight Clipping을 사용했습니다. 1-Lipschitz는 두 점 사이의 거리를 일정 비 이상으로 증가시키지 않는 함수로 1-Lipschitz는 함수 $f$의 미분계수가 1을 넘어가지 않음을 의미합니다. WGAN은 weight clipping을 사용해 1-Lipchitz를 해결하는데, weight clipping은 가중치 값을 제한함으로써 해결하는 방법입니다. Weight Clipping의 방법으로도 기존의 DCGAN과 같은 모델보다 좋은 성능이 나왔으며 CNN, MLP 환경, Batch normalization이 없는 환경에서도 학습이 이루어진 모습을 보여주어 mode collapse 현상 없이 기존의 방법보다 안정적임을 보여주었습니다.
+WGAN은 1-Lipschitz 전제 조건을 만족하기 위해 Weight Clipping을 사용했습니다. Lipschitz는 두 점 사이의 거리를 일정 비 이상으로 증가시키지 않는 함수로 1-Lipschitz는 함수 $f$의 미분계수가 1을 넘어가지 않음을 의미합니다. WGAN은 weight clipping을 사용해 1-Lipchitz를 해결하는데, weight clipping은 가중치 값을 제한함으로써 해결하는 방법입니다. Weight Clipping의 방법으로 기존의 DCGAN과 같은 모델보다 좋은 성능이 나왔으며 CNN, MLP 환경, Batch normalization이 없는 환경에서도 학습이 이루어진 모습을 보여주어 mode collapse 현상 없이 기존의 방법보다 안정적임을 보여주었습니다.
 
 하지만 Weight Clipping은 방법을 소개한 WGAN 논문에서조차 좋지 않은 방법이라 표현하는데, 단순하게 weight를 제한하는 방법일 뿐더러 모델의 성능이 하이퍼 파라미터에 민감하기 때문입니다. 모델의 weight를 $[-c, c]$로 제한한다면 $c$의 값이 하이퍼 파라미터가 됩니다. 이때 $c$의 값이 크면 $[-c, c]$까지 도달하는 시간이 오래 걸려 optimal까지 학습하는 시간이 오래 걸리게 되고 $c$ 값이 작으면 gradient vanishing 문제가 발생하게 됩니다.
 
@@ -106,7 +106,7 @@ $$
 모델 학습이 사용되는 adversarial loss는 위의 식과 같습니다. 여기서 $\hat{x}$은 실제 이미지와 생성된 이미지 사이의 직선에 따라 균일하게 샘플링되며 모든 실험에서 $\lambda_{gp}=10$을 사용합니다.
 
 <br>
-참고<br>
+**참고** <br>
 - 모끼의 딥러닝 공부 / <a href="https://ahjeong.tistory.com/7" target="_blank">[논문 읽기] Wasserstein GAN</a>
 - 하우론 / <a href="https://haawron.tistory.com/21?fbclid=IwAR1cyqYSvG-KzDDonGoPSXgBR17hFVWu9G0RJMQm5z7bskDLEfnp6F133DY" target="_blank">[학부생의 딥러닝] GANs WGAN, WGAN-GP : Wassestein GAN(Gradient Penalty)</a>
 
