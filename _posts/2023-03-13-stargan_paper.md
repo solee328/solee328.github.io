@@ -113,7 +113,7 @@ $$
 
 
 ### Domain classification
-판별 모델이 이미지를 입력받아 해당 이미지에 대한 도메인이 무엇인지 예측해 라벨을 출력하고 그 라벨이 실제 라벨과의 차이를 Domain classification loss로 사용합니다. Domain classification loss는 2가지로 나뉘는데 $D$에게 실제 데이터를 준 경우와 $G$가 생성한 가짜 데이터를 준 경우로 나눌 수 있습니다.
+판별 모델이 이미지를 입력받아 해당 이미지에 대한 도메인이 무엇인지 예측해 라벨을 출력하고 그 라벨과 실제 라벨과의 차이를 Domain classification loss로 사용합니다. Domain classification loss는 2가지로 나뉘는데 $D$에게 실제 데이터를 준 경우와 $G$가 생성한 가짜 데이터를 준 경우로 나눌 수 있습니다.
 
 우선 $D$에게 실제 데이터를 주어 Domain classification loss를 학습할 때 수식은 아래와 같습니다.
 
@@ -130,7 +130,7 @@ $$
 \mathcal{L}^{\mathcal{f}}_{cls} = \mathbb{E}_{x, c}[-logD_{cls}(c | G(x, c))]
 $$
 
-생성 모델 $G$는 원본 이미지 $x$와 만들고자 하는 목표인 타겟 도메인 라벨 $c$을 입력으로 받아 이미지($G(x, c)$)를 생성합니다. 생성된 이미지를 $D$에게 입력으로 주고 $D$는 이 이미지의 라벨이 무엇인지($D _{cls}(c \mid G(x, c))$) 판별합니다. $G$를 훈련할 때 위의 목적함수를 최소화함으로써 $G$는 $D$가 타겟 도메인 라벨인 $c$로 분류할 수 있는 이미지를 생성하는 방법을 학습합니다.
+생성 모델 $G$는 원본 이미지 $x$와 만들고자 하는 이미지의 목표 도메인 라벨 $c$을 입력으로 받아 가짜 이미지($G(x, c)$)를 생성합니다. 생성된 이미지를 $D$에게 입력으로 주고 $D$는 이 이미지의 라벨이 무엇인지($D _{cls}(c \mid G(x, c))$) 판별합니다. $G$를 훈련할 때 위의 목적함수를 최소화함으로써 $G$는 $D$가 타겟 도메인 라벨인 $c$로 분류할 수 있는 이미지를 생성하는 방법을 학습합니다.
 
 ### Reconstruction Loss
 Adversarial loss와 Classification Loss를 최소화함으로써 $G$는 사실적이고 타겟 도메인 라벨 $c$로 분류되는 이미지를 생성하도록 학습합니다. 그러나 위의 2가지 Loss를 최소화해도 $G$가 입력 이미지의 도메인 관련된 부분들은 변경하도록 이미지를 변환하지만 변환된 이미지가 입력 이미지의 내용을 보존한다고 보장할 수는 없습니다. 이 문제를 완화하기 위해 Cycle Consistency Loss를 생성모델에 적용합니다.
@@ -139,7 +139,7 @@ $$
 \mathcal{L} _{rec} = \mathbb{E} _{x, c, c'}[\| x-G(G(x, c), c') \|_1]
 $$
 
-Cycle Consistency Loss처럼 이미지를 타겟 도메인($c$)에 해당하는 이미지($G(x, c)$)로 변경했다 다시 원본 도메인($c'$)에 해당하는 이미지($G(G(x, c), c')$)로 변경하는 과정을 거칩니다. 원본 이미지($x$)와 다시 원본 이미지로 재구성된 이미지와의 차이를 L1 norm($\| -- \|_1$)으로 계산해 Reconstruction Loss로 사용합니다.
+Cycle Consistency Loss처럼 이미지를 타겟 도메인($c$)에 해당하는 이미지($G(x, c)$)로 변경했다 다시 원본 도메인($c'$)에 해당하는 이미지($G(G(x, c), c')$)로 변경하는 과정을 거칩니다. 원본 이미지($x$)와 다시 원본 이미지로 재구성된 이미지와의 차이를 L1 norm($ \| () \|_1 $)으로 계산해 Reconstruction Loss로 사용합니다.
 
 CycleGAN에서는 두 도메인으로 변환하는 생성 모델 2개를 사용했으므로 2개의 모델을 이용해 Cycle Consistency Loss를 계산했지만 StarGAN에서는 하나의 생성모델로 Reconstructed Loss를 계산한다는 차이점이 있습니다.
 
@@ -147,11 +147,11 @@ CycleGAN에서는 두 도메인으로 변환하는 생성 모델 2개를 사용�
 최종 $G$와 $D$를 최적화하기 위한 목적 함수는 아래와 같습니다.
 
 $$
-\mathcal{L}_D = - \mathcal{L}_{adv} + \lambda_{cls}\mathcal{L}^{r}_{cls}, \tag{5}
+\mathcal{L}_D = - \mathcal{L}_{adv} + \lambda_{cls}\mathcal{L}^{r}_{cls}
 $$
 
 $$
-\mathcal{L}_G = \mathcal{L}_{adv} + \lambda_{cls}\mathcal{L}^r_{cls} + \lambda_{rec}\mathcal{L}_{rec}, \tag{6}
+\mathcal{L}_G = \mathcal{L}_{adv} + \lambda_{cls}\mathcal{L}^r_{cls} + \lambda_{rec}\mathcal{L}_{rec}
 $$
 
 여기서  $\lambda_{cls}$와 $\lambda_{rec}$은 각 adversarial loss와 비교해 domain clasification loss와 reconstruction loss의 상대적 중요성을 제어하는 하이퍼 파라미터입니다. 모든 실험에서  $\lambda_{cls} = 1$,  $\lambda_{rec} = 10$을 사용했다 합니다.
