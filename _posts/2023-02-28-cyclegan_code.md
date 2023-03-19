@@ -113,15 +113,15 @@ class Generator(nn.Module):
       XK(3, 64, name='ck'),
       XK(64, 128, name='dk'),
       XK(128, 256, name='dk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
-      XK(256, 256, name='Rk'),
+      Residual(256, 256),
+      Residual(256, 256),
+      Residual(256, 256),
+      Residual(256, 256),
+      Residual(256, 256),
+      Residual(256, 256),
+      Residual(256, 256),
+      Residual(256, 256),
+      Residual(256, 256),
       XK(256, 128, name='uk'),
       XK(128, 64, name='uk'),
       XK(64, 3, name='ck', drop=True),
@@ -132,6 +132,26 @@ class Generator(nn.Module):
     return self.model(x)
 ```
 9 residual block으로 이루어진 네트워크인 $c7s1-64, d128, d256, R256 * 9, u128, u64, c7s1-3$인 Generator입니다. `XK(64, 3, name='ck', drop=True)`에만 `drop` 인자가 있는데 마지막 레이어에서 InstanceNorm과 ReLU가 사용되면 생기는 artifact를 방지하기 위해 인자로 해당 레이어에서는 Convolution만이 모델에 추가되어야 해야하므로 이를 위해 `drop`인자를 사용했습니다. 마지막으로는 이미지 생성을 위한 `nn.Tanh()`를 추가합니다.
+<br><br>
+
+```python
+class Residual(nn.Module):
+  def __init__(self, in_feature, out_feature):
+    super(Residual, self).__init__()
+
+    self.model = nn.Sequential(
+      nn.Conv2d(in_feature, out_feature, kernel_size=3, padding=1, padding_mode='reflect'),
+      nn.InstanceNorm2d(out_feature),
+      nn.ReLU(),
+      nn.Conv2d(in_feature, out_feature, kernel_size=3, padding=1, padding_mode='reflect'),
+      nn.InstanceNorm2d(out_feature),
+      nn.ReLU()
+    )
+
+  def forward(self, x):
+    return x + self.model(x)
+```
+Residual block에 해당하는 코드입니다. $RK$는 3x3 Convolution-InstanceNorm-ReLU 가 2번 반복되는 모양입니다. 입력 값으로 들어오는 x와 Resiaudal block의 출력인 self.model(x)의 값을 더해 최종 출력 값으로 사용해 gradient vanishing 문제를 완화할 수 있는 것이 특징입니다.
 <br><br>
 
 
@@ -146,9 +166,6 @@ class XK(nn.Module):
     elif name == 'dk':
       conv = nn.Conv2d(in_feature, out_feature, kernel_size=3, stride=2, padding=1, padding_mode='reflect')
 
-    elif name == 'Rk':
-      conv = nn.Conv2d(in_feature, out_feature, kernel_size=3, padding=1, padding_mode='reflect')
-
     elif name == 'uk':
       conv = nn.ConvTranspose2d(in_feature, out_feature, kernel_size=3, stride=2, padding=1, output_padding=1)
     else:
@@ -158,8 +175,6 @@ class XK(nn.Module):
     relu = nn.ReLU()
     model = [conv, norm, relu]
 
-    if name == 'Rk':
-      model += [conv, norm, relu]
     if drop:
       model = [conv]
 
@@ -169,7 +184,7 @@ class XK(nn.Module):
     return self.model(x)
 ```
 
-각 구조 명칭 별로 대응되도록 XK 클래스를 만들었습니다. 모든 구조에서 InstanceNorm과 ReLU가 사용되는 것은 동일하므로 `name`으로 넘어오는 구조 명에 따라 사용되는 Convolution만 변경됩니다. Residual block인 $RK$의 경우 Convolution - InstanceNorm - ReLU가 2번 반복되므로 `name`이 $RK$인 경우 모델에 [conv, norm, relu]를 반복해 넣어줍니다. 또한 위에서 언급했듯 마지막 레이어에서 InstanceNorm과 ReLU가 사용되면 생기는 artifact를 방지하기 위해 마지막 레이어에서 `drop` 인자가 넘어오게 되면 Convolution만이 모델에 추가되도록 구현했습니다.
+Rsidual block인 'RK'를 제외한 각 구조 명칭 별로 대응되도록 XK 클래스를 만들었습니다. 모든 구조에서 InstanceNorm과 ReLU가 사용되는 것은 동일하므로 `name`으로 넘어오는 구조 명에 따라 사용되는 Convolution만 변경됩니다. 또한 위에서 언급했듯 마지막 레이어에서 InstanceNorm과 ReLU가 사용되면 생기는 artifact를 방지하기 위해 마지막 레이어에서 `drop` 인자가 넘어오게 되면 Convolution만이 모델에 추가되도록 구현했습니다.
 
 
 ### 2.3. Discriminator
@@ -246,14 +261,14 @@ class Buffer():
 learning rate는 0.0002로 첫 100 epoch 동안 유지되며 이후 100 epoch 동안 0 까지 linear하게 learning rate를 줄어들게 한다고 합니다. scheduler를 사용해 learning rate를 관리할 수 있습니다. 다양한 scheduler가 있지만 지정한 함수에 따라 자유롭게 lr를 조절할 수 있는게 LambdaLR을 사용했습니다.
 
 ```python
-scheduler_lambda = lambda x: 0.95 ** (x-99) if x > 99 else 1
+scheduler_lambda = lambda epoch: 1.0 - max(0, epoch - 99) / float(100)
 scheduler_G_G = torch.optim.lr_scheduler.LambdaLR(optimizer_G_G, lr_lambda=scheduler_lambda)
 scheduler_G_F = torch.optim.lr_scheduler.LambdaLR(optimizer_G_F, lr_lambda=scheduler_lambda)
 scheduler_D_X = torch.optim.lr_scheduler.LambdaLR(optimizer_D_X, lr_lambda=scheduler_lambda)
 scheduler_D_Y = torch.optim.lr_scheduler.LambdaLR(optimizer_D_Y, lr_lambda=scheduler_lambda)
 ```
 
-lambdaLR을 사용하기 위해서는 lr에 적용할 함수 또는 바뀔 lr 값에 대한 리스트를 입력으로 주어야 합니다. `scheduler_lambda`를 만들어 함수로 넣어주었습니다. 100 epoch 이후 lr 값에 0.95씩 곱해지게 되어 점점 lr 값이 작아지게 하는 것이 목표입니다.
+lambdaLR을 사용하기 위해서는 lr에 적용할 함수 또는 바뀔 lr 값에 대한 리스트를 입력으로 주어야 합니다. `scheduler_lambda`를 만들어 함수로 넣어주었습니다. 100 epoch 이후 lr 값에 lr/100씩 값을 감소시켜 점점 lr 값이 0이 되도록 작아지게 구현합니다.
 
 
 
@@ -288,9 +303,13 @@ $$
 
 ## 4. 결과
 ### 4.1. history
+<div>
+  <img src="/assets/images/posts/cyclegan/code/history_graph.png" width="500" height="200">
+</div>
 
-<img src="/assets/images/posts/cyclegan/code/history_graph.png" width="500" height="200">
-학습에 따라 loss 변화를 그래프로 나타낸 결과입니다. Generator의 loss는 Epoch에 따라 내려가는 걸 볼 수 있는데 scheduler로 인해 lr이 줄어들어 그런지 100 epoch 이후 loss 변동이 이전만큼 크지 않은 것을 확인할 수 있었습니다. 반면 D는 D_X와 D_Y의 변화가 크게 다르네요...? 도메인 Y가 실제 사진(photo) 데이터인데 실제 사진 데이터는 G_G가 잘 생성하나 라벨(sketch) 데이터는 G_F가 상대적으로 만들어 내는 능력이 떨어지는 것으로 보입니다.
+학습에 따라 loss 변화를 그래프로 나타낸 결과입니다. Generator의 loss는 Epoch에 따라 내려가는 걸 볼 수 있는데 100 epoch 즈음 변동이 커지다 scheduler로 인해 lr이 줄어들며 loss 변화가 안정적으로 바뀌며 학습이 진행되는 것을 확인할 수 있습니다.
+
+반면 D는 D_X와 D_Y의 변화가 크게 다르네요...? 도메인 Y가 실제 사진(photo) 데이터인데 실제 사진 데이터는 G_G가 가짜 이미지를 현실적으로 잘 생성해 D_Y가 G_G에게 상대적으로 잘 속는 것에 반해 라벨(sketch) 데이터는 G_F가 상대적으로 만들어 내는 능력이 떨어져 D_X를 속이지 못하는 것으로 보입니다.
 
 
 <div align="center">
@@ -298,16 +317,17 @@ $$
     <source src="/assets/images/posts/cyclegan/code/history_image.mp4" type="video/mp4">
   </video>
 </div>
-G_G가 200epoch 동안 생성한 이미지 히스토리입니다. 초반에는 건물은 물론 창틀의 모양이 흐릿해서 거의 보이지 않으나 후반으로 갈수록 또렷해지는 걸 볼 수 있습니다. 절반인 100 epoch 에서 조금 더 흐른 약 110 epoch 정도부터 변화가 급격하게 줄어드는데 이때부터 위에서 보았던 D_Y를 잘 속이기 시작하면서 업데이트되는 loss 양이 줄어든 영향이 학습에 나타난 것으로 보입니다.
+G_G가 200epoch 동안 생성한 이미지 히스토리입니다. 초반에는 과거 흑백 영화 같은 이미지에서 색이 조금 입혀지더니 50~70 epoch 즈음부터 창문과 창틀 등의 이미지의 디테일이 생기는 걸 볼 수 있습니다. D_Y를 속이기 시작했던 130 epoch 즈음부터는 좀 더 현실적인 이미지를 생성한다 느껴졌습니다.
 
 
 ### 4.2. CycleGAN vs Pix2Pix
 <div align="center">
   <img src="/assets/images/posts/cyclegan/code/vs_pix2pix.png" width="600" height="330">
 </div>
-논문에서는 Pix2Pix의 결과가 더 좋았으며 Pix2Pix 페어 데이터를 사용하나 CycleGAN은 페어 데이터를 사용하지 않는 것의 차이가 있으니 페어 데이터를 사용하지 않고 Pix2Pix를 얼마만큼 따라잡을 수 있는 지를 봐야한다 했었습니다. 하지만 위의 결과만 본다면 CycleGAN의 이미지가 Pix2Pix보다 더 선명하고 디테일이 더 좋은 결과를 낸 것 같습니다.... 제가 Pix2Pix를 최적의 성능을 내도록 만들지 못한 것 같습니다 :disappointed_relieved:
 
-사용한 cmp_x0006, cmp_x0220 데이터는 학습에 사용하지 않은 CMP facade DB extended에서 가져온 사진으로 CycleGAN의 결과가 조금 더 선명하긴 하지만 아직 아티팩트가 보이고 cmp_x0220의 경 좌측 건물의 건물 경계가 정확하지 않아 어색한 사진을 만들어 내었음을 볼 수 있습니다. 아직 갈 길이 멀어 보입니다 :running:
+논문에서는 Pix2Pix의 결과가 더 좋았으며 Pix2Pix 페어 데이터를 사용하나 CycleGAN은 페어 데이터를 사용하지 않는 것의 차이가 있으니 페어 데이터를 사용하지 않고 Pix2Pix를 얼마만큼 따라잡을 수 있는 지를 봐야한다 했었습니다. 위의 결과에서도 언뜻 보기에는 Pix2Pix가 더 괜찮아 보이기는 합니다. 하지만 창문 밖 난관이나 건물 끝 외관 등의 디테일한 부분에서 Pix2Pix는 흐릿하게 blur 처리한 것처럼 보이지만 CycleGAN은 상대적으로 blur함이 덜하고 어떻게든 라벨을 표현해 디테일한 부분은 오히려 CycleGAN이 상대적으로 더 잘 표현한 것처럼 보이네요.
+
+사용한 cmp_x0006, cmp_x0220 데이터는 학습에 사용하지 않은 CMP facade DB extended에서 가져온 사진으로 아직까지는 학습하지 않은 사진들에 대해 general하게 사실적인 이미지를 잘 생성했다 보기는 어려운 것 같습니다. 학습 데이터셋에 높이가 다른 두 건물이 연결된 경우가 별로 없었던지 cmp_x0220의 경우 두 건물이 어색하게 건물이 연결되어 있고 좌측의 건물은 꼭대기 층 자체가 명확하지 않은 걸 확인할 수 있었습니다.아직 갈 길이 멀어 보입니다 :running:
 
 
 
