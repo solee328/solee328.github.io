@@ -175,17 +175,15 @@ StarGAN은 다중 데이터셋 학습이 가능한 모델로 다중 데이터셋
 
 Fig8 상단에서 볼 수 있듯이, CelebA의 라벨에는 이진 속성(흑발, 금발, 갈발, 남자, 젊음)이 포함되어 있고, RaFD의 라벨에는 범주형 속성(화남, 두려움, 행복, 슬픔, 혐오)에 대한 정보가 제공됩니다. 마스크 벡터는 2차원 one-hot 벡터로 CelebA 또는 RaFD 라벨이 유효한지 여부를 나타냅니다.
 
-Fig8에서 (a) ~ (d)는 CelebA를 사용한 훈련 과정, (e) ~ (h)는 RaFD를 사용한 훈련 과정을 보여줍니다.
+Fig8에서 **(a)** ~ **(d)** 는 CelebA를 사용한 훈련 과정, **(e)** ~ **(h)** 는 RaFD를 사용한 훈련 과정을 보여줍니다.
 
-(a), (e)는 판별 모델에 관한 것으로 판별 모델 $D$는 실제 이미지와 가짜 이미지를 구분하고 알고 있는 domain classification loss를 계산합니다. CelebA 데이터셋을 사용하는 경우 CelebA 라벨의 classification error를 계산해 CelebA 라벨에 대해서만 domain classification loss를 최소화하는 학습을 하고 RaFD 데이터셋을 사용하는 경우에는 RaFD 라벨의 domain classification loss를 최소화하도록 학습합니다.
+**(a)**, **(e)** 는 판별 모델에 관한 것으로 판별 모델 $D$는 실제 이미지와 가짜 이미지를 구분하고 이미지의 domain을 예측해 domain classification loss를 계산합니다. CelebA 데이터셋을 사용하는 경우 CelebA 라벨의 classification error를 계산해 CelebA 라벨에 대해서만 domain classification loss를 최소화하는 학습을 하고 RaFD 데이터셋을 사용하는 경우에는 RaFD 라벨의 domain classification loss만을 최소화하도록 학습합니다.
 
-(b), (c), (f), (g)는 생성 모델에 관한 것으로 mask vector(보라색)가 [1, 0]일 때 생성 모델 $G$는 CelebA 라벨(노란색)에 초점을 맞추고 RaFD 라벨(초록색)을 무시하여 image-to-image 변환을 수행하도록 학습하는 것을 보여줍니다. 마스크 벡터가 [0, 1]일 때는 그 반대의 경우로 학습합니다.
+**(b)**, **(c)**, **(f)**, **(g)** 는 생성 모델에 관한 것으로 mask vector(보라색)가 [1, 0]일 때 생성 모델 $G$는 CelebA 라벨(노란색)에 초점을 맞추고 RaFD 라벨(초록색)을 무시하여 image-to-image 변환을 수행하도록 학습하는 것을 보여줍니다. 마스크 벡터가 [0, 1]일 때는 그 반대의 경우로 학습합니다.
 
-(d), (h)는 adversiral loss에 관한 것으로 $G$는 실제 이미지와 구별할 수 없고 $D$가 Target 도메인에 속하는 것으로 분류할 수 있는 이미지를 생성하려 시도하는 것을 보여줍니다.
+**(d)**, **(h)** 는 adversiral loss에 관한 것으로 $G$는 $D$가 실제 이미지와 가짜 이미지를 구별할 수 없고 목표 도메인에 속하는 것으로 분류할 수 있는 이미지를 생성하려 시도하는 것을 보여줍니다.
 
-생성 모델의 구조는 마스크 벡터를 제외하면 단일 데이터 셋으로 학습할 때와 완전히 동일합니다. 반면, 판별 모델의 경우 Domain classification을 마스크 벡터까지 예측하도록 확장합니다. classification error를 계산 시 마스크 벡터를 확인해 주어진 라벨과 관련된 error만 최소화하여 학습합니다. 예를 들어, CelebA의 이미지로 학습할 때 판별 모델은 RaFD와 관련된 라벨이 아닌 CelebA 속성과 관련된 라벨에 대해서만 classification error를 최소화합니다. 이런 설정에서 판별 모델은 CelebA와 RaFD를 번갈아 학습함으로써 두 데이터 셋에 대한 모든 판별 특징을 학습하고 생성 모델은 두 데이터 셋의 모든 라벨을 제어하는 방법을 학습합니다.
-
-다중 데이터셋에서 또 하나 확인해야 할 것은 데이터셋 간의 크기 차이입니다. StarGAN에서 사용한 CelebA의 장 수는 202,599장이고 RaFD는 4,824장으로 두 데이터셋의 크기 차이가 큽니다. StarGAN에서는 두 데이터셋을 학습하는 epoch 수를 조절했습니다. CelebA에 대해서는 총 20 epoch, RaFD에 대해서는 총 200 epoch을 학습함으로써 데이터셋 간의 크기 차이에 따른 부작용을 줄일 수 있도록 했습니다.
+다중 데이터셋에서 하나 확인해야 할 것은 데이터셋 간의 크기 차이입니다. StarGAN에서 사용한 CelebA의 장 수는 202,599장이고 RaFD는 4,824장으로 두 데이터셋의 크기 차이가 큽니다. StarGAN에서는 두 데이터셋을 학습하는 epoch 수를 조절했습니다. CelebA에 대해서는 총 20 epoch, RaFD에 대해서는 총 200 epoch을 학습함으로써 데이터셋 간의 크기 차이에 따른 부작용을 줄일 수 있도록 했습니다.
 <br><br>
 
 ---
