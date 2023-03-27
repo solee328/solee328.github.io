@@ -27,3 +27,11 @@ Pix2Pix(Image-to-Image Translation with Conditional Adversarial Networks)
 [<a href="https://solee328.github.io/gan/2022/12/27/pix2pix_paper.html" target="_blank">paper post</a>]
 [<a href="https://solee328.github.io/gan/2023/01/27/pix2pix_code.html" target="_blank">code post</a>]
 [<a href="https://github.com/solee328/post-code/blob/main/gan/Pix2Pix.ipynb" target="_blank">code</a>]
+
+CycleGAN(Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks)
+[<a href="https://solee328.github.io/gan/2023/02/09/cyclegan_paper.html" target="_blank">paper post</a>]
+[<a href="https://solee328.github.io/gan/2023/02/28/cyclegan_code.html" target="_blank">code post</a>]
+[<a href="https://github.com/solee328/post-code/blob/main/gan/CycleGAN.ipynb" target="_blank">code</a>]
+
+StarGAN(StarGAN: Unified Generative Adversarial Networks for Multi-Domain Image-to-Image Translation)
+[<a href="https://solee328.github.io/gan/2023/03/13/stargan_paper.html" target="_blank">paper post</a>]
