@@ -292,7 +292,118 @@ $$
 \min_G V _{LSGAN}(G) \frac{1}{2}\mathbb{E} _{z \sim p_z(z)}[(D(G(z))-c)^2]
 $$
 
-첫번째 수식에서 a는 G가 생성한 가짜 데이터 라벨, b는 실제 데이터 라벨을 의미합니다. 첫번째 수식은 D의 학습에 대한 식으로 실제 데이터인 b(1)이 입력된다면 1로 결과를 출력하고 가짜 데이터인 a(0)이 입력된다면 0으로 결과를 출력해 식을 최소화하도록 합니다. 두번째 수식에서 c는 G가 생성한 가짜 데이터로 D가 실제라고 믿기를 바라는 데이터를 의미합니다. G는 D가 속을 수 있도록 실제 데이터이길 바라는 c(1)와 D의 결과가 최대한 1에 가깝게 출력되도록 식을 최소화합니다. 수식이 Mean squared Loss와 모양이 같은 것을 볼 수 있으며 따라서 코드로는 `nn.MSELoss()`를 사용해 구현했습니다.
+첫번째 수식에서 a는 G가 생성한 가짜 데이터 라벨, b는 실제 데이터 라벨을 의미합니다. 첫번째 수식은 D의 학습에 대한 식으로 실제 데이터인 b(1)이 입력된다면 1로 결과를 출력하고 가짜 데이터인 a(0)이 입력된다면 0으로 결과를 출력해 식을 최소화하도록 합니다. 두번째 수식에서 c는 G가 생성한 가짜 데이터로 D가 실제라고 믿기를 바라는 데이터를 의미합니다. G는 D가 속을 수 있도록 실제 데이터이길 바라는 c(1)와 D의 결과가 최대한 1에 가깝게 출력되도록 식을 최소화합니다. 수식이 Mean squared Loss와 모양이 같은 것을 볼 수 있으며 따라서 코드로는 `nn.MSELoss()`를 사용해 구현했습니다. 학습 코드는 아래와 같습니다.
+
+```python
+loss_lse = nn.MSELoss().cuda()
+loss_l1 = nn.L1Loss().cuda()
+
+for epoch in range(n_epochs):
+  time_start = datetime.now()
+  history_loss = [0, 0, 0]
+  generator_G.train()
+
+  for photos, sketches, _ in dataloader:
+    photos = photos.cuda()
+    sketches = sketches.cuda()
+
+    '''
+    Discriminator
+    '''
+    optimizer_D_X.zero_grad()
+    optimizer_D_Y.zero_grad()
+
+    # generate fake
+    fake_X = generator_F(photos).detach() # buffer로 들어가 다시 사용될 수 있으므로 detach해 추적을 막아주어야 한다.
+    fake_Y = generator_G(sketches).detach()
+
+    # classify real data
+    d_real_X = discriminator_X(sketches)
+    d_real_Y = discriminator_Y(photos)
+
+    # classify fake data
+    d_fake_X = discriminator_X(buffer_X.sampling(fake_X))
+    d_fake_Y = discriminator_Y(buffer_Y.sampling(fake_Y))
+
+    # loss
+    loss_X = (loss_lse(d_real_X, ones) + loss_lse(d_fake_X, zeros)) / 2
+    loss_Y = (loss_lse(d_real_Y, ones) + loss_lse(d_fake_Y, zeros)) / 2
+    history_loss[1] += loss_X.item()
+    history_loss[2] += loss_Y.item()
+
+    # buffer insert
+    buffer_X.insert(fake_X)
+    buffer_Y.insert(fake_Y)
+
+    # update
+    loss_X.backward()
+    loss_Y.backward()
+    optimizer_D_X.step()
+    optimizer_D_Y.step()
+
+    '''
+    Generator
+    '''
+    optimizer_G_G.zero_grad()
+    optimizer_G_F.zero_grad()
+
+    # generate real
+    fake_Y = generator_G(sketches)
+    fake_X = generator_F(photos)
+
+    # classify fake
+    d_fake_X = discriminator_X(fake_X)
+    d_fake_Y = discriminator_Y(fake_Y)
+
+    # loss(gan)
+    loss_gan = (loss_lse(d_fake_X, ones) + loss_lse(d_fake_Y, ones))
+
+    # loss(cycle)
+    F_G_X = generator_F(fake_Y) # for forward cyc
+    G_F_Y = generator_G(fake_X) # for backward cyc
+
+    loss_cyc = loss_l1(sketches, F_G_X) + loss_l1(photos, G_F_Y)
+
+    if identity is True:
+      pass
+    else:
+      loss_G = loss_gan + loss_cyc * lambda_cyc
+    history_loss[0] += loss_G.item()
+
+    # update
+    loss_G.backward()
+    optimizer_G_G.step()
+    optimizer_G_F.step()
+
+  '''
+  scheduler step
+  '''
+  scheduler_D_X.step()
+  scheduler_D_Y.step()
+  scheduler_G_G.step()
+  scheduler_G_F.step()
+
+  '''
+  History
+  '''
+  time_end = datetime.now() - time_start
+
+  loss = [history_loss[0]/len_loader, history_loss[1]/len_loader, history_loss[2]/len_loader]
+  history['G'].append(loss[0])
+  history['D_X'].append(loss[1])
+  history['D_Y'].append(loss[2])
+  history_lr.append(optimizer_G_G.param_groups[0]["lr"])
+
+  generator_G.eval()
+  with torch.no_grad():
+    test = generator_G(sketch)[0].detach().cpu()
+    test = transforms.functional.to_pil_image(0.5 * test + 0.5)
+    history_image.append(test)
+    test.save('./history/test/' + str(epoch).zfill(3) + '.png')
+
+  print('%2dM %2dS / Epoch %2d' %(*divmod(time_end.seconds, 60), (epoch+1)))
+  print('loss_G: %.5f, loss_D_X: %.5f, loss_D_Y: %.5f' %(loss[0], loss[1], loss[2]))
+```
 
 <a href="https://jaejunyoo.blogspot.com/2017/03/lsgan-1.html" target="_blank">Jaejun Yoo님의 초짜 대학원생의 입장에서 이해하는 LSGAN</a>에서 LSGAN의 장점에 대해 자세한 설명이 있으니 함께 보시는 걸 추천드립니다 :thumbsup:
 
