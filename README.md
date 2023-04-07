@@ -36,3 +36,4 @@ CycleGAN(Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial 
 StarGAN(StarGAN: Unified Generative Adversarial Networks for Multi-Domain Image-to-Image Translation)
 [<a href="https://solee328.github.io/gan/2023/03/13/stargan_paper.html" target="_blank">paper post</a>]
 [<a href="https://solee328.github.io/gan/2023/04/04/stargan_code.html" target="_blank">code post</a>]
+[<a href="https://github.com/solee328/post-code/blob/main/gan/StarGAN.ipynb" target="_blank">code</a>]
