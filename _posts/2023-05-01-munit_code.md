@@ -8,7 +8,7 @@ tags: [gan, munit, multimodal, unsupervised, 생성 모델, 논문 구현]
 use_math: true
 ---
 
-dd
+저번 글인 <a href="https://solee328.github.io/gan/2023/04/19/munit_paper.html" target="_blank">MUNIT(1) - 논문 리뷰</a>에 이은 MUNIT 코드 구현입니다! 논문의 공식 코드는 <a href="https://github.com/NVlabs/MUNIT" target="_blank">github</a>에서 제공되고 있습니다.
 <br><br>
 
 ---
