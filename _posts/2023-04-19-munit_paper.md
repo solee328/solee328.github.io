@@ -53,9 +53,11 @@ Encoder, Decoder는 결정론적(deterministic)이기 때문에 멀티모달 출
 image-to-image 변환 모델은 각 도메인에 2개의 auto-encoder(빨간색과 파란색 화살표)로 구성됩니다. 각 auto-encoder의 latent code는 콘텐츠 코드 $c$와 스타일 코드 $s$로 구성됩니다.<br>
 변환된 이미지가 목표 도메인의 실제 이미지와 구별되지 않도록 adversarial 목적함수(검은색 점선)와 이미지와 잠재 코드 모두를 재구성하는 bidirectional reconstruction 목적함수(회색 점선)을 사용해 모델을 학습합니다.
 
-Fig. 2는 모델의 개요와 학습 과정을 보여줍니다. <a href="https://arxiv.org/abs/1703.00848" target="_blank">UNIT</a>과 비슷하게 MUNIT은 도메인 별 encoder $E_i$, decoder $G_i$로 구성됩니다. Fig.2 (a)에서 auto-encoder를 이용해 $(c_i, s_i) = (E ^c _i(x_i), E ^s _i(x_i)) = E_i(x_i)$를 만드는 과정을 보여주며 Content Encoder로 content code $c_i$와 Style Encoder로 style code $s_i$를 분리할 수 있습니다.
+Fig. 2는 모델의 개요와 학습 과정을 보여줍니다. <a href="https://arxiv.org/abs/1703.00848" target="_blank">UNIT</a>과 비슷하게 MUNIT은 도메인 별 encoder $E ^c _i$, encoder $E ^s _i$ decoder $G_i$로 구성됩니다. 도메인 별로 encoder 2개와 decoder 1개가 있으며 encoder 2개는 각각 이미지의 content와 style을 담당합니다. Encode 과정에서 content encoder($E ^c _i$)와 style encoder($E ^s _i$)에 이미지 $x_i$를 입력해 content code $c_i$(content feature)와 style code $s_i$(style feature)를 추출합니다. Decode 과정에서 decoder($G$, generator)는 입력으로 content code와 style code를 입력으로 받아 다시 이미지를 만듭니다.
 
-Fig.2 (b)에서 image-to-image 변환 과정에 대해 볼 수 있습니다. image-to-image 변환은 encoder-decoder 페어를 교환해 수행됩니다.  이미지 $x_1 \in \mathcal{X_1}$를 $\mathcal{X_2}$에 해당하도록 변환하기 위해 MUNIT은 우선 이미지의 잠재 content code $c_1 = E^c_1(x_1)$와 무작위로 뽑은 잠재 style code $s_2$를 prior distribution $q(s_2)\sim \mathcal{N}(0, I)$에서 추출합니다. 그 후  $G_2$를 이용해 최종 결과 이미지 $x_{1 \rightarrow 2} = G_2(c_1, s_2)$를 생성합니다.
+Fig.2 (a)에서 auto-encoder를 이용해 $(c_i, s_i) = (E ^c _i(x_i), E ^s _i(x_i)) = E_i(x_i)$를 만드는 과정을 보여주며 Content Encoder로 content code $c_i$와 Style Encoder로 style code $s_i$를 분리한 후 다시 생성 모델인 Decoder($G$)로 이미지 $\hat{x}$를 만드는 과정을 확인할 수 있습니다.
+
+Fig.2 (b)에서 image-to-image 변환 과정에 대해 볼 수 있습니다. image-to-image 변환은 encoder-decoder 페어를 교환해 수행됩니다.  이미지 $x_1 \in \mathcal{X_1}$를 $\mathcal{X_2}$에 해당하도록 변환하기 위해 MUNIT은 우선 이미지의 잠재 content code $c_1$을 content encoder로 추출($E^c_1(x_1)$)하고 잠재 style code $s_2$를 prior distribution $q(s_2)\sim \mathcal{N}(0, I)$에서 무작위로 추출합니다. content code $c_1$과 style code $s_2$를 그 후 decoder인 $G_2$를 이용해 최종 결과 이미지 $x_{1 \rightarrow 2} = G_2(c_1, s_2)$를 생성합니다.
 
 Encoder와 Decoder는 모두 deterministic하지만 MUNIT은 하나의 입력 이미지에서 content code와 style code를 추출해 해당 이미지의 content code와 다른 이미지의 style code들을 decoder인 $G$를 통해 합성하며 다양한 이미지 분포를 만들 수 있기에 multi-modal이 될 수 있습니다.
 
