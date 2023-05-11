@@ -40,3 +40,5 @@ StarGAN(StarGAN: Unified Generative Adversarial Networks for Multi-Domain Image-
 
 MUNIT(Multimodal Unsupervised Image-to-Image Translation)<br>
 [<a href="https://solee328.github.io/gan/2023/04/19/munit_paper.html" target="_blank">paper post</a>]
+[]
+[]
