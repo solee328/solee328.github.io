@@ -74,7 +74,7 @@ dataloader_dog와 dataloader_cat에서 이미지 한 장씩을 확인해보았�
 
 ## 2. 모델
 <div>
-  <img src="/assets/images/posts/munit/paper/fig3.png" width="700" height="250">
+  <img src="/assets/images/posts/munit/code/fig3.png" width="700" height="250">
 </div>
 > **Fig.3** auto-encoder 구조
 
@@ -88,6 +88,7 @@ dataloader_dog와 dataloader_cat에서 이미지 한 장씩을 확인해보았�
 
 표기법이 어디선가 봤다 했더니 <a href="https://solee328.github.io/gan/2023/02/28/cyclegan_code.html#h-22-generator" target="_blank">CycleGAN 코드 구현</a> 글이네요. CycleGAN과 유사한 표기와 convolution을 사용합니다. 추가된 것으로는 Global average pooling을 의미하는 $\mathsf{GAP}$과 fully connected layer를 의미하는 $\mathsf{fck}$가 있으며 Decoder에 사용되는 $\mathsf{uk}$의 경우 CycleGAN과 표기는 같으나 모듈 차이가 존재합니다.
 
+<br>
 MUNIT에서 정의한 모듈 내용은 다음과 같습니다.
 - $\mathsf{c7s1-k}$ : k filter와 1 stride를 가진 7x7 Convolution - InstanceNorm - ReLU
 - $\mathsf{dk}$ : k filter와 2 stride를 가진 4x4 Convolution - InstanceNorm - ReLU
@@ -96,18 +97,83 @@ MUNIT에서 정의한 모듈 내용은 다음과 같습니다.
 - $\mathsf{GAP}$ : Global Average Pooling
 - $\mathsf{fck}$ : k filter를 가진 fully connected layer
 
+<br>
+
+Generator와 Discriminator에서 사용하는 $\mathsf{c7s1-k}$, $\mathsf{dk}$, $\mathsf{uk}$는 `class xk`를 만들어 쉽게 호출할 수 있도록 구현했습니다.
+
+```python
+class xk(nn.Module):
+    def __init__(self, name, in_feature, out_feature, norm_mode='in'):
+        super(xk, self).__init__()
+
+        model = []
+        norm = [nn.InstanceNorm2d(out_feature)]
+        relu = [nn.ReLU()]
+
+        if name == 'c7s1':
+            conv = [nn.Conv2d(in_feature, out_feature, kernel_size=7, stride=1, padding=3, padding_mode='reflect')]
+
+        elif name == 'dk':
+            conv = [nn.Conv2d(in_feature, out_feature, kernel_size=4, stride=2, padding=1, padding_mode='reflect')]
+
+        elif name == 'uk':
+            conv = []
+            conv += [nn.Upsample(scale_factor=2, mode='nearest')]
+            conv += [nn.Conv2d(in_feature, out_feature, kernel_size=5, stride=1, padding=2)]
+
+            norm = [LayerNorm(out_feature)]
+
+        model += conv
+        model += norm
+        model += relu
+
+        self.model = nn.Sequential(*model)
+
+    def forward(self, x):
+        return self.model(x)
+```
+
+<br>
+
+$\mathsf{Rk}$는 이전 논문 구현글에서 사용했던 Residual block 코드에서 norm_mode가 추가되어 어떤 normalization을 사용할 지 인자로 선택할 수 있도록 구현했습니다. in은 Instance Normalization으로 이전과 동일하지만 adain으로 불리는 Adaptive Instace Normalization이 추가되었습니다. Decoder에서만 사용되는 normalization으로 Decoder에서 더 자세하게 설명하겠습니다.
+
+```python
+class Residual(nn.Module):
+    def __init__(self, in_feature, out_feature, norm_mode='in'):
+        super(Residual, self).__init__()
+
+        if norm_mode == 'in':
+            norm = nn.InstanceNorm2d(out_feature)
+        elif norm_mode == 'adain':
+            norm = AdaptiveInstanceNorm2d()
+
+        conv = nn.Conv2d(in_feature, out_feature, kernel_size=3, padding=1, padding_mode='reflect')
+        relu = nn.ReLU()
+
+        model = []
+        for _ in range(2):
+            model += [conv, norm, relu]
+
+        self.model = nn.Sequential(*model)
+
+    def forward(self, x):
+        return x + self.model(x)
+```
+
+생성 모델에 해당하는 Content Encoder, Style Encoder, Decoder와 판별 모델인 Discriminator까지 하나하나 살펴보겠습니다!
 
 
 
+### Content Encoder
+<div>
+  <img src="/assets/images/posts/munit/code/content_encoder.png" width="500" height="280">
+</div>
+> Fig.3에서 표현된 Content Encoder 부분
 
-content encoder에는 IN, decoder에는 AdaIN
-생성 모델에는 ReLU, 판별모델에는 0.2 Leaky ReLU
-판별 모델은 3개의 scale을 가진 multi scale discriminator 사용
+Content Encoder는 이미지를 입력받아 이미지의 내용을 담고 있는 Content code를 만드는 것이 목적입니다. 크게 Down-sampling, Residual Blocks 2단계로 이루어져 있음을 볼 수 있습습니다.
 
+Down-sampling 부분은 $\mathsf{c7s1-64}$, $\mathsf{d128}$, $\mathsf{d256}$으로 위의 `class xk`로 객체를 만들었습니다. Residual Blocks는 $\mathsf{R256}$, $\mathsf{R256}$, $\mathsf{R256}$, $\mathsf{R256}$으로 `class Residual`로 객체를 만들었습니다. Content Encoder에서는 normalization으로 Instance Normalization을 사용하므로 norm_mode 인자 값으로 'in'을 넣어주었습니다.
 
-
-
-#### Content Encoder
 
 ```python
 class ContentEncoder(nn.Module):
@@ -132,18 +198,162 @@ class ContentEncoder(nn.Module):
 ```
 
 
-#### Style Encoder
+### Style Encoder
+
+<div>
+  <img src="/assets/images/posts/munit/code/style_encoder.png" width="500" height="280">
+</div>
+> Fig.3에서 표현된 Style Encoder 부분
+
+Style Encoder는 이미지를 입력으로 받아 이미지의 스타일을 나타내는 Style code를 출력하는 것이 목표입니다. Down-sampling, Global pooling, Fully connected layer 단계로 이루어져 있습니다.
+
 Style Encoder에는 Global Average Pooling가 구조로 포함되어 있습니다.
 JINSOL KIM님의 <a href="https://gaussian37.github.io/dl-concept-global_average_pooling/" target="_blank">Global Average Pooling</a>을 참고했습니다.
 
 스타일 코드의 차원 : 8
 
-#### Decoder
+
+```python
+class StyleEncoder(nn.Module):
+    def __init__(self):
+        super(StyleEncoder, self).__init__()
+
+        self.model = nn.Sequential(
+            # Down-sampling
+            xk('c7s1', 3, 64),
+            xk('dk', 64, 128),
+            xk('dk', 128, 256),
+            xk('dk', 256, 256),
+            xk('dk', 256, 256)
+        )
+
+        # Global average pooling
+        self.gap = nn.AdaptiveAvgPool2d((1, 1))
+
+        # FC
+        self.fc = nn.Linear(256, 8)
+
+    def forward(self, x):
+        x = self.model(x)
+        x = self.gap(x)
+        x = self.fc(x.flatten(start_dim=1))
+
+        return x
+```
+
+### Decoder
+
+<div>
+  <img src="/assets/images/posts/munit/code/decoder.png" width="550" height="350">
+</div>
+
+
 upsampling과 convolution이 번갈아 나옴.
 AdaIN 논문에서도 등장하는 내용으로 checker-board effect를 감소시키기 위해 decoder의 pooling layer를 nearest-up sampling 방식으로 교체함
 cycleGAN에서 convtranspose2d를 사용하던 것과 차이가 남.
 residual block에 MLP로 인해 학습된는 parameter인 AdaIN 사용
 기존 AdaIN은 고정 값이지만 MUNIT에서는 MLP에 의해 생성된다.
+decoder에는 AdaIN
+
+```python
+class Decoder(nn.Module):
+    def __init__(self):
+        super(Decoder, self).__init__()
+
+        self.model = nn.Sequential(
+            # Residual
+            Residual(256, 256, norm_mode='adain'),
+            Residual(256, 256, norm_mode='adain'),
+            Residual(256, 256, norm_mode='adain'),
+            Residual(256, 256, norm_mode='adain'),
+
+            # Upsampling
+            xk('uk', 256, 128),
+            xk('uk', 128, 64),
+
+            # c7s1-3
+            nn.Conv2d(64, 3, kernel_size=7, stride=1, padding=3, padding_mode='reflect'),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+        return self.model(x)
+```
+
+```python
+class AdaptiveInstanceNorm2d(nn.Module):
+    def __init__(self):
+        super(AdaptiveInstanceNorm2d, self).__init__()
+
+        self.eps = 1e-5
+        self.y_mean = None
+        self.y_std = None
+
+    def forward(self, x):
+        assert self.y_mean is not None and self.y_std is not None, "Set AdaIN first"
+
+        n, c, h, w = x.size()
+
+        x_mean = x.view(n, c, -1).mean(dim=2).view(n, c, 1, 1).expand(x.size())
+        x_var = x.view(n, c, -1).var(dim=2) + self.eps
+        x_std = x_var.sqrt().view(n, c, 1, 1).expand(x.size())
+
+        y_mean = self.y_mean.view(n, c, 1, 1).expand(x.size())
+        y_std = self.y_std.view(n, c, 1, 1).expand(x.size())
+
+        norm = y_std * ((x - x_mean) / (x_std + self.eps)) + y_mean
+        return norm
+```
+
+
+```python
+class MLP(nn.Module):
+    def __init__(self):
+        super(MLP, self).__init__()
+
+        self.model = nn.Sequential(
+            nn.Linear(8, 256),
+            nn.ReLU(),
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Linear(256, 2048)
+        )
+
+    def forward(self, x):
+        x = self.model(x)
+        return x
+```
+
+```python
+class LayerNorm(nn.Module):
+    def __init__(self, num_features, eps=1e-5, affine=True):
+        super(LayerNorm, self).__init__()
+        self.num_features = num_features
+        self.affine = affine
+        self.eps = eps
+
+        if self.affine:
+            self.gamma = nn.Parameter(torch.Tensor(num_features).uniform_())
+            self.beta = nn.Parameter(torch.zeros(num_features))
+
+    def forward(self, x):
+        shape = [-1] + [1] * (x.dim() - 1)
+        # print(x.size())
+        if x.size(0) == 1:
+            # These two lines run much faster in pytorch 0.4 than the two lines listed below.
+            mean = x.view(-1).mean().view(*shape)
+            std = x.view(-1).std().view(*shape)
+        else:
+            mean = x.view(x.size(0), -1).mean(1).view(*shape)
+            std = x.view(x.size(0), -1).std(1).view(*shape)
+
+        x = (x - mean) / (std + self.eps)
+
+        if self.affine:
+            shape = [1, -1] + [1] * (x.dim() - 2)
+            x = x * self.gamma.view(*shape) + self.beta.view(*shape)
+        return x
+```
 
 
 ### Discriminator
@@ -201,31 +411,98 @@ class Discriminator(nn.Module):
 이미지 크기는 nn.Avgpool2d로 바꿔주며 위 코드의 경우 256 x 256 크기의 이미지가 forward의 x로 들어오면 $D_1$, $D_2$, $D_3$마다 receptive field 크기는 각각 ~~~~가 됩니다.
 <br><br>
 
+
+### 전체 모델
+
+```python
+class MUNIT(nn.Module):
+    def __init__(self):
+        super(MUNIT, self).__init__()
+
+        self.content_encoder = ContentEncoder()
+        self.style_encoder = StyleEncoder()
+        self.mlp = MLP()
+        self.decoder = Decoder()  # Generator
+        self.discriminator = Discriminator()
+
+        self.gen_params = list(self.content_encoder.parameters()) + list(self.style_encoder.parameters()) + list(self.mlp.parameters()) + list(self.decoder.parameters())
+        self.dis_params = list(self.discriminator.parameters())
+
+    def encode(self, x):
+        content = self.content_encoder(x)
+        style = self.style_encoder(x)
+        return content, style
+
+    def decode(self, content, style):
+        param = self.mlp(style)
+        self.set_adain(param)
+
+        return self.decoder(content)
+
+    def discriminate(self, x):
+        return self.discriminator.forward(x)
+
+    def loss_gan(self, results, target):
+        loss = 0
+
+        for result in results:
+            loss += torch.mean((result - target) ** 2)
+
+        return loss
+
+    def set_adain(self, param):
+        cnt = 0
+        for m in self.decoder.modules():
+            if m.__class__.__name__ == 'AdaptiveInstanceNorm2d':
+                m.y_mean = param[:, cnt*256:(cnt+1)*256]
+                m.y_std = param[:, (cnt+1)*256:(cnt+2)*256]
+                cnt += 2
+```
+
+
 ---
 
 ## 3. Loss
+
+loss 별 lambda 값
 
 ### Adversarial Loss
 LSGAN?
 
 
 ### Bidirectional Reconstruction Loss
+- Image reconstruction
+- Latent reconstruction
 
-#### Image reconstruction
 
-#### Latent reconstruction
+### Generator
 
-### Total?
+
+### Discriminator
+
 
 ---
 
 ## 4. 학습
 
 ### scheduler
+```python
+scheduler_gen = torch.optim.lr_scheduler.StepLR(optimizer_gen, step_size=8, gamma=0.5)
+scheduler_dis = torch.optim.lr_scheduler.StepLR(optimizer_dis, step_size=8, gamma=0.5)
+```
 
 
 ### 학습
 
 ---
 
-### 5. 결과
+## 5. 결과
+
+
+### 결과 1
+
+
+### 결과 2
+
+
+### 결과 3
