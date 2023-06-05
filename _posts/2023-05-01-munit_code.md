@@ -8,7 +8,7 @@ tags: [gan, munit, multimodal, unsupervised, 생성 모델, 논문 구현]
 use_math: true
 ---
 
-저번 글인 <a href="https://solee328.github.io/gan/2023/04/19/munit_paper.html" target="_blank">MUNIT(1) - 논문 리뷰</a>에 이은 MUNIT 코드 구현입니다! 논문의 공식 코드는 <a href="https://github.com/NVlabs/MUNIT" target="_blank">github</a>에서 제공되고 있습니다.
+이전 글인 <a href="https://solee328.github.io/gan/2023/04/19/munit_paper.html" target="_blank">MUNIT(1) - 논문 리뷰</a>에 이은 MUNIT 코드 구현입니다! 논문의 공식 코드는 <a href="https://github.com/NVlabs/MUNIT" target="_blank">github</a>에서 제공되고 있습니다.
 <br><br>
 
 ---
@@ -16,18 +16,15 @@ use_math: true
 ## 1. 데이터셋
 논문에서 사용된 데이터 셋 중에서 Animal Translation dataset을 사용해 동물 간의 변환을 구현하는 것으로 목표를 잡았습니다. 이유는 하나입니다. 귀여우니까요 :see_no_evil: :dog: :cat: :tiger:
 
-하지만 MUNIT의 <a href="https://github.com/NVlabs/MUNIT/issues/22" target="_blank">issue</a>에서 ImageNet 데이터셋의 저작권 때문에 사용한 데이터는 공개되지 않는다고 합니다. 유사한 데이터셋을 찾아보다 <a href="https://github.com/clovaai/stargan-v2/blob/master/README.md#animal-faces-hq-dataset-afhq" target="_blank">Animal-Faces-HQ(AFHQ)</a>를 찾게 되어 AFHQ 데이터셋을 사용했습니다.
+MUNIT에서 Animal Translation에서는 ImageNET의 데이터를 사용했습니다. 하지만 MUNIT의 <a href="https://github.com/NVlabs/MUNIT/issues/22" target="_blank">issue</a>에서 ImageNet 데이터셋의 저작권 때문에 사용한 데이터는 공개되지 않는다는 것을 보게 되었습니다. 사용할 수 있는 다른 유사한 데이터셋을 찾아보다 <a href="https://github.com/clovaai/stargan-v2/blob/master/README.md#animal-faces-hq-dataset-afhq" target="_blank">Animal-Faces-HQ(AFHQ)</a>를 찾게 되어 AFHQ 데이터셋을 사용했습니다. AFHQ 데이터셋을 사용해 강아지와 고양이 두 도메인 변환을 시도해보겠습니다!
 
-### 논문
-UNIT의 <a href="https://github.com/mingyuliutw/UNIT/issues/27" target="_blank">issue</a>에서 데이터 처리 방법을 알 수 있었습니다. VGG를 이용해 Template matching을 통해 개와 고양이 품종의 머리 부분의 이미지를 찾았으며 각 카테고리 별로 이미지는 1000장 ~ 10000장이였다 합니다. 또한 종이 다양하게 섞여있도록 데이터셋을 만들었는데 예시로 고양이 카테고리 안에는 이집트 고양이, 페르시안 고양에, 범무늬 고양이 등 다양한 종을 섞어 사용했다 합니다.
 
 ### AFHQ
-AFHQ는 StarGAN-v2에서 공개한 데이터로 고양이, 강아지, 야생의 동물들 3개의 도메인에 각각 약 5000장의 이미지가 있는 데이터셋입니다. AFHQ-v2도 공개되어 있는데 기존의 nearest neighbor downsampling이 아닌 Lanczos resampling을 이용해 더 좋은 퀄리티의 AFHQ 데이터셋으로 두 데이터셋 모두 쉽게 다운 받을 수 있어 이용하기 용이했습니다.
+AFHQ는 StarGAN-v2에서 공개한 데이터로 'dog', 'cat', 'wild'로 3개의 도메인이 있으며 3개의 도메인에 각각 약 5000장의 이미지가 있는 데이터셋입니다. 'dog'에는 강아지, 'cat'에는 고양이, 'wild'에는 여우, 치타, 호랑이, 사자 등의 동물이 포함되어 있습니다.  AFHQ-v2도 공개되어 있는데 기존의 nearest neighbor downsampling이 아닌 Lanczos resampling을 이용해 더 좋은 퀄리티의 AFHQ 데이터셋으로 두 데이터셋 모두 쉽게 다운 받을 수 있어 이용하기 용이했습니다.
 
-AFHQ 데이터셋을 사용해 강아지와 고양이 두 도메인 변환을 시도해보겠습니다!
 
 ### AFHQ 처리
-AFHQ는 'train', 'val'로 폴더가 나뉘어져 있으며 각각의 폴더 내부에 'dog', 'cat', 'wild' 폴더가 존재합니다.
+AFHQ는 'train', 'val'로 폴더가 나뉘어져 있으며 각각의 폴더 내부에 'dog', 'cat', 'wild' 폴더가 존재합니다. target 인자로 어떤 폴더를 읽어올지 선택할 수 있도록 구현했습니다.
 
 ```python
 class AFHQ(Dataset):
@@ -64,10 +61,12 @@ dataloader_dog = DataLoader(dataset=dataset_dog, batch_size=batch_size, shuffle=
 dataloader_cat = DataLoader(dataset=dataset_cat, batch_size=batch_size, shuffle=True)
 ```
 
+<br>
+
 dataloader_dog와 dataloader_cat에서 이미지 한 장씩을 확인해보았습니다.
-```
-데이터 이미지
-```
+<div>
+  <img src="/assets/images/posts/munit/code/data.png" width="600" height="300">
+</div>
 
 
 ---
@@ -78,6 +77,7 @@ dataloader_dog와 dataloader_cat에서 이미지 한 장씩을 확인해보았�
 </div>
 > **Fig.3** auto-encoder 구조
 
+<br>
 <a href="https://arxiv.org/abs/1804.04732" target="_blank">MUNIT 논문</a>의 Fig.3과 **B. Training Details**에서 간략한 모델 구조를 확인할 수 있습니다.
 
 - Generator architecture
@@ -170,10 +170,12 @@ class Residual(nn.Module):
 </div>
 > Fig.3에서 표현된 Content Encoder 부분
 
+<br>
 Content Encoder는 이미지를 입력받아 이미지의 내용을 담고 있는 Content code를 만드는 것이 목적입니다. 크게 Down-sampling, Residual Blocks 2단계로 이루어져 있음을 볼 수 있습습니다.
 
 Down-sampling 부분은 $\mathsf{c7s1-64}$, $\mathsf{d128}$, $\mathsf{d256}$으로 위의 `class xk`로 객체를 만들었습니다. Residual Blocks는 $\mathsf{R256}$, $\mathsf{R256}$, $\mathsf{R256}$, $\mathsf{R256}$으로 `class Residual`로 객체를 만들었습니다. Content Encoder에서는 normalization으로 Instance Normalization을 사용하므로 norm_mode 인자 값으로 'in'을 넣어주었습니다.
 
+Down-sampling, Residual 과정 이후 추출된 Content Code는 batch_size=1 일 경우 [1, 256, 64, 64]의 크기를 갖습니다.
 
 ```python
 class ContentEncoder(nn.Module):
@@ -205,13 +207,13 @@ class ContentEncoder(nn.Module):
 </div>
 > Fig.3에서 표현된 Style Encoder 부분
 
+<br>
 Style Encoder는 이미지를 입력으로 받아 이미지의 스타일을 나타내는 Style code를 출력하는 것이 목표입니다. Down-sampling, Global pooling, Fully connected layer 단계로 이루어져 있습니다.
 
 Style Encoder에는 Global Average Pooling가 구조로 포함되어 있습니다.
 JINSOL KIM님의 <a href="https://gaussian37.github.io/dl-concept-global_average_pooling/" target="_blank">Global Average Pooling</a>을 참고했습니다.
 
-스타일 코드의 차원 : 8
-
+스타일 코드는 마지막 FC layer를 통해 출력되며 논문에서 스타일 코드의 차원 수는 8로 정했으므로 nn.Linear를 사용해 스타일 코드의 크기를 [1, 8]로 출력해주었습니다.
 
 ```python
 class StyleEncoder(nn.Module):
@@ -246,7 +248,16 @@ class StyleEncoder(nn.Module):
 <div>
   <img src="/assets/images/posts/munit/code/decoder.png" width="550" height="350">
 </div>
+> Fig.3에서 표현된 Decoder 부분
 
+<br>
+Decoder는 Content Encoder, Style Encoder의 결과물인 Content Code와 Style Code를 입력으로 받아 이미지를 생성합니다. Fig.3의 Decoder의 구조에서 Style Code가 MLP를 통과해 AdaIN Parameter를 생성하고 생성된 Parameter가 Residual Blocks에 적용된다 되어 있습니다. Decoder의 핵심인 AdaIN에 대해 짚고 넘어가야 합니다.
+
+AdaIN은
+
+
+[참고]
+- Lifeignite님의 <a href="https://lifeignite.tistory.com/48" target="_blank">AdaIN을 제대로 이해해보자</a>
 
 upsampling과 convolution이 번갈아 나옴.
 AdaIN 논문에서도 등장하는 내용으로 checker-board effect를 감소시키기 위해 decoder의 pooling layer를 nearest-up sampling 방식으로 교체함
