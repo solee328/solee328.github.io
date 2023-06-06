@@ -253,43 +253,24 @@ class StyleEncoder(nn.Module):
 <br>
 Decoder는 Content Encoder, Style Encoder의 결과물인 Content Code와 Style Code를 입력으로 받아 이미지를 생성합니다. Fig.3의 Decoder의 구조에서 Style Code가 MLP를 통과해 AdaIN Parameter를 생성하고 생성된 Parameter가 Residual Blocks에 적용된다 되어 있습니다. Decoder의 핵심인 AdaIN에 대해 짚고 넘어가야 합니다.
 
-AdaIN은
+#### AdaIN (Origin)
+$$
+AdaIN(x, y) = \sigma(y)(\frac{x - \mu(x)}{\sigma(x)}) + \mu(y)
+$$
 
+AdaIN(Adaptive Instance Normalization)은 입력의 평균(mean, $\mu$), 분산(variance, $\sigma$)를 이용해 원하는 style을 feature에 추가할 수 있습니다.
+
+content 이미지와 style 이미지를 VGG Encoder에 입력해 content feature와 style feature를 얻게 됩니다. 이때 content feature가 위 AdaIN 수식의 $x$, style feature가 $y$가 됩니다. 수식에서 $\frac{x - \mu(x)}{\sigma(x)}$는 Standard score 또는 z score normalization이라 불리며 데이터를 정규분포 형태로 바꾸고자 할 때 사용합니다. z score normalization 이후 $\sigma(y)(Z) + \mu(y)$로 style feature에 대해 raw score 데이터로 변환합니다. 수식은 content feature의 statistics(mean, variance)을 제거하고 style feature의 statistics를 추가함을 의미합니다. $\sigma(y)$로 content feature를 scaling하고 $\mu(y)$로 데이터를 shift하는 것으로 style을 표현할 수 있습니다.
+
+Encoder는 pre-trained 모델(VGG-19)이고 AdaIN은 입력받은 feature 간의 statistic를 값을 이용해 $x$를 수정하는 것이 다이기 때문에 learnable parameter가 없다는 것이 특징으로 네트워크에서 학습이 되는 부분은 Decoder만이기 때문에 빠른 학습이 가능합니다.
 
 [참고]
 - Lifeignite님의 <a href="https://lifeignite.tistory.com/48" target="_blank">AdaIN을 제대로 이해해보자</a>
 
-upsampling과 convolution이 번갈아 나옴.
-AdaIN 논문에서도 등장하는 내용으로 checker-board effect를 감소시키기 위해 decoder의 pooling layer를 nearest-up sampling 방식으로 교체함
-cycleGAN에서 convtranspose2d를 사용하던 것과 차이가 남.
-residual block에 MLP로 인해 학습된는 parameter인 AdaIN 사용
-기존 AdaIN은 고정 값이지만 MUNIT에서는 MLP에 의해 생성된다.
-decoder에는 AdaIN
 
-```python
-class Decoder(nn.Module):
-    def __init__(self):
-        super(Decoder, self).__init__()
-
-        self.model = nn.Sequential(
-            # Residual
-            Residual(256, 256, norm_mode='adain'),
-            Residual(256, 256, norm_mode='adain'),
-            Residual(256, 256, norm_mode='adain'),
-            Residual(256, 256, norm_mode='adain'),
-
-            # Upsampling
-            xk('uk', 256, 128),
-            xk('uk', 128, 64),
-
-            # c7s1-3
-            nn.Conv2d(64, 3, kernel_size=7, stride=1, padding=3, padding_mode='reflect'),
-            nn.Tanh()
-        )
-
-    def forward(self, x):
-        return self.model(x)
-```
+#### AdaIN (MUNIT)
+하지만 MUNIT에서는 AdaIN을 조금 다른 방식으로 사용합니다. MLP를 사용해 AdaIN의 parameter를 구하는 방법을 사용하는 것이 차이점입니다.
+우선 AdaIN인 AdaptiveInstanceNorm의 코드를 확인해보겠습니다.
 
 ```python
 class AdaptiveInstanceNorm2d(nn.Module):
@@ -316,6 +297,12 @@ class AdaptiveInstanceNorm2d(nn.Module):
         return norm
 ```
 
+<br>
+$x$를 입력으로 받아 $x$의 mean, std를 style feature에 해당하는 $y$로 바꿔주는 `norm`을 계산해 return합니다. 이때 $y$를 forward에서 입력으로 받아 mean, std를 계산하는 것이 아니라 이미 계산되어 저장된 값을 사용합니다. 이 계산된 값은 어디에서 오나요? 바로 MLP에서 계산되어 옵니다! 기존 AdaIN이 pretrained VGG-19에서 style feature map을 가져와 mean, std를 계산하는 것과는 다르게 MUNIT에서는 Style Encoder로 계산한 Style code를 MLP에 입력으로 넣어 MLP의 결과 값을 style mean, std 값으로 사용합니다. ~~아직도 왜 MLP를 통해서 계산하는지는 이해하지 못했습니다. 굳이...? 왜....?~~
+
+AdaIN은 Decoder의 Residual Blocks에 사용되므로 Residual Block 수만큼의 계산된 $y$의 mean, std 값이 필요하겠죠? Decoder 구조는 $\mathsf{R256, R256, R256, R256, u128, u64, c7s1-3}$ 로 총 4개의 Residual block이 사용됩니다. 하나의 Residual Block에는 256개의 channel을 가지고 있고 하나의 Residual Block에 적용되는 AdaIN은 mean, std 2개의 값이 필요하니 Residual Block 당 512개의 값이 필요합니다. Decoder에 사용되는 Residual block은 4개이므로 총 2048개의 값이 MLP를 통해 계산되어야 합니다.
+
+MLP의 입력은 Style Code로 8차원의 벡터 값을 입력으로 받습니다. nn.Linear를 이용해 sample의 size를 필요한 parameter 개수인 2048로 out_feature 수를 맞춰주어 벡터 사이즈를 늘려주었습니다.
 
 ```python
 class MLP(nn.Module):
@@ -334,6 +321,38 @@ class MLP(nn.Module):
         x = self.model(x)
         return x
 ```
+
+<br>
+MLP를 이용해 계산된 parameter는 decoder를 사용하기 전에 세팅해주어야 합니다. 위의 AdaptiveInstanceNorm2d 코드에서도 forward 함수의 첫 줄은 assert 문으로 만일 parameter(self.y_mean, self.y_std)가 세팅되어 있지 않다면 에러를 출력할 수 있도록 된 것을 보실 수 있습니다.
+
+```python
+def decode(self, content, style):
+    param = self.mlp(style)
+    self.set_adain(param)
+
+    return self.decoder(content)
+
+
+def set_adain(self, param):
+    cnt = 0
+    for m in self.decoder.modules():
+        if m.__class__.__name__ == 'AdaptiveInstanceNorm2d':
+            m.y_mean = param[:, cnt*256:(cnt+1)*256]
+            m.y_std = param[:, (cnt+1)*256:(cnt+2)*256]
+            cnt += 2
+```
+
+
+#### Decoder
+upsampling과 convolution이 번갈아 나옴.
+AdaIN 논문에서도 등장하는 내용으로 checker-board effect를 감소시키기 위해 decoder의 pooling layer를 nearest-up sampling 방식으로 교체함
+cycleGAN에서 convtranspose2d를 사용하던 것과 차이가 남.
+residual block에 MLP로 인해 학습된는 parameter인 AdaIN 사용
+기존 AdaIN은 고정 값이지만 MUNIT에서는 MLP에 의해 생성된다.
+decoder에는 AdaIN
+
+instance norm은 global feature의 mean, variance를 삭제하기 때문에 style information을 제대로 표현하지 못하므로 LayerNorm을 사용
+<a href="https://github.com/NVlabs/MUNIT/issues/10" target="_blank">issue</a>
 
 ```python
 class LayerNorm(nn.Module):
@@ -366,6 +385,31 @@ class LayerNorm(nn.Module):
         return x
 ```
 
+
+```python
+class Decoder(nn.Module):
+    def __init__(self):
+        super(Decoder, self).__init__()
+
+        self.model = nn.Sequential(
+            # Residual
+            Residual(256, 256, norm_mode='adain'),
+            Residual(256, 256, norm_mode='adain'),
+            Residual(256, 256, norm_mode='adain'),
+            Residual(256, 256, norm_mode='adain'),
+
+            # Upsampling
+            xk('uk', 256, 128),
+            xk('uk', 128, 64),
+
+            # c7s1-3
+            nn.Conv2d(64, 3, kernel_size=7, stride=1, padding=3, padding_mode='reflect'),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+        return self.model(x)
+```
 
 ### Discriminator
 Discriminator는 Pix2PixHD의 Multi-scale discriminator를 사용합니다. 고해상도의 이미지를 처리하기 위해 더 깊은 네트워크 또는 더 큰 convolution kernel을 사용해하나 두 가지 방법 모두 네트워크 용량을 증가시키고 잠재적으로 overfitting을 유발할 수 있으며 더 큰 메모리 공간을 필요로 한다는 단점을 언급하며 Pix2PixHD에서는 이 문제를 해결하기 위해 multi-scale discriminator를 제안합니다.
