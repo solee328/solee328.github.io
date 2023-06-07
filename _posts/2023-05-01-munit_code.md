@@ -67,7 +67,9 @@ dataloader_dog와 dataloader_cat에서 이미지 한 장씩을 확인해보았�
 <div>
   <img src="/assets/images/posts/munit/code/data.png" width="600" height="300">
 </div>
+> 귀엽다!
 
+<br><br>
 
 ---
 
@@ -323,7 +325,7 @@ class MLP(nn.Module):
 ```
 
 <br>
-MLP를 이용해 계산된 parameter는 decoder를 사용하기 전에 세팅해주어야 합니다. 위의 AdaptiveInstanceNorm2d 코드에서도 forward 함수의 첫 줄은 assert 문으로 만일 parameter(self.y_mean, self.y_std)가 세팅되어 있지 않다면 에러를 출력할 수 있도록 된 것을 보실 수 있습니다.
+MLP를 이용해 계산된 parameter는 decoder를 사용하기 전에 세팅해주어야 합니다. 위의 AdaptiveInstanceNorm2d 코드에서도 forward 함수의 첫 줄은 assert 문으로 만일 parameter(self.y_mean, self.y_std)가 세팅되어 있지 않다면 에러를 출력할 수 있도록 된 것을 보실 수 있습니다. 세팅은 `set_adain` 함수를 사용합니다. `decode` 함수에서 mlp에서 계산한 parameter를 받아와 `set_adain` 함수에 넘깁니다. `set_adain` 함수에서는 모델의 모든 모듈을 확인하며 AdaptiveInstanceNorm2d 모듈을 발견하면 해당 모듈의 y_mean, y_std에 param을 세팅합니다.
 
 ```python
 def decode(self, content, style):
@@ -344,15 +346,74 @@ def set_adain(self, param):
 
 
 #### Decoder
-upsampling과 convolution이 번갈아 나옴.
-AdaIN 논문에서도 등장하는 내용으로 checker-board effect를 감소시키기 위해 decoder의 pooling layer를 nearest-up sampling 방식으로 교체함
-cycleGAN에서 convtranspose2d를 사용하던 것과 차이가 남.
-residual block에 MLP로 인해 학습된는 parameter인 AdaIN 사용
-기존 AdaIN은 고정 값이지만 MUNIT에서는 MLP에 의해 생성된다.
-decoder에는 AdaIN
+Decoder의 구조는 $\mathsf{R256, R256, R256, R256, u128, u64, c7s1-3}$로 `Residual`, `xk` 클래스를 사용해 아래와 같이 구현했습니다.
 
-instance norm은 global feature의 mean, variance를 삭제하기 때문에 style information을 제대로 표현하지 못하므로 LayerNorm을 사용
-<a href="https://github.com/NVlabs/MUNIT/issues/10" target="_blank">issue</a>
+```python
+class Decoder(nn.Module):
+    def __init__(self):
+        super(Decoder, self).__init__()
+
+        self.model = nn.Sequential(
+            # Residual
+            Residual(256, 256, norm_mode='adain'),
+            Residual(256, 256, norm_mode='adain'),
+            Residual(256, 256, norm_mode='adain'),
+            Residual(256, 256, norm_mode='adain'),
+
+            # Upsampling
+            xk('uk', 256, 128),
+            xk('uk', 128, 64),
+
+            # c7s1-3
+            nn.Conv2d(64, 3, kernel_size=7, stride=1, padding=3, padding_mode='reflect'),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+        return self.model(x)
+```
+
+
+Decoder의 Residual은 instance normalization이 아닌 Adaptive Instance Normalization을 사용하므로 norm_mode='adain'으로 지정해 Residual 객체를 생성했습니다. uk는 up-sampling 과정으로 이미지 크기를 키우고 채널 수를 줄여 최종적으로 이미지를 생성하는 역할을 합니다.
+
+```python
+class xk(nn.Module):
+    def __init__(self, name, in_feature, out_feature, norm_mode='in'):
+        super(xk, self).__init__()
+
+        model = []
+        norm = [nn.InstanceNorm2d(out_feature)]
+        relu = [nn.ReLU()]
+
+        if name == 'c7s1':
+            conv = [nn.Conv2d(in_feature, out_feature, kernel_size=7, stride=1, padding=3, padding_mode='reflect')]
+
+        elif name == 'dk':
+            conv = [nn.Conv2d(in_feature, out_feature, kernel_size=4, stride=2, padding=1, padding_mode='reflect')]
+
+        elif name == 'uk':
+            conv = []
+            conv += [nn.Upsample(scale_factor=2, mode='nearest')]
+            conv += [nn.Conv2d(in_feature, out_feature, kernel_size=5, stride=1, padding=2)]
+
+            norm = [LayerNorm(out_feature)]
+
+        model += conv
+        model += norm
+        model += relu
+
+        self.model = nn.Sequential(*model)
+
+    def forward(self, x):
+        return self.model(x)
+```
+
+`xk` 클래스의 'uk'부분에서는 nn.Upsampling과 nn.Conv2d가 번갈아 나오는 것을 볼 수 있습니다. 이는 Checker-board artifact를 감소시키기 위위한 방법으로 CycleGAN에서 ConvTranspose2d를 사용했던 것처럼 ConvTranspose2d를 사용하지 않고 pooling layer를 nearest-up sampling 방식으로 교체한 것입니다. ConvTranspose2d는 feature map 별 kernel이 overlap 되는 횟수 차이가 발생해 artifact가 생길 수 있으니 upsampling을 사용해 이를 예방하는 것입니다.
+
+[참고]
+- <a href="https://distill.pub/2016/deconv-checkerboard/" target="_blank">Deconvolution and Checkerboard Artifacts</a>
+
+uk의 normalization은 instance normalization이 아닌 layer normlization을 사용합니다. instance norm은 global feature의 mean, variance를 삭제하기 때문에 style information을 제대로 표현하지 못하므로 LayerNorm을 사용한다는 것을 MUNIT의 <a href="https://github.com/NVlabs/MUNIT/issues/10" target="_blank">issue</a>에서 발견해 LayerNorm을 공식 코드에서 가져왔습니다.
 
 ```python
 class LayerNorm(nn.Module):
@@ -386,30 +447,6 @@ class LayerNorm(nn.Module):
 ```
 
 
-```python
-class Decoder(nn.Module):
-    def __init__(self):
-        super(Decoder, self).__init__()
-
-        self.model = nn.Sequential(
-            # Residual
-            Residual(256, 256, norm_mode='adain'),
-            Residual(256, 256, norm_mode='adain'),
-            Residual(256, 256, norm_mode='adain'),
-            Residual(256, 256, norm_mode='adain'),
-
-            # Upsampling
-            xk('uk', 256, 128),
-            xk('uk', 128, 64),
-
-            # c7s1-3
-            nn.Conv2d(64, 3, kernel_size=7, stride=1, padding=3, padding_mode='reflect'),
-            nn.Tanh()
-        )
-
-    def forward(self, x):
-        return self.model(x)
-```
 
 ### Discriminator
 Discriminator는 Pix2PixHD의 Multi-scale discriminator를 사용합니다. 고해상도의 이미지를 처리하기 위해 더 깊은 네트워크 또는 더 큰 convolution kernel을 사용해하나 두 가지 방법 모두 네트워크 용량을 증가시키고 잠재적으로 overfitting을 유발할 수 있으며 더 큰 메모리 공간을 필요로 한다는 단점을 언급하며 Pix2PixHD에서는 이 문제를 해결하기 위해 multi-scale discriminator를 제안합니다.
@@ -513,7 +550,7 @@ class MUNIT(nn.Module):
                 m.y_std = param[:, (cnt+1)*256:(cnt+2)*256]
                 cnt += 2
 ```
-
+<br><br>
 
 ---
 
@@ -522,18 +559,79 @@ class MUNIT(nn.Module):
 loss 별 lambda 값
 
 ### Adversarial Loss
-LSGAN?
+Adversarial loss로는 <a href="https://solee328.github.io/gan/2023/02/28/cyclegan_code.html#h-33-gan-loss" target="_blank">CycleGAN 코드 구현글</a>에서도 소개했었던 <a href="https://arxiv.org/abs/1611.04076" target="_blank">LSGAN</a>의 목적함수를 사용합니다.
+
+$$
+\min _D V _{LSGAN}(D) = \frac{1}{2} \mathbb{E} _{x \sim p _{data}(x)}[(D(x) - b) ^2] + \frac{1}{2} \mathbb{E} _{z \sim p _{z}(z)}[(D(G(z)) - a) ^2]
+$$
+
+$$
+\min _G V _{LSGAN}(G) = \frac{1}{2} \mathbb{E} _{z \sim p _{z}(z)}[(D(G(z)) - c) ^2]
+$$
+
+
+CycleGAN에서는 `nn.MSELoss()`를 사용해 구현했었고 이번에는 코드를 짜보았습니다.
+
+```python
+def loss_gan(self, results, target):
+    loss = 0
+
+    for result in results:
+        loss += torch.mean((result - target) ** 2)
+
+    return loss
+```
+
+target 값으로 0 또는 1의 값이 들어오게 되며 results로는 Discriminator의 결과값이 들어오게 됩니다. 두 값의 차이를 제곱한 값을 loss로 사용하는 것은 일치하나 for 문이 추가되어 있는 걸 볼 수 있습니다. Discriminator가 이전의 논문들과는 다르게 Multi-scale로 판별 결과가 3개($D_1$, $D_2$, $D_3$)이기 때문에 for 문을 통해 판별 모델 결과 별 loss를 구하고 더해주었습니다.
+
 
 
 ### Bidirectional Reconstruction Loss
-- Image reconstruction
-- Latent reconstruction
+Bidirectional Reconstruction Loss는 Image reconstruction과 Latent reconstruction으로 나뉩니다.
+- Image reconstruction : image $\rightarrow$ latent $\rightarrow$ image
+- Latent reconstruction : latent $\rightarrow$ image $\rightarrow$ latent
+
+두 loss 모두
+
+```python
+loss_l1 = torch.nn.L1Loss()
+
+image_dog = next(iter(dataloader_dog)).cuda()
+image_cat = next(iter(dataloader_cat)).cuda()
+
+style_rand_dog = torch.autograd.Variable(torch.randn((1, 8)).cuda())
+style_rand_cat = torch.autograd.Variable(torch.randn((1, 8)).cuda())
+
+# encode
+content_dog, style_dog = munit_dog.encode(image_dog)
+content_cat, style_cat = munit_cat.encode(image_cat)
+
+# decode(differ domain)
+recon_dog = munit_dog.decode(content_cat, style_rand_dog)
+recon_cat = munit_cat.decode(content_dog, style_rand_cat)
+
+# encode(latent reconstruction)
+content_hat_cat, style_hat_rand_dog = munit_dog.encode(recon_dog)
+content_hat_dog, style_hat_rand_cat = munit_cat.encode(recon_cat)
+
+recon_latent_c_dog = loss_l1(content_hat_dog, content_dog)
+recon_latent_c_cat = loss_l1(content_hat_cat, content_cat)
+recon_latent_s_dog = loss_l1(style_hat_rand_dog, style_rand_dog)
+recon_latent_s_cat = loss_l1(style_hat_rand_cat, style_rand_cat)
+```
 
 
 ### Generator
 
+```python
+```
+
 
 ### Discriminator
+
+
+```python
+```
 
 
 ### 추가
@@ -545,13 +643,146 @@ LSGAN?
 ## 4. 학습
 
 ### scheduler
+논문에서는 100,000 iteration 마다 lr 값이 절반으로 줄어든다 되어 있습니다. AFHQ 데이터셋이 한 epoch 당 약 5,000장 정도이기에 50,000 정도마다 절반씩 줄어드는 것으로 step_size=10, gamma=0.5로 설정한 `lr_scheduler.StepLR()`을 사용했습니다.
+
 ```python
-scheduler_gen = torch.optim.lr_scheduler.StepLR(optimizer_gen, step_size=8, gamma=0.5)
-scheduler_dis = torch.optim.lr_scheduler.StepLR(optimizer_dis, step_size=8, gamma=0.5)
+# 결과 부분에서 수정됩니다
+scheduler_gen = torch.optim.lr_scheduler.StepLR(optimizer_gen, step_size=10, gamma=0.5)
+scheduler_dis = torch.optim.lr_scheduler.StepLR(optimizer_dis, step_size=10, gamma=0.5)
 ```
 
 
 ### 학습
+학습 부분에 대한 전체 코드입니다.
+```python
+for epoch in range(n_epoch):
+    time_start = datetime.now()
+    munit_dog.train()
+    munit_cat.train()
+
+    for i in tqdm(range(len(dataloader_dog))):
+        image_dog = next(iter(dataloader_dog)).cuda()
+        image_cat = next(iter(dataloader_cat)).cuda()
+
+        '''
+        Generator
+        '''
+        optimizer_gen.zero_grad()
+
+        style_rand_dog = torch.autograd.Variable(torch.randn((1, 8)).cuda())
+        style_rand_cat = torch.autograd.Variable(torch.randn((1, 8)).cuda())
+
+
+        # encode
+        content_dog, style_dog = munit_dog.encode(image_dog)
+        content_cat, style_cat = munit_cat.encode(image_cat)
+
+        # decode(origin domain)
+        hat_dog = munit_dog.decode(content_dog, style_dog)
+        hat_cat = munit_cat.decode(content_cat, style_cat)
+
+        # decode(differ domain)
+        recon_dog = munit_dog.decode(content_cat, style_rand_dog)
+        recon_cat = munit_cat.decode(content_dog, style_rand_cat)
+
+        # encode(latent reconstruction)
+        content_hat_cat, style_hat_rand_dog = munit_dog.encode(recon_dog)
+        content_hat_dog, style_hat_rand_cat = munit_cat.encode(recon_cat)
+
+        # decode(cycle consistency)
+        recon_cyc_dog = munit_dog.decode(content_hat_dog, style_dog)
+        recon_cyc_cat = munit_cat.decode(content_hat_cat, style_cat)
+
+        # loss_adversarial
+        loss_gan = munit_dog.loss_gan(munit_dog.discriminate(recon_dog), 1) + \
+                   munit_cat.loss_gan(munit_cat.discriminate(recon_cat), 1)
+
+        # loss_reconstruction
+        recon_img_dog = loss_l1(hat_dog, image_dog)
+        recon_img_cat = loss_l1(hat_cat, image_cat)
+        recon_latent_c_dog = loss_l1(content_hat_dog, content_dog)
+        recon_latent_c_cat = loss_l1(content_hat_cat, content_cat)
+        recon_latent_s_dog = loss_l1(style_hat_rand_dog, style_rand_dog)
+        recon_latent_s_cat = loss_l1(style_hat_rand_cat, style_rand_cat)
+        recon_cyc_dog = loss_l1(recon_cyc_dog, image_dog)
+        recon_cyc_cat = loss_l1(recon_cyc_cat, image_cat)
+
+        # total loss
+        loss_G = loss_gan + lambda_x * (recon_img_dog + recon_img_cat) + \
+                 lambda_c * (recon_latent_c_dog + recon_latent_c_cat) + \
+                 lambda_s * (recon_latent_s_dog + recon_latent_s_cat) + \
+                 lambda_cyc * (recon_cyc_dog + recon_cyc_cat)
+        history['G'][epoch] += loss_G.item()
+
+        loss_G.backward()
+        optimizer_gen.step()
+
+        '''
+        Discriminator
+        '''
+        optimizer_dis.zero_grad()
+
+        # encode
+        content_dog, _ = munit_dog.encode(image_dog)
+        content_cat, _ = munit_cat.encode(image_cat)
+
+        # decode(differ domain)
+        recon_dog = munit_dog.decode(content_cat, style_rand_dog)
+        recon_cat = munit_cat.decode(content_dog, style_rand_cat)
+
+        # loss_adversarial(real image)
+        loss_gan_real = munit_dog.loss_gan(munit_dog.discriminate(image_dog), 1) + \
+                        munit_cat.loss_gan(munit_cat.discriminate(image_cat), 1)
+
+        # loss_adversarial(fake image)
+        loss_gan_fake = munit_dog.loss_gan(munit_dog.discriminate(recon_dog), 0) + \
+                        munit_cat.loss_gan(munit_cat.discriminate(recon_cat), 0)
+
+        # total loss
+        loss_D = loss_gan_real + loss_gan_fake
+        history['D'][epoch] += loss_D.item()
+
+        loss_D.backward()
+        optimizer_dis.step()
+
+    '''
+    scheduler
+    '''
+    scheduler_gen.step()
+    scheduler_dis.step()
+
+    '''
+    history
+    '''
+    history['lr'].append(optimizer_gen.param_groups[0]['lr'])
+    history['G'][epoch] /= len(dataloader_dog)
+    history['D'][epoch] /= len(dataloader_dog)
+
+    munit_dog.eval()
+    munit_cat.eval()
+    with torch.no_grad():
+        # encode
+        content_dog, style_dog = munit_dog.encode(data_dog)
+        content_cat, style_cat = munit_cat.encode(data_cat)
+
+        # decode(differ domain)
+        recon_dog = munit_dog.decode(content_cat, style_fix_dog)
+        recon_cat = munit_cat.decode(content_dog, style_fix_cat)
+
+        test_dog = get_plt_image(recon_dog[0])
+        test_cat = get_plt_image(recon_cat[0])
+
+        test_dog.save('./history/test/dog_' + str(epoch).zfill(3) + '.png')
+        test_cat.save('./history/test/cat_' + str(epoch).zfill(3) + '.png')
+
+    '''
+    print
+    '''
+    time_end = datetime.now() - time_start
+    print('%2dM %2dS / Epoch %2d' % (*divmod(time_end.seconds, 60), epoch + 1))
+    print('loss_G: %.5f, loss_D: %.5f \n' % (history['G'][epoch], history['D'][epoch]))
+```
+<br><br>
 
 ---
 
@@ -559,9 +790,11 @@ scheduler_dis = torch.optim.lr_scheduler.StepLR(optimizer_dis, step_size=8, gamm
 
 
 ### 결과 1
+10, 1, 1 -> 230515 test
 
 
 ### 결과 2
-
+7, 3, 3, cyc, step_size=10 -> 230519
 
 ### 결과 3
+7, 3, 3, cyc 10, step_size=3 -> 230521
