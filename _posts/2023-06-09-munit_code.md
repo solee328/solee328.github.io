@@ -615,7 +615,7 @@ class MUNIT(nn.Module):
 ## 3. Loss
 Loss는 크게 Adversarial loss, Bidirectional Reconstruction Loss 2가지 종류로 나뉘어집니다. 그리고 Reconstruction Loss는 image reconstruction, style reconstruction, content reconstruction 3가지로 나뉘어집니다.
 
-adversarial, image recon, style recon, content recon 
+Reconstruction은 image recon, style recon, content recon으로 나뉘니 각각 loss로 계산될 때 비율을 정해야 하는데 논문에서는 image recon($\lambda x$) : style recon($\lambda_s$) : content recon($\lambda_c$) = 10 : 1 : 1로 계산합니다.
 
 ### Adversarial Loss
 Adversarial loss로는 <a href="https://solee328.github.io/gan/2023/02/28/cyclegan_code.html#h-33-gan-loss" target="_blank">CycleGAN 코드 구현글</a>에서도 소개했었던 <a href="https://arxiv.org/abs/1611.04076" target="_blank">LSGAN</a>의 목적함수를 사용합니다.
@@ -650,7 +650,11 @@ Bidirectional Reconstruction Loss는 Image reconstruction과 Latent reconstructi
 - Image reconstruction : image $\rightarrow$ latent $\rightarrow$ image
 - Latent reconstruction : latent $\rightarrow$ image $\rightarrow$ latent
 
-두 loss 모두
+Image reconstruction은 이미지 $x_1$를 encode해 style, content code를 만든 후 두 code를 다시 decode했을 때 결과 이미지 $G_1(E_1(x_1))$와 원본 이미지 $x$ 간의 차이($\|G_1(E_1(x_1)) - x_1\|_1$)를 계산합니다.
+
+Latent reconstruction은 style reconstruction, content reconstruction으로 latent code($c_1$, $s_2$)를 이용해 decode해 생성한 이미지($G_2(c_1, s_2)$)를 만든 후 해당 이미지를 encode한 결과인 latent code($E_2(G_2(c_1, s_2))$)를 이미지를 만들 때 사용한 latent code와의 차이를 계산합니다. content reconstruction은 $\| E ^c _2(G_2(c_1, s_2)) - c_1\|_1$, style reconstruction은 $\| E ^s _2(G_2(c_1, s_2)) - s_2 \|_1$를 계산합니다.
+
+Reconstruction loss는 모두 L1 distance를 계산하기 때문에 pytorch에서 제공하는 `nn.L1Loss`를 사용해 계산했으며 아래의 코드는 Generator 학습시 사용되는 Reconstruction 계산을 구현한 부분입니다.
 
 ```python
 loss_l1 = torch.nn.L1Loss()
@@ -680,22 +684,54 @@ recon_latent_s_cat = loss_l1(style_hat_rand_cat, style_rand_cat)
 ```
 <br><br>
 
-### Generator
+### Option
+추가로 옵션으로 사용할 수 있는 Loss가 2개 더 있습니다. Domain-inavariant perceptual loss와 Style-augmented cycle consistency loss입니다.
+
+#### Perceptual loss
+perceptual loss는 이전 <a href="https://solee328.github.io/gan/2023/04/19/munit_paper.html#h-domain-invariant-perceptual-loss" target="_blank">Munit(1)</a>에서 소개되었었는데, VGG net을 이용해 feature map 간의 거리를 계산한 loss 였습니다. perceptual loss는 고해상도(> 512x512) 이미지 데이터에 효과를 보기 때문에 고해상도 데이터에 적용한다 언급됩니다. 공식 github 코드의 config를 통해 loss의 사용 여부와 loss 간 비율을 알 수 있는데 <a href="https://github.com/NVlabs/MUNIT/blob/master/configs/synthia2cityscape_folder.yaml" target="_blank">synthia2cityscape config</a>에서 `vgg_w` 값이 1로 domain-invariant perceptual loss를 사용하며 이미지 크기가 512x512인 것을 확인할 수 있습니다. 다른 config에서는 사용하지 않음을 확인했습니다. 저 또한 이미지 크기가 256x256으로 perceptual loss는 사용하지 않았습니다.
+
+#### Style cyc loss
+Style-augmented cycle consistency loss는 논문에서도 Bidirectional Reconstruction loss와 유사하며 Bidirectional Reconstruction loss에서도 암시되는 내용이라 언급됩니다. 이미 암시되기 때문에 필수로 사용해야 하는 것이 아니고 일부 데이터 셋에서만 명시적으로 사용하는 것이 도움이 될 수 있다고 합니다.
+
+$$
+\lambda ^{x_1} _{cc} = \mathbb{E} _{x_1 \sim p(x_1), s_2 \sim q(s_2)} [\| G_1(E ^c _2(G_2(E ^c _1(x_1), s_2)), E ^s _1(x_1)) - x_1 \|_1]
+$$
+
+Style-augmented cycle consistency loss는 Latent Reconstruction에서 계산했던 $E ^c _2(G_2(c_1, s_2))$를 사용하기 때문에 코드가 추가되는 부분이 짧습니다. 계산한 $E ^c _2(G_2(c_1, s_2))$와 $s_1$을 decode해 만든 이미지($G_1(E ^c _2(G_2(c_1, s_2)), s_1)$)와 원본 이미지 $x_1$과의 차이를 계산합니다. 추가되는 부분은 아래 코드의 recon_cyc_dog, recon_cyc_cat으로 위 부분의 코드는 latent recon의 코드와 동일합니다.
 
 ```python
+loss_l1 = torch.nn.L1Loss()
+
+image_dog = next(iter(dataloader_dog)).cuda()
+image_cat = next(iter(dataloader_cat)).cuda()
+
+style_rand_dog = torch.autograd.Variable(torch.randn((1, 8)).cuda())
+style_rand_cat = torch.autograd.Variable(torch.randn((1, 8)).cuda())
+
+# encode
+content_dog, style_dog = munit_dog.encode(image_dog)
+content_cat, style_cat = munit_cat.encode(image_cat)
+
+# decode(differ domain)
+recon_dog = munit_dog.decode(content_cat, style_rand_dog)
+recon_cat = munit_cat.decode(content_dog, style_rand_cat)
+
+# encode(latent reconstruction)
+content_hat_cat, style_hat_rand_dog = munit_dog.encode(recon_dog)
+content_hat_dog, style_hat_rand_cat = munit_cat.encode(recon_cat)
+
+# decode(cycle consistency)
+recon_cyc_dog = munit_dog.decode(content_hat_dog, style_dog)
+recon_cyc_cat = munit_cat.decode(content_hat_cat, style_cat)
+
+recon_cyc_dog = loss_l1(recon_cyc_dog, image_dog)
+recon_cyc_cat = loss_l1(recon_cyc_cat, image_cat)
 ```
+
+<br>
+모든 데이터셋에 적용한다고 도움이 되는 loss가 아니여서 처음에는 적용하지 않았지만 결과가 좋지 않아 적용을 시도한 결과를 보니 적용한 것이 더 좋은 결과를 볼 수 있었습니다. MUNIT 공식 코드에서 사용한 데이터라면 <a href="https://github.com/NVlabs/MUNIT/tree/master/configs" target="_blank">config</a>를 확인해 적용 여부를 보실 수 있습니다. MUNIT에서 사용하지 않은 데이터셋을 사용하신다면 적용을 하는 것과 하지 않은 것 둘 다 테스트 해보시는 것을 추천드립니다.
 <br><br>
 
-### Discriminator
-
-
-```python
-```
-<br><br>
-
-### 추가
-512 x 512 이상의 이미지에서 효과가 있다고 합니다. config를 통해 데이터셋마다 적용 여부를 확인할 수 있었는데 cityscape 데이터셋에만 적용했음을 확인할 수 있었습니다.
-<br><br>
 
 ---
 
@@ -712,7 +748,8 @@ scheduler_dis = torch.optim.lr_scheduler.StepLR(optimizer_dis, step_size=10, gam
 
 
 ### 학습
-학습 부분에 대한 전체 코드입니다.
+Geneator, Discriminator 학습에 대한 전체 코드입니다.
+
 ```python
 for epoch in range(n_epoch):
     time_start = datetime.now()
@@ -846,7 +883,7 @@ for epoch in range(n_epoch):
 ---
 
 ## 5. 결과
-공식 코드의 config를 확인하면 max_iter: 1,000,000로 제가 사용한 데이터셋으로는 약 200 epoch 정도를 학습해야 합니다. 하지만 사용하는 GPU에서 학습시간이 1 epoch에 1시간 이상으로 학습에 시간이 오래 걸려서 30 epoch만 학습한 결과입니다. 당연히 논문의 결과보다는 좋지 못하지만 30 epoch만으로도 어느 정도 결과 이미지를 확인할 수 있다 정도만으로 봐주시면 좋을 것 같습니다ㅎㅎ
+공식 코드의 config를 확인하면 max_iter: 1,000,000로 제가 사용한 데이터셋으로는 약 200 epoch 정도를 학습해야 합니다. 하지만 사용하는 GPU에서 학습시간이 1 epoch에 1시간 이상으로 학습에 시간이 오래 걸려서 30 epoch만 학습한 결과입니다. 당연히 논문의 결과보다는 좋지 못하지만 30 epoch만으로도 어느 정도 결과 이미지를 확인할 수 있다 정도만으로 봐주시면 좋을 것 같습니다 :eyes: :eyes:
 
 모든 결과 이미지는 학습에서 사용했던 fixed random vector(style code)를 사용해 변환했습니다.
 ```python
@@ -855,39 +892,71 @@ style_fix_dog = torch.autograd.Variable(torch.randn((1, 8)).cuda())
 style_fix_cat = torch.autograd.Variable(torch.randn((1, 8)).cuda())
 ```
 
-### 결과 1
-10, 1, 1 -> 230515 test
+### 시도_1
+lambda_x = 10, lambda_s = 1, lambda_c = 1로 설정해 30 epoch을 학습한 결과입니다.
+
 <div>
   <img src="/assets/images/posts/munit/code/result1.png" width="600" height="400">
 </div>
+
+<br>
+뭔가 열심히 변형하려고 한 흔적은 있지만 이미지의 질감이 blur하게 변하고 눈을 없애버리는 것 말고는 개와 고양이 간의 변환을 느낄 수는 없는 결과가 나왔습니다 :confused:
+
+이미지를 encode한 결과인 style code와 content code로 다시 이미지를 decode한 image reconstruction은 기존 이미지보다 blur하지만 잘 작동됨에 비해 style 변환은 되지 않는다고 느껴 labmda 비율을 조절해 다시 학습을 하는 것으로 결정했습니다.
 <br><br>
 
-### 결과 2
-7, 3, 3, cyc, step_size=10 -> 230519
+### 시도_2
+image recon의 비율을 줄이고 style, content recon의 비율을 높여 lambda_x = 7, lambda_s = 3, lambda_c = 3 설정 값을 사용하고 Style-augmented cycle consistency loss를 추가로 사용해 lambda_cyc = 3으로 설정해 30 epoch을 학습한 결과입니다.
+
 <div>
   <img src="/assets/images/posts/munit/code/result2.png" width="600" height="400">
 </div>
+
+<br>
+오...? 시도_1에 비하면 훨씬 결과가 나아진 것 같습니다. 일단 눈이 확인 가능하네요 :speak_no_evil:
+
+개 $\rightarrow$ 고양이의 결과 이미지는 꽤 그럴싸하다고 생각했습니다. 코와 입의 모양이 고양이처럼 변했으며 모양이 뚜렷하지는 않지만 눈 또한 고양이 눈으로 변한 것, 그리고 고양이 특유의 긴 흰 수염이 생성됨을 볼 수 있습니다.
+
+하지만 고양이 $\rightarrow$ 개의 결과 이미지는 굳이 따지자면 고양이라 보여집니다. 고양이의 귀가 흐릿해져있으며 눈은 이도저도 아닌 모습이 보여집니다. 하지만 고양이의 흰 수염은 사라지고 코의 보양이 개처럼 변한 것을 볼 수 있었습니다. 개와 고양이를 코와, 턱, 입과 같은 하관으로 구별하나? 라는 생각이 든 결과였습니다. 고양이 $\rightarrow$ 개의 결과를 개선하고자 한번 더 시도를 해보았습니다.
 <br><br>
 
-### 결과 3
-7, 3, 3, cyc 10, step_size=3 -> 230521
+### 시도_3
+lambda_cyc를 추가해 효과를 보았으니 이번에는 lambda_cyc 값을 키워 lambda_cyc = 10으로 설정했습니다. lambda_x, lambda_s, lambda_c의 값은 시도_2와 마찬가지로 각각 7, 3, 3입니다. 또한 scheduler의 step_size를 변경했습니다.
+
+논문은 100,000의 step_size를 가지니 저의 데이터셋의 epoch으로는 약 20 epoch이였고 그 절반 값인 10 epoch을 step_size로 설정해놓았었습니다. 학습 epoch 수가 30 epoch으로 작다보니 step_size도 작아져야겠다 판단해 step_size = 3으로 변경해 다시 시도해보았습니다.
+
 <div>
   <img src="/assets/images/posts/munit/code/result3.png" width="600" height="400">
 </div>
+
+<br>
+오묘...하지만 시도_2보다 고양이 $\rightarrow$ 개 의 결과가 자연스러워졌습니다!
+
+개 $\rightarrow$ 고양이는 시도_2와 큰 차이를 느끼지는 못했습니다. 눈이 고양이 눈으로, 코와 입이 고양이 코와 입으로 그리고 고양이 특유의 흰 수염이 생김을 볼 수 있습니다.
+
+고양이 $\rightarrow$ 개의 결과는 시도_2보다 더 좋은 결과를 보여주고 있다 생각했습니다. 시도_2는 귀 부분이 흐릿하게 변하며 윤곽이 변했지만 시도_3은 윤곽이 변하지 않았고 눈, 코, 입 부분을 집중적으로 바꾸려 시도한다 느껴졌습니다. 눈의 동공 부분이 조금 더 크고 또렸해졌으로 코와 입 부분이 고양이의 핑크색이 아닌 개의 검은색으로 변한 것을 볼 수 있습니다. 고양이의 혀가 나와있는 이미지라 그런가 혀까지 개의 코로 변환하는 것을 시도했지만 실패한 것 같습니다...:joy_cat:
 <br><br>
 
-### 결과의 결과?
-powerpoint가 인정한 개와 고양이 입니다.
+### 결과
+결과들이 사실 논문에 비하면 나오지 않았지만 포스팅용 이미지를 PPT로 제작하던 중 신기한 걸 발견했습니다. 시도_2, 시도_3의 결과를 PowerPoint는 의도대로 인식합니다!
+
+PowerPoint가 인정한 개와 고양이 입니다 :sunglasses:
 
 <div>
   <img src="/assets/images/posts/munit/code/result4.png" width="700" height="600">
 </div>
 > 개에서 고양이로 변환한 결과는 고양이로, 고양이에서 개로 변환한 결과는 개로 인식함을 대체 텍스트를 통해 확인할 수 있었습니다.
 
-PPT로 결과 이미지를 만들다 이미지에 대해 자동으로 생성되는 대체 텍스트를 확인하게 되었습니다. 대체 텍스트가 인식하는 결과를 보니
-사실 결과 2의 Cat -> Dog 결과는 사람이 본다면 고양이로 인식할 거 같은데 개로 인식하는 것이 신기하네요. 코를 중요포인트로 여기는 것 같습니다.
+PPT에 이미지를 삽입할 때 삽입한 이미지에 대해 자동으로 생성되는 대체 텍스트를 캡쳐한 것입니다. 대체 텍스트가 인식하는 결과를 보니
+사실 시도_2의 Cat $\rightarrow$ Dog 결과는 사람이 본다면 고양이로 인식할 거 같은데 개로 인식하는 것이 신기하네요. 정말 하관 부분을 중요포인트로 여기는 게 아닐까 다시 한번 생각했습니다.
 <br><br>
 
 ---
 
-dd
+<br>
+얼레벌레 MUNIT 구현 글이 끝났습니다!<br>
+지금까지 코드 구현은 그리 무겁지 않아 가능한 한 논문의 조건을 따라 갔었는데 MUNIT 부터는 데탑 성능의 한계가 느껴집니다 :tired_face:
+
+제가 사용한 데이터셋을 기준으로 논문이 200 epoch 즈음인데 저는 30 epoch 만을 학습했으니 학습의 반의 반도 못 한게 되어버렸네요.... 이것도 하루 넘게 학습을 돌린 건데 조금 슬퍼집니다 어헝헝. 논문 구현에 대한 고민을 조금 더 해봐야 될 것 같습니다 :thinking:
+
+이번 글도 끝까지 봐주셔서 감사합니다! 구현에 사용한 코드는 <a href="https://github.com/solee328/post-code/blob/main/gan/munit.ipynb" target="_blank">github</a>에서 확인하실 수 있습니다 :)
