@@ -303,6 +303,7 @@ class StyleEncoder(nn.Module):
 Decoder는 Content Encoder, Style Encoder의 결과물인 Content Code와 Style Code를 입력으로 받아 이미지를 생성합니다. Fig.3의 Decoder의 구조에서 Style Code가 MLP를 통과해 AdaIN Parameter를 생성하고 생성된 Parameter가 Residual Blocks에 적용된다 되어 있습니다. Decoder의 핵심인 AdaIN이 뭔데 MLP로 만들고 만들어진 AdaIN Parameter를 Residual Block에 어떻게 적용한다는 건지 그림만으로는 이해하기 어렵습니다. AdaIN에 대해 조금 더 자세하게 알아보겠습니다.
 
 #### AdaIN (Origin)
+
 $$
 AdaIN(x, y) = \sigma(y)(\frac{x - \mu(x)}{\sigma(x)}) + \mu(y)
 $$
