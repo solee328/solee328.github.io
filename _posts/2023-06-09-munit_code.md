@@ -689,7 +689,7 @@ recon_latent_s_cat = loss_l1(style_hat_rand_cat, style_rand_cat)
 추가로 옵션으로 사용할 수 있는 Loss가 2개 더 있습니다. Domain-inavariant perceptual loss와 Style-augmented cycle consistency loss입니다.
 
 #### Perceptual loss
-perceptual loss는 이전 <a href="https://solee328.github.io/gan/2023/04/19/munit_paper.html#h-domain-invariant-perceptual-loss" target="_blank">Munit(1)</a>에서 소개되었었는데, VGG net을 이용해 feature map 간의 거리를 계산한 loss 였습니다. perceptual loss는 고해상도(> 512x512) 이미지 데이터에 효과를 보기 때문에 고해상도 데이터에 적용한다 언급됩니다. 공식 github 코드의 config를 통해 loss의 사용 여부와 loss 간 비율을 알 수 있는데 <a href="https://github.com/NVlabs/MUNIT/blob/master/configs/synthia2cityscape_folder.yaml" target="_blank">synthia2cityscape config</a>에서 `vgg_w` 값이 1로 domain-invariant perceptual loss를 사용하며 이미지 크기가 512x512인 것을 확인할 수 있습니다. 다른 config에서는 사용하지 않음을 확인했습니다. 저 또한 이미지 크기가 256x256으로 perceptual loss는 사용하지 않았습니다.
+perceptual loss는 이전 <a href="https://solee328.github.io/gan/2023/04/19/munit_paper.html#h-domain-invariant-perceptual-loss" target="_blank">Munit(1)</a>에서 소개되었었는데, VGG net을 이용해 feature map 간의 거리를 계산한 loss 였습니다. perceptual loss는 고해상도(> 512x512) 이미지 데이터에 효과를 보기 때문에 고해상도 데이터에 적용한다 언급됩니다. 공식 github 코드의 config를 통해 loss의 사용 여부와 loss 간 비율을 알 수 있는데 <a href="https://github.com/NVlabs/MUNIT/blob/master/configs/synthia2cityscape_folder.yaml" target="_blank">synthia2cityscape config</a>에서 `vgg_w` 값이 1로 domain-invariant perceptual loss를 사용하며 이미지 크기가 512x512인 것을 확인할 수 있으며 다른 config에서는 perceptual loss를 사용하지 않음을 확인할 수 있었습니다. 저 또한 이미지 크기가 256x256으로 perceptual loss는 사용하지 않았습니다.
 
 #### Style cyc loss
 Style-augmented cycle consistency loss는 논문에서도 Bidirectional Reconstruction loss와 유사하며 Bidirectional Reconstruction loss에서도 암시되는 내용이라 언급됩니다. 이미 암시되기 때문에 필수로 사용해야 하는 것이 아니고 일부 데이터 셋에서만 명시적으로 사용하는 것이 도움이 될 수 있다고 합니다.
@@ -730,7 +730,9 @@ recon_cyc_cat = loss_l1(recon_cyc_cat, image_cat)
 ```
 
 <br>
-모든 데이터셋에 적용한다고 도움이 되는 loss가 아니여서 처음에는 적용하지 않았지만 결과가 좋지 않아 적용을 시도한 결과를 보니 적용한 것이 더 좋은 결과를 볼 수 있었습니다. MUNIT 공식 코드에서 사용한 데이터라면 <a href="https://github.com/NVlabs/MUNIT/tree/master/configs" target="_blank">config</a>를 확인해 적용 여부를 보실 수 있습니다. MUNIT에서 사용하지 않은 데이터셋을 사용하신다면 적용을 하는 것과 하지 않은 것 둘 다 테스트 해보시는 것을 추천드립니다.
+모든 데이터셋에 적용한다고 도움이 되는 loss가 아니여서 처음에는 적용하지 않았지만 결과가 좋지 않아 Style_augmented cycle consistency loss를 적용해보았습니다. 저는 적용한 결과가 더 좋다고 느꼈기에 저처럼 MUNIT 논문에서 사용하지 않은 데이터셋을 사용하신다면 적용을 하는 것과 하지 않는 것, 둘 다 테스트 해보시는 것을 추천드립니다.
+
+MUNIT 논문에서 사용한 데이터셋을 사용하신다면 MUNIT 공식 코드의 <a href="https://github.com/NVlabs/MUNIT/tree/master/configs" target="_blank">config</a>를 통해 적용 여부를 확인하실 수 있습니다.
 <br><br>
 
 
@@ -918,7 +920,7 @@ image recon의 비율을 줄이고 style, content recon의 비율을 높여 lamb
 
 개 $\rightarrow$ 고양이의 결과 이미지는 꽤 그럴싸하다고 생각했습니다. 코와 입의 모양이 고양이처럼 변했으며 모양이 뚜렷하지는 않지만 눈 또한 고양이 눈으로 변한 것, 그리고 고양이 특유의 긴 흰 수염이 생성됨을 볼 수 있습니다.
 
-하지만 고양이 $\rightarrow$ 개의 결과 이미지는 굳이 따지자면 고양이라 보여집니다. 고양이의 귀가 흐릿해져있으며 눈은 이도저도 아닌 모습이 보여집니다. 하지만 고양이의 흰 수염은 사라지고 코의 보양이 개처럼 변한 것을 볼 수 있었습니다. 개와 고양이를 코와, 턱, 입과 같은 하관으로 구별하나? 라는 생각이 든 결과였습니다. 고양이 $\rightarrow$ 개의 결과를 개선하고자 한번 더 시도를 해보았습니다.
+하지만 고양이 $\rightarrow$ 개의 결과 이미지는 굳이 따지자면 고양이라 보여집니다. 고양이의 귀가 흐릿해져있으며 눈은 이도저도 아닌 모습이 보여집니다. 하지만 고양이의 흰 수염은 사라지고 코의 모양이 개처럼 변한 것을 볼 수 있었습니다. 개와 고양이를 코와, 턱, 입과 같은 하관으로 구별하나? 라는 생각이 든 결과였습니다. 고양이 $\rightarrow$ 개의 결과를 개선하고자 한번 더 시도를 해보았습니다.
 <br><br>
 
 ### 시도_3
@@ -933,13 +935,13 @@ lambda_cyc를 추가해 효과를 보았으니 이번에는 lambda_cyc 값을 �
 <br>
 오묘...하지만 시도_2보다 고양이 $\rightarrow$ 개 의 결과가 자연스러워졌습니다!
 
-개 $\rightarrow$ 고양이는 시도_2와 큰 차이를 느끼지는 못했습니다. 눈이 고양이 눈으로, 코와 입이 고양이 코와 입으로 그리고 고양이 특유의 흰 수염이 생김을 볼 수 있습니다.
+개 $\rightarrow$ 고양이는 시도_2와 큰 차이를 느끼지는 못했습니다. 눈이 고양이 눈으로, 코와 입이 고양이 코와 입으로 그리고 고양이 특유의 흰 수염이 생김을 볼 수 있습니다. 왠지 비웃는 표정인 것 같은 건 기분 탓이겠죠...?
 
-고양이 $\rightarrow$ 개의 결과는 시도_2보다 더 좋은 결과를 보여주고 있다 생각했습니다. 시도_2는 귀 부분이 흐릿하게 변하며 윤곽이 변했지만 시도_3은 윤곽이 변하지 않았고 눈, 코, 입 부분을 집중적으로 바꾸려 시도한다 느껴졌습니다. 눈의 동공 부분이 조금 더 크고 또렸해졌으로 코와 입 부분이 고양이의 핑크색이 아닌 개의 검은색으로 변한 것을 볼 수 있습니다. 고양이의 혀가 나와있는 이미지라 그런가 혀까지 개의 코로 변환하는 것을 시도했지만 실패한 것 같습니다...:joy_cat:
+고양이 $\rightarrow$ 개의 결과는 시도_2보다 더 좋은 결과를 보여주고 있다 생각했습니다. 시도_2는 귀 부분이 흐릿하게 변하며 윤곽이 변했지만 시도_3은 윤곽이 변하지 않았고 눈, 코, 입 부분을 집중적으로 바꾸려 시도한다 느껴졌습니다. 눈의 동공 부분이 조금 더 크고 또렸해졌으며 코와 입 부분이 고양이의 핑크색이 아닌 개의 검은색으로 변한 것을 볼 수 있습니다. 고양이의 혀가 나와있는 이미지라 그런가 혀까지 개의 코로 변환하는 것을 시도했지만 실패한 것 같습니다...:joy_cat:
 <br><br>
 
-### 결과
-결과들이 사실 논문에 비하면 나오지 않았지만 포스팅용 이미지를 PPT로 제작하던 중 신기한 걸 발견했습니다. 시도_2, 시도_3의 결과를 PowerPoint는 의도대로 인식합니다!
+### 결과의 결과
+결과들이 사실 논문에 비하면 나오지 않았지만 포스팅용 이미지를 PPT로 제작하던 중 신기한 걸 발견했습니다. 시도_2, 시도_3의 결과를 PowerPoint는 제가 의도한 대로 Dog $\rightarrow$ Cat을 시도한 이미지는 고양이로, Cat $\rightarrow$ Dog를 시도한 이미지는 개로 인식합니다!
 
 PowerPoint가 인정한 개와 고양이 입니다 :sunglasses:
 
@@ -948,7 +950,7 @@ PowerPoint가 인정한 개와 고양이 입니다 :sunglasses:
 </div>
 > 개에서 고양이로 변환한 결과는 고양이로, 고양이에서 개로 변환한 결과는 개로 인식함을 대체 텍스트를 통해 확인할 수 있었습니다.
 
-PPT에 이미지를 삽입할 때 삽입한 이미지에 대해 자동으로 생성되는 대체 텍스트를 캡쳐한 것입니다. 대체 텍스트가 인식하는 결과를 보니
+위 이미지는 PPT에 이미지를 삽입할 때 PPT는 이미지에 대해 자동으로 대체 텍스트 생성하는데, 그 대체 텍스트를 캡쳐한 것입니다. 대체 텍스트가 인식하는 결과를 보니
 사실 시도_2의 Cat $\rightarrow$ Dog 결과는 사람이 본다면 고양이로 인식할 거 같은데 개로 인식하는 것이 신기하네요. 정말 하관 부분을 중요포인트로 여기는 게 아닐까 다시 한번 생각했습니다.
 <br><br>
 
