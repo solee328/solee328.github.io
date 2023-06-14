@@ -467,7 +467,7 @@ class xk(nn.Module):
 
 <br>
 
-uk의 normalization은 instance normalization이 아닌 layer normlization을 사용합니다. instance norm은 global feature의 mean, variance를 삭제하기 때문에 style information을 제대로 표현하지 못하므로 LayerNorm을 사용한다는 것을 MUNIT의 <a href="https://github.com/NVlabs/MUNIT/issues/10" target="_blank">issue</a>에서 발견해 LayerNorm을 공식 코드에서 가져왔습니다.
+uk의 normalization은 instance normalization이 아닌 layer normlization을 사용합니다. instance norm은 global feature의 mean, variance를 삭제하기 때문에 style information을 제대로 표현하지 못하므로 LayerNorm을 사용한다는 것을 MUNIT의 <a href="https://github.com/NVlabs/MUNIT/issues/10" target="_blank">issue</a>에서 발견하게 되었습니다. LayerNorm 코드는 공식 코드에서 가져와 사용했습니다.
 
 ```python
 class LayerNorm(nn.Module):
@@ -483,7 +483,7 @@ class LayerNorm(nn.Module):
 
     def forward(self, x):
         shape = [-1] + [1] * (x.dim() - 1)
-        # print(x.size())
+
         if x.size(0) == 1:
             # These two lines run much faster in pytorch 0.4 than the two lines listed below.
             mean = x.view(-1).mean().view(*shape)
@@ -503,11 +503,11 @@ class LayerNorm(nn.Module):
 
 
 ### Discriminator
-Discriminator는 Pix2PixHD의 Multi-scale discriminator를 사용합니다. 고해상도의 이미지를 처리하기 위해 더 깊은 네트워크 또는 더 큰 convolution kernel을 사용해하나 두 가지 방법 모두 네트워크 용량을 증가시키고 잠재적으로 overfitting을 유발할 수 있으며 더 큰 메모리 공간을 필요로 한다는 단점을 언급하며 Pix2PixHD에서는 이 문제를 해결하기 위해 multi-scale discriminator를 제안합니다.
+Discriminator는 <a href="https://arxiv.org/abs/1711.11585" target="_blank">Pix2PixHD</a>의 Multi-scale discriminator를 사용합니다. 고해상도의 이미지를 처리하기 위해 더 깊은 네트워크 또는 더 큰 convolution kernel을 사용하나 두 가지 방법 모두 네트워크 용량을 증가시키고 잠재적으로 overfitting을 유발할 수 있으며 더 큰 메모리 공간을 필요로 한다는 단점을 언급하며 Pix2PixHD에서는 이 문제를 해결하기 위해 multi-scale discriminator를 제안합니다.
 
 Multi scale discriminator는 말그대로 여러 개의 판별 모델을 사용하는 방법입니다. 네트워크 구조(PatchGAN)은 동일하지만 서로 다른 크기의 이미지에서 동작하는 판별 모델을 사용합니다. 원본 이미지 크기에서 동작하는 $D_1$, 원본 이미지의 높이, 너비가 절반이 된 이미지에서 동작하는 $D_2$, 원본 이미지의 높이, 너비가 1/4가 된 이미지에서 동작하는 $D_3$를 사용하며 이때 모든 판별 모델의 구조는 동일합니다.
 
-정말 이미지 크기만 다르게 입력으로 넣게 되면서 $D_1$, $D_2$, $D_3$의 receptive field 크기가 달라지 되는데 가장 큰 receptive field를 가진 $D_1$은 이미지를 전체적으로 보면서 생성 모델이 일관된 이미지를 생성하도록 유도할 수 있으며 가장 작은 $D_3$는 생성 모델이 더 디테일을 생성할 수 있도록 유도할 수 있습니다.
+정말 이미지 크기만 다르게 입력으로 넣게 되면서 $D_1$, $D_2$, $D_3$의 receptive field 크기가 달라지 되는데 가장 큰 receptive field를 가진 $D_1$은 이미지를 전체적으로 보면서 생성 모델이 일관된 이미지를 생성하도록 유도할 수 있으며 가장 작은 $D_3$는 생성 모델이 더 디테일을 생성할 수 있도록 유도할 수 있다고 합니다.
 
 Discriminator의 구조는 <a href="https://solee328.github.io/gan/2023/02/28/cyclegan_code.html#h-23-discriminator" target="_blank">CycleGAN - 코드구현의 Discriminator</a>와 광장히 유사합니다. 0.2 slope인 LeakyReLU와 InstanceNorm을 사용하며 convolution의 channel, kernel size, stride, padding 크기 모두 일치합니다. 하지만 모델 마지막의 convolution에 차이가 있습니다.
 
@@ -561,7 +561,7 @@ class Discriminator(nn.Module):
 ### class MUNIT
 Content Encoder, Style Encoder, Decoder, Discriminator를 편하게 다룰 수 있는 `class MUNIT`을 구현했습니다.
 
-Adversarial 학습을 하기 때문에 Generator 부분 학습과 Discriminator 학습 부분이 분리 되어 있기에 Generator 학습 시 학습할 parameter 와 Discriminator 학습 시 학습할 parameter를 따로 모아두었습니다. Generator와 관련된 parameter들인 content encoder, style encoder, mlp, decoder의 parameter들을 모아 gen_params으로, discriminator의 parameter를 dis_params으로 선언했습니다.
+Adversarial 학습을 하기 때문에 Generator 학습 부분과 Discriminator 학습 부분이 분리 되어 있기에 Generator 학습 시 학습할 parameter 와 Discriminator 학습 시 학습할 parameter를 따로 모아두었습니다. Generator와 관련된 parameter들인 content encoder, style encoder, mlp, decoder의 parameter들을 모아 gen_params으로, discriminator의 parameter를 dis_params으로 선언했습니다.
 
 그 외에도 encode, decode, discriminate 기능을 함수로 만들고 decoder에서 등장했던 `set_adain` 함수 또한 `class MUNIT`에 있어 decoder 내부 모듈을 확인 후 AdaIN을 사용하는 모듈에 AdaIN parameter인 y_mean, y_std를 설정할 수 있도록 구현했습니다.
 
@@ -616,7 +616,7 @@ class MUNIT(nn.Module):
 ## 3. Loss
 Loss는 크게 Adversarial loss, Bidirectional Reconstruction Loss 2가지 종류로 나뉘어집니다. 그리고 Reconstruction Loss는 image reconstruction, style reconstruction, content reconstruction 3가지로 나뉘어집니다.
 
-Reconstruction은 image recon, style recon, content recon으로 나뉘니 각각 loss로 계산될 때 비율을 정해야 하는데 논문에서는 image recon($\lambda x$) : style recon($\lambda_s$) : content recon($\lambda_c$) = 10 : 1 : 1로 계산합니다.
+Reconstruction은 image recon, style recon, content recon으로 나뉘니 각각 loss로 계산될 때 비율을 정해야 하는데 논문에서는 image recon($\lambda_x$) : style recon($\lambda_s$) : content recon($\lambda_c$) = 10 : 1 : 1로 계산합니다.
 
 ### Adversarial Loss
 Adversarial loss로는 <a href="https://solee328.github.io/gan/2023/02/28/cyclegan_code.html#h-33-gan-loss" target="_blank">CycleGAN 코드 구현글</a>에서도 소개했었던 <a href="https://arxiv.org/abs/1611.04076" target="_blank">LSGAN</a>의 목적함수를 사용합니다.
