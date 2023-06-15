@@ -39,9 +39,9 @@ bash download.sh afhq-v2-dataset
 ```
 
 ### AFHQ 처리
-AFHQ는 'train', 'val'로 폴더가 나뉘어져 있으며 각각의 폴더 내부에 'dog', 'cat', 'wild' 폴더가 존재합니다. target 인자로 어떤 폴더를 읽어올지 선택한 후 해당 폴더의 jpg 이미지 경로를 glob으로 모두 읽어옵니다.
+AFHQ는 'train', 'val'로 폴더가 나뉘어져 있으며 각각의 폴더 내부에 'dog', 'cat', 'wild' 폴더가 존재합니다. target 인자로 어떤 폴더를 읽어올지 선택한 후 해당 폴더의 jpg 이미지 경로를 glob으로 모두 읽어오도록 구현했습니다.
 
-데이터를 호출할 때는 idx에 맞는 self.images의 경로를 pillow로 읽어와 transform을 적용해 이미지를 return했습니다.
+데이터를 호출할 때는 idx에 맞는 self.images의 경로를 읽고 pillow로 이미지를 열어 transform을 적용한 후 이미지를 return했습니다.
 
 ```python
 class AFHQ(Dataset):
@@ -80,7 +80,8 @@ dataloader_cat = DataLoader(dataset=dataset_cat, batch_size=batch_size, shuffle=
 
 <br>
 
-이미지가 제대로 들어오는 지 dataloader_dog와 dataloader_cat에서 한 장씩을 확인해보았습니다. 논문에서 batch_size=1로 저 또한 batch_size=1이여서 이미지는 한 장씩 들어옵니다.
+이미지가 제대로 들어오는 지 dataloader_dog와 dataloader_cat에서 한 장씩을 확인해보았습니다. 논문에서 batch_size=1로 저 또한 batch_size=1로 설정했기 때문에 이미지는 한 장씩 들어옵니다.
+
 ```python
 def get_plt_image(img):
     return transforms.functional.to_pil_image(0.5 * img + 0.5)
@@ -176,7 +177,9 @@ class xk(nn.Module):
 
 <br>
 
-$\mathsf{Rk}$는 Content encoder와 Decoder에서 사용되며 이전 논문 구현글에서 사용했던 Residual block 코드에서 norm_mode가 추가되어 어떤 normalization을 사용할 지 인자로 선택할 수 있도록 구현했습니다. in은 Instance Normalization으로 이전과 동일하지만 adain으로 불리는 Adaptive Instace Normalization이 추가되었습니다. Decoder에서만 사용되는 normalization으로 adain에 대해서는 Decoder 부분에서 더 자세하게 설명하겠습니다. normalization을 제외하면 Residual block은 이전에 코드 구현에서 사용하던 것과 동일합니다.
+$\mathsf{Rk}$는 Content encoder와 Decoder에서 사용되며 이전 논문 구현글에서 사용했던 Residual block과 유사합니다. 이전 코드에서 Residual block은 instance normalization만 사용했었지만 이번 코드의 Residual block에서는 normalization 종류가 늘어 Adaptive Instance normalization이 추가되어 norm_mode 인자 값을 통해 선택할 수 있도록 구현했습니다.
+
+Adain이라 불리는 Adaptive instance normalization은 Decoder에서만 사용되는 normalization으로 Adain에 대해서는 Decoder 부분에서 더 자세하게 설명하겠습니다. normalization을 제외하면 Residual block은 이전에 코드 구현에서 사용하던 것과 동일합니다.
 
 ```python
 class Residual(nn.Module):
@@ -308,7 +311,7 @@ $$
 AdaIN(x, y) = \sigma(y)(\frac{x - \mu(x)}{\sigma(x)}) + \mu(y)
 $$
 
-<a href="https://solee328.github.io/style_transfer/2022/07/12/neural-transfer_1.html" target="_blank">Style Transfer(1)</a> 글에서 이미지의 style과 content를 분리해 하나의 이미지에 담아내는 것을 이미지 최적화 방법을 통해 구현했었습니다. 하지만 이 방법은 최적화 시간이 오래 걸린다는 단점이 있었는데, AdaIN(Adaptive Instance Normalization)은 feature map 입력을 사용해 학습 parameter를 사용하지 않고 feature map의 statistic인 평균(mean, $\mu$), 분산(variance, $\sigma$)를 이용해 원하는 style을 feature에 입힐 수 있어 빠르게 Style Transfer가 가능하다는 장점이 있는 방법입니다.
+<a href="https://solee328.github.io/style_transfer/2022/07/12/neural-transfer_1.html" target="_blank">Style Transfer(1)</a> 글에서 이미지의 style과 content를 분리해 하나의 이미지에 담아내는 것을 이미지 최적화 방법을 통해 구현했었습니다. 하지만 이 방법은 최적화 시간이 오래 걸린다는 단점이 있었는데, AdaIN(Adaptive Instance Normalization)은 이미 학습한 VGG net을 사용한 feature map 입력을 사용해 feature map의 statistic인 평균(mean, $\mu$), 분산(variance, $\sigma$)를 이용해 원하는 style을 feature에 입힐 수 있어 빠르게 Style Transfer가 가능하다는 장점이 있는 방법입니다.
 
 AdaIN을 사용하기 위해서는 우선 Content 이미지와 Style 이미지의 statistic 정보를 가져올 feature map을 추출해야 합니다. 이를 위해 Content 이미지와 Style 이미지를 VGG Encoder(pre-trained VGG)에 입력해 content feature와 style feature를 얻게 되고 이때 content feature가 위 AdaIN 수식의 $x$, style feature가 $y$가 됩니다.
 
