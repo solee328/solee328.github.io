@@ -463,7 +463,9 @@ class xk(nn.Module):
         return self.model(x)
 ```
 
-`xk` 클래스의 'uk'부분에서는 nn.Upsampling과 nn.Conv2d가 번갈아 나오는 것을 볼 수 있습니다. 이는 Checker-board artifact를 감소시키기 위위한 방법으로 CycleGAN에서 ConvTranspose2d를 사용했던 것처럼 ConvTranspose2d를 사용하지 않고 pooling layer를 nearest-up sampling 방식으로 교체한 것입니다. ConvTranspose2d는 feature map 별 kernel이 overlap 되는 횟수 차이가 발생해 artifact가 생길 수 있으니 upsampling을 사용해 이를 예방하는 것입니다.
+`xk` 클래스의 'uk'부분에서는 nn.Upsampling과 nn.Conv2d가 번갈아 나오는 것을 볼 수 있습니다. 이는 Checker-board artifact를 감소시키기 위한 방법으로 CycleGAN에서 ConvTranspose2d를 사용해 feature map의 크기를 키우고 channel 수를 줄이는 작업을 했다면 MUNIT에서는 Upsampling과 Conv2d를 사용해 feature map의 크기를 키우고 channel 수를 줄이는 작업을 합니다.
+
+Upsampling을 사용하는 이유는 ConvTranspose2d를 사용했을 때 생기는 artifact를 방지하기 위함입니다. ConvTranspose2d를 사용했을 때 feature map 별 kernel이 overlap 되는 횟수 차이가 발생해 Checkerboard Artifact가 생길 수 있기 때문입니다. Distill의 글에서 Checkerboard Artifact에 대해 더 자세한 설명이 되어 있으니 읽어보시는 것을 추천드립니다.
 
 **참고**
 - Distill / <a href="https://distill.pub/2016/deconv-checkerboard/" target="_blank">Deconvolution and Checkerboard Artifacts</a>
