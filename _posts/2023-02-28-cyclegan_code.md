@@ -424,7 +424,7 @@ for epoch in range(n_epochs):
 
 
 <div align="center">
-  <video muted controls width="600" height="300">
+  <video muted controls width="600" height="300" poster="/assets/images/posts/cyclegan/code/thumnail.png">
     <source src="/assets/images/posts/cyclegan/code/history_image.mp4" type="video/mp4">
   </video>
 </div>
