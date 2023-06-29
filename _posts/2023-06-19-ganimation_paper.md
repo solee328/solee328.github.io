@@ -16,11 +16,17 @@ use_math: true
 
 ## 소개
 
-Generative Adversarial Network가 발전함에 따라 <a href="https://arxiv.org/abs/1711.09020" target="_blank">StarGAN</a>과 같은 구조로 많은 발전이 이루어졌습니다. 나이, 머리색, 성별과 같이 여러 얼굴 속성을 변경할 수 있는 StarGAN은 데이터셋에 정의된 속성만 변경할 수 있으며 연속적인 변환이 불가능합니다. <a href="https://www.tandfonline.com/doi/abs/10.1080/02699930903485076" target="_blank">RaFD</a> 데이터셋을 학습했다면 얼굴 표정에 대한 8개의 이진 라벨, 즉 슬픔, 중립, 분노, 경멸, 혐오, 놀람, 두려움, 행복함에 대해 얼굴 표정 변환이 가능합니다.
+Generative Adversarial Network가 발전함에 따라 <a href="https://arxiv.org/abs/1711.09020" target="_blank">StarGAN</a>과 같은 구조로 많은 발전이 이루어졌습니다. 나이, 머리색, 성별과 같이 여러 얼굴 속성을 변경할 수 있는 StarGAN은 데이터셋에 정의된 속성으로만 변경할 수 있으며 연속적인 변환이 불가능합니다. 예시로 <a href="https://www.tandfonline.com/doi/abs/10.1080/02699930903485076" target="_blank">RaFD</a> 데이터셋을 학습했다면 얼굴 표정에 대한 8개의 이진 라벨, 즉 슬픔, 중립, 분노, 경멸, 혐오, 놀람, 두려움, 행복함에 대해 얼굴 표정 변환이 가능하며 다른 표정으로는 변환할 수 없습니다.
 
-하지만 얼굴 표정은 얼굴 근육으로 결합되고 조절된 행동의 결과로 하나의 라벨로 정의될 수 없습니다. Pal Ekman과 Wallace Friesen은 얼굴 근육을 기반으로 얼굴 표정을 분석하기 위해 Action Units(AUs)의 관점에서 얼굴 표정을 표현하기 위한 Facial Action Coding System(FACS)를 개발했습니다. action units의 수는 많지 않지만 7,000개 이상의 다른 AU 조합이 가능하다고 합니다. 각각 AU에 대한 정보는 <a href="https://www.cs.cmu.edu/~face/facs.htm" target="_blank">FACS-Facial Action Coding System</a>에서 확인할 수 있습니다. 공포에 대한 얼굴 표정은 일반적으로 Inner Brow Raiser(AU1), Outer Brow Raiser(AU2), Brow Lowerer(AU4), Upper Lid Raiser(AU5), Lid Tighttener(AU7), Lip Stretcher(AU20), Jaw Drop(AU26)에 의해 생성되며 각 AU의 크기에 따라 표현하는 공포의 감정 크기가 달라집니다.
+GANimation에서는 특정 표정 도메인에 해당하는 데이터셋이 없더라도 다양한 표정으로 변환이 연속적으로 가능하고 고해상도 이미지에도 자연스럽게 모델을 적용할 수 있는 것이 장점입니다. 이와 같은 장점을 가지기 위한 GANimation의 큰 특징 두가지는 Action Units와 Attention Layer입니다.
 
-StarGAN[4]와 같이 특정 도메인에 해당하는 이미지를 조건화하는 대신 각 action unit의 존재 유무와 크리를 나타내는 1차원 벡터에 조건화되는 GAN 구조를 구축합니다.
+### Action Units
+
+논문에서 얼굴 표정은 얼굴 근육으로 결합되고 조절된 행동의 결과로 하나의 라벨로 정의될 수 없다 언급합니다. 따라서 GANimation에서는 해부학적 관점으로 얼굴 표정을 변환하기 위해 Action Units이라 불리는 근육 별 움직임을 사용합니다. Action Units은 Pal Ekman과 Wallace Friesen이 개발한 Facial Action Coding System(FACS)에서 얼굴 근육을 기반으로 얼굴 표정을 분석하기 위해 사용되는 얼굴 근육 동작 단위입니다. Action Units의 수는 많지 않지만 7,000개 이상의 다른 AU 조합이 가능하다고 합니다.
+
+각각 AU에 대한 정보는 <a href="https://www.cs.cmu.edu/~face/facs.htm" target="_blank">FACS-Facial Action Coding System</a>에서 확인할 수 있습니다. 공포에 대한 얼굴 표정은 일반적으로 Inner Brow Raiser(AU1), Outer Brow Raiser(AU2), Brow Lowerer(AU4), Upper Lid Raiser(AU5), Lid Tighttener(AU7), Lip Stretcher(AU20), Jaw Drop(AU26)에 의해 생성되며 각 AU의 크기에 따라 표현하는 공포의 감정 크기가 달라집니다.
+
+GANimation은 StarGAN와 같이 특정 도메인에 해당하는 이미지를 조건화하는 대신 각 action unit의 존재 유무와 크기를 나타내는 1차원 벡터에 조건화되는 GAN 구조를 구축합니다.
 
 
 ### Attention Layer
@@ -28,16 +34,21 @@ StarGAN[4]와 같이 특정 도메인에 해당하는 이미지를 조건화하�
 <div>
   <img src="/assets/images/posts/ganimation/paper/fig5.png" width="600" height="200">
 </div>
-> Fig.5.
+> Fig.5. Attention mask $\mathrm{A}$(첫번째 행)와 Color mask $\mathrm{C}$(두번째 행)의 변화 과정. Attention mask $\mathrm{A}$의 어두운 영역은 이미지의 해당 영역이 각 특정 AU와 더 관련이 있음을 나타냅니다. 원본 이미지에서는 밝은 영역이 유지됩니다.
 
-최종 결과 이미지 $\mathrm{I _{y_g}}$에 대해 생성한 Attention A와 Color C mask를 보여줍니다. 모델은 비지도 방식으로 해당 AU에 attetion(어두운 부분)을 집중하는 방법을 학습합니다. 이런 방법은 color mask를 사용해 각 픽셀 값을 정확하게 계산할 필요가 없으며 표정 변화와 관련된 픽셀들만 신중하게 추측하고 나머지는 noise로 판단합니다. 예를 들어 attention은 배경 픽셀을 분명하게 제거하고(신경쓰지 않기 때문에 하얀색으로 나오게 됨) 원본 이미지에서 직접 복사할 수 있습니다. 이 방법으로 wild 이미지를 처리할 수 있는 핵심 요소입니다.
+이전에 다뤘던 모델들과는 다르게 GANimation의 생성 모델은 2개의 이미지를 결과로 출력합니다. 바로 Attention mask와 Color mask입니다. Attention mask $\mathrm{A}$는 AUs에 집중하기 위한 이미지로 표정 변화와 관련된 픽셀들만 추측할 수 있도록 도와주는 mask입니다. 입력 이미지에서 배경에 해당하는 부분은 $\mathrm{A}$에서는 하얀색으로, 표정 변화와 관련이 깊은 픽셀일 수록 검은색에 가까운 색으로 표현됩니다. 배경 픽셀로 판단된 픽셀은 원본 이미지에서 복사해서 가져오는 방식을 사용해 자연스러운 결과 이미지를 생성하는 것이 GANimation의 장점입니다.
+
+Fig.5의 이미지에서 Attention mask 와 Color mask $\mathrm{C}$의 예시를 볼 수 있습니다. 크게 변형되는 얼굴 근육이 검은색에 가까운 색을 띄고 있는 $\mathrm{A}$와 배경과 관련된 픽셀들은 사용되지 않기에 색상이 녹색 파란색 널뛰고 있는 $\mathrm{C}$를 볼 수 있습니다.
+<br><br>
 
 ---
 
 ## 사용 데이터셋
-AU 라벨링이된 100만개의 얼굴 표정 이미지를 가진 EmotionNet Dataset[3]을 사용했으며 그 중 200,0000개를 사용했습니다.
+GANimation은 데이터셋으로 AU 라벨링이된 얼굴 표정 이미지를 가진 <a href="http://cbcsl.ece.ohio-state.edu/EmotionNetChallenge/" target="_blank">EmotionNet Dataset</a>을 사용했으며 전체 약 100만개의 데이터 중 약 200,0000개를 사용했다 합니다.
 
-### AU 라벨링
+AU 라벨링은
+
+
 입력 RGB 이미지를 $\mathrm{I _{y_r}} \in \mathbb{R} ^{H \times W \times 3}$이고 임의의 얼굴 표정이 표현되어 있다 정의합니다. 모든 표정 표현은 $N$개의 action unit으로 이루어져 있으며 $\mathrm{y_r} = (y_1, \dots, y_N)^{\mathsf{T}}$에 인코딩됩니다. 이때 각 $y_n$은 n번째 action unit의 크기를 0과 1 사이의 정규화된 값을 나타냅니다. 0부터 1 사이의 값으로 표현 덕분에 continuous한 표현이 가능하며 여러 표정 사이 자연스러운 보간이 가능해 사실적이고 부드러운 얼굴 표정을 표현할 수 있습니다.
 
 GANimation의 목표는 action unit $\mathrm{y_r}$에 해당하는 입력 이미지 $\mathrm{I _{y_r}}$을 목표 action unit $\mathrm{y_g}$에 해당하는 결과 이미지 $\mathrm{I _{y_g}}$로 변환할 수 있는 매핑 $\mathcal{M}$을 학습하는 것입니다. 매핑 $\mathcal{M} : (\mathrm{I _{y_r}}, y_g) \rightarrow \mathrm{I _{y_g}} $을 추정하기 위해 목표 action unit $\mathrm{y}^m_g$를 랜덤하게 생성해 사용합니다. 입력 이미지의 표정을 변환하기 위해 목표 표현을 가진 페어 이미지 $\mathrm{I _{y_g}}$가 필요하지 않은 비지도 방식을 사용합니다.
