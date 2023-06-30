@@ -34,7 +34,8 @@ GANimation은 StarGAN와 같이 특정 도메인에 해당하는 이미지를 �
 <div>
   <img src="/assets/images/posts/ganimation/paper/fig5.png" width="600" height="200">
 </div>
-> Fig.5. Attention mask $\mathrm{A}$(첫번째 행)와 Color mask $\mathrm{C}$(두번째 행)의 변화 과정. Attention mask $\mathrm{A}$의 어두운 영역은 이미지의 해당 영역이 각 특정 AU와 더 관련이 있음을 나타냅니다. 원본 이미지에서는 밝은 영역이 유지됩니다.
+> Fig.5. Attention mask $\mathrm{A}$(첫번째 행)와 Color mask $\mathrm{C}$(두번째 행)의 변화 과정.<br>
+Attention mask $\mathrm{A}$의 어두운 영역은 이미지의 해당 영역이 각 특정 AU와 더 관련이 있음을 나타냅니다. 원본 이미지에서는 밝은 영역이 유지됩니다.
 
 이전에 다뤘던 모델들과는 다르게 GANimation의 생성 모델은 2개의 이미지를 결과로 출력합니다. 바로 Attention mask와 Color mask입니다. Attention mask $\mathrm{A}$는 AUs에 집중하기 위한 이미지로 표정 변화와 관련된 픽셀들만 추측할 수 있도록 도와주는 mask입니다. 입력 이미지에서 배경에 해당하는 부분은 $\mathrm{A}$에서는 하얀색으로, 표정 변화와 관련이 깊은 픽셀일 수록 검은색에 가까운 색으로 표현됩니다. 배경 픽셀로 판단된 픽셀은 원본 이미지에서 복사해서 가져오는 방식을 사용해 자연스러운 결과 이미지를 생성하는 것이 GANimation의 장점입니다.
 
@@ -43,13 +44,11 @@ Fig.5의 이미지에서 Attention mask 와 Color mask $\mathrm{C}$의 예시를
 
 ---
 
-## 사용 데이터셋
+## 사용 데이터셋 & 라벨링
 GANimation은 데이터셋으로 AU 라벨링이된 얼굴 표정 이미지를 가진 <a href="http://cbcsl.ece.ohio-state.edu/EmotionNetChallenge/" target="_blank">EmotionNet Dataset</a>을 사용했으며 전체 약 100만개의 데이터 중 약 200,0000개를 사용했다 합니다.
 
-AU 라벨링은
+이미지 $\mathrm{I}$에 대한 AU 라벨링 값은 $\mathrm{y_o}$로 표현합니다. 입력 이미지가 $\mathrm{I _{y_r}}$ 일 때 이 이미지의 AU 라벨링 값은 $\mathrm{y_r}$이 됩니다. 모든 표정 표현은 $N$개의 action unit으로 이루어져 있으며 $\mathrm{y_r} = (y_1, \dots, y_N)^{\mathsf{T}}$에 인코딩됩니다. 이때 각 $y_n$은 n번째 action unit의 크기를 0과 1 사이의 정규화된 값을 나타냅니다. 0부터 1 사이의 값으로 표현 덕분에 continuous한 표현이 가능하며 여러 표정 사이 자연스러운 보간이 가능해 사실적이고 부드러운 얼굴 표정을 표현할 수 있습니다.
 
-
-입력 RGB 이미지를 $\mathrm{I _{y_r}} \in \mathbb{R} ^{H \times W \times 3}$이고 임의의 얼굴 표정이 표현되어 있다 정의합니다. 모든 표정 표현은 $N$개의 action unit으로 이루어져 있으며 $\mathrm{y_r} = (y_1, \dots, y_N)^{\mathsf{T}}$에 인코딩됩니다. 이때 각 $y_n$은 n번째 action unit의 크기를 0과 1 사이의 정규화된 값을 나타냅니다. 0부터 1 사이의 값으로 표현 덕분에 continuous한 표현이 가능하며 여러 표정 사이 자연스러운 보간이 가능해 사실적이고 부드러운 얼굴 표정을 표현할 수 있습니다.
 
 GANimation의 목표는 action unit $\mathrm{y_r}$에 해당하는 입력 이미지 $\mathrm{I _{y_r}}$을 목표 action unit $\mathrm{y_g}$에 해당하는 결과 이미지 $\mathrm{I _{y_g}}$로 변환할 수 있는 매핑 $\mathcal{M}$을 학습하는 것입니다. 매핑 $\mathcal{M} : (\mathrm{I _{y_r}}, y_g) \rightarrow \mathrm{I _{y_g}} $을 추정하기 위해 목표 action unit $\mathrm{y}^m_g$를 랜덤하게 생성해 사용합니다. 입력 이미지의 표정을 변환하기 위해 목표 표현을 가진 페어 이미지 $\mathrm{I _{y_g}}$가 필요하지 않은 비지도 방식을 사용합니다.
 <br><br>
@@ -61,24 +60,29 @@ GANimation의 목표는 action unit $\mathrm{y_r}$에 해당하는 입력 이미
 <div>
   <img src="/assets/images/posts/ganimation/paper/fig2.png" width="600" height="200">
 </div>
-> Fig.2.
+> Fig.2. GANimation으로 사실적인 조건부 이미지를 생성하는 방법의 개요.<br>
+제안된 구조는 2개의 메인 블록으로 이루어져 있습니다. Color mask와 Attention mask를 생성하는 모델 $G$와 생성된 이미지가 사실적인지 판별하는 $D_I$와 조건에 충족하는 표현 $\hat{y_g}$에 대해 평가하는 판별 모델 $D$가 있습니다.<br>
+이 방법은 지도 학습이 필요하지 않습니다. 즉, 표현이 다른 동일한 사람에 대한 이미지페어나 목표 이미지 $\mathrm{I _{y_g}}$가 필요하지 않습니다.
 
+Fig.2는 GANimation의 이미지 생성에 대한 개요를 보여줍니다. GANimation은 2개의 주요 모듈로 구성되어 사실적인 조건부 이미지를 생성하는 새로운 접근 방식을 설명합니다.
 
-동일한 사람에 대해 서로 다른 표현의 학습 이미지 페어가 필요하지 않도록 2단계로 문제를 구성합니다.
-1. 입력 이미지를 원하는 표정으로 렌더링하는 AU 조건의 bidirectional adversarial architecture
-2. 변화하는 배경과 조명 조건을 처리할 수 있도록 표정과 관련된 이미지의 영역만 처리하는 것에 초점을 맞추는 attention layer 사용
+첫번째 주요 모듈은 bidirectional adversarial architecture입니다. 표정 $\mathrm{y_r}$을 가지고 있는 입력 이미지 $\mathrm{I _{y_r}}$을 목표 조건 $\mathrm{y_g}$에 해당하는 이미지로 변환한 이미지 $\mathrm{I _{y_g}}$를 생성 모델로 생성합니다. 판별 모델은 $\mathrm{I _{y_g}}$가 진짜 이미지인지 아닌지 판별하고 이미지의 표정을 분석해 $\hat{\mathrm{y}} _{\mathrm{g}}$를 얻어 이미지를 생성할 때 사용한 $\mathrm{y_g}$와의 차이를 계산해 loss에 사용합니다.
 
-bidirectional은 Fig.2에서 생성 모델이 2번 적용되는 $\mathrm{I _{y_r}} \rightarrow G(\mathrm{I _{y_r}} \| \mathrm{y_g}) \rightarrow G(G(\mathrm{I _{y_r}} \| \mathrm{y_g}) \| \mathrm{y_r}) = \hat{\mathrm{I _{y_r}}}$과정을 의미합니다.
+이후 생성 모델은 초기 이미지의 표정이였던 $\mathrm{y_r}$을 다시 $\mathrm{I _{y_g}}$에 적용해 원본과 유사한 이미지 $\hat{\mathrm{I}} _{\mathrm{y_r}}$을 생성합니다. 생성된 $\hat{\mathrm{I}} _{\mathrm{y_r}}$와 원본 이미지 $\mathrm{I _{y_r}}$과의 차이를 loss에 사용합니다. bidirectional은 생성 모델이 2번 적용되는 $\mathrm{I _{y_r}} \rightarrow G(\mathrm{I _{y_r}} \| \mathrm{y_g}) \rightarrow G(G(\mathrm{I _{y_r}} \| \mathrm{y_g}) \| \mathrm{y_r}) = \hat{\mathrm{I}} _{\mathrm{y_r}}$ 과정을 의미합니다.
 
+두번째 주요 모듈은 attention layer입니다. 입력 이미지에서 변화하는 배경과 다양한 조명 조건을 처리할 수 있도록 표정과 관련된 영역만 처리하는 것에 초점을 맞추는 attention mechanism을 사용합니다. Fig.2에서 ${\mathrm{G_A}}$로 표시되는 이미지들이 attention mask로 표정과 관련된 픽셀일 수록 검은색으로 표현되는 것을 볼 수 있습니다.
+
+생성 모델 $G$, 판별 모델(Critic) $D$를 순서대로 조금 더 자세하게 살펴보겠습니다!
 
 
 ### Generator
 <div>
   <img src="/assets/images/posts/ganimation/paper/fig3.png" width="600" height="250">
 </div>
-> Fig.3.
+> Fig.3. Attention-based generator.<br>
+입력 이미지와 목표 표현이 주어지면 생성 모델은 전체 이미지에서 attention mask $A$와 RGB color transformation $C$를 생성합니다. attention mask는 최종 렌더링된 이미지에서 원본 이미지에 각 픽셀들이 어느 정도 확장되는 지를 지정하는 강도를 정의합니다.
 
-생성 모델의 핵심요소는 새로운 표정을 합성하는 이미지의 영역에만 초점을 맞추고 머리, 안경, 모자, 악세사리와 같은 이미지의 나머지 요소를 건드리지 않도록 하는 것입니다. 이를 위해 생성 모델에서는 Attention mechanism을 사용합니다. 생성모델은 color mask C와 attention mask A, 2가지 마스크를 출력합니다.
+생성 모델의 핵심요소는 새로운 표정을 합성하는 이미지의 영역에만 초점을 맞추고 머리, 안경, 모자, 악세사리와 같은 이미지의 나머지 요소를 건드리지 않도록 하는 것입니다. 이를 위해 생성 모델에서는 Attention mechanism을 사용합니다. 생성모델은 color mask C와 attention mask A, 2가지 마스크를 출력하며 Fig.3에서 생성 과정을 볼 수 있습니다.
 
 Color mask C는  $C = G_C(\mathrm{I _{y_o}} \| \mathrm{y_f}) \in \mathbb{R}^{H \times W \times 3}$이고 Attention mask A는 $A = G_A(\mathrm{I _{y_o}} \| \mathrm{y_f}) \in \lbrace 0, \dots ,1 \rbrace ^{H \times W}$로 A는 C의 각 픽셀들의 변형되고 확장되는 정도를 나타냅니다. 얼굴 움직임의 정의하고 변형되야 하는 픽셀들은 검게, 변형되지 않는 픽셀들은 하얗게 나타납니다.
 
