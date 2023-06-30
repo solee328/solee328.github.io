@@ -95,13 +95,15 @@ $$
 
 
 ### Condition Critic
-WGAN-GP[9] 기반 판별 모델 $D$를 사용해 생성된 이미지($\mathrm{I _{y_g}}$)의 품질과 표현을 평가합니다.
+StarGAN과 마찬가지로 <a href="https://arxiv.org/abs/1704.00028" target="_blank">WGAN-GP</a> 기반 판별 모델 $D$를 사용해 생성된 이미지($\mathrm{I _{y_g}}$)의 품질과 표현을 평가합니다.
 
-$D(\mathrm{I})$의 구조는 입력 이미지 $\mathrm{I}$의 행렬 $\mathrm{Y_I} \in \mathbb{R} ^{H / 2^6 \times W/2^6}$에 매핑하는 PatchGAN[10]과 유사하며, 여기서 $\mathrm{Y_I}[i, j]$는 patch $ij$가 실제 데이터일 확률을 나타냅니다.
+$D(\mathrm{I})$의 구조는 입력 이미지 $\mathrm{I}$의 행렬 $\mathrm{Y_I} \in \mathbb{R} ^{H / 2^6 \times W/2^6}$에 매핑하는 <a href="https://arxiv.org/abs/1611.07004" target="_blank">pix2pix</a>의 PatchGAN과 유사하며, 여기서 $\mathrm{Y_I}[i, j]$는 patch $ij$가 실제 데이터일 확률을 나타냅니다.
 
-또한 condition에 대한 평가를 합니다. StarGAN의 Domain classification처럼 이미지가 어떤 condition을 가지고 있는지 판별모델이 측정합니다. StarGAN에서는 어떤 도메인에 속하는지를 계산했었다면 GANimation에서는 실제 이미지를 학습할 때 실제 이미지가 어떤 AUs가 활성화되어있는지 $\hat{\mathrm{y}} = (\hat{y}_1, \dots, \hat{y}_N)^T$를 계산합니다.
+WGAN-GP는 ---에서, patchGAN은 ---에서 다룬 적이 있으니 참고해주세요ㅎㅅㅎ
 
-안정성을 향상시키기 위해 [32]에서 제안한 것처럼 생성 모델의 업데이트에서 생성된 이미지 버퍼를 사용해 critic을 업데이트하려고 시도했지만 성능 향상을 관찰하지 못했다고 합니다.
+추가로 이미지의 condition, 조건에 대한 평가를 합니다. StarGAN의 Domain classification처럼 이미지가 어떤 condition을 가지고 있는지 판별모델이 측정합니다. StarGAN에서는 어떤 도메인에 속하는지를 계산했었다면 GANimation에서는 실제 이미지를 학습할 때 실제 이미지가 어떤 AUs가 활성화되어있는지 $\hat{\mathrm{y}} = (\hat{y}_1, \dots, \hat{y}_N)^T$를 계산합니다.
+
+안정성을 향상시키기 위해 <a href="https://arxiv.org/pdf/1612.07828.pdf" target="_blank">SimGAN</a>에서 제안한 것처럼 생성 모델의 업데이트에서 생성된 이미지 버퍼를 사용해 critic을 업데이트하려고 시도했지만 성능 향상을 관찰하지 못했다고 합니다.
 <br><br>
 
 ---
@@ -180,7 +182,8 @@ $\lambda_A, \lambda_y, \lambda_{idt}$는 hyper-parameter로 모든 loss term의 
 <div>
   <img src="/assets/images/posts/ganimation/paper/fig4.png" width="600" height="300">
 </div>
-> Fig.4.
+> Fig.4. Single AUs Edution.<br>
+특정 AU는 강도 레벨이 증가할 때 활성화됩니다. 첫번째 행은 모든 경우에 원본 영상을 생성하는 AU 강도 0을 적용한 것에 해당합니다.
 
 사람의 identity를 유지하면서 다양한 강도의 AU를 활성화하는 모델의 능력을 평가했으며 Figure 4는 4단계의 강도(0, 0.33, 0.66, 1)로 변환된 9개의 AU 집합을 보여줍니다. identity(정체성) 능력은 원하지 않는 얼굴 움직임이 도입하지 않도록 보장하는데 필수적입니다.
 
@@ -189,7 +192,8 @@ $\lambda_A, \lambda_y, \lambda_{idt}$는 hyper-parameter로 모든 loss term의 
 <div>
   <img src="/assets/images/posts/ganimation/paper/fig1.png" width="600" height="400">
 </div>
-> Fig.1.
+> Fig.1. 단일 이미지에서 얼굴 애니메이션.<br>
+불연속적인 수의 표현에 제한되지 않고 주어진 이미지를 연속적으로 새로운 표현으로 렌더링할 수 있는 해부학적으로 일관된 접근 방식을 제안합니다. 예시에서 가장 왼쪽에 있는 입력 이미지 $\mathrm{I _{y_r}}$(녹색 사각형으로 강조됨)만 제공하며, 매개 변수 $\alpha$는 미소와 같은 표정과 관련된 action unit의 활성화 정도를 제어합니다. 또한 이 시스템은 맨 아래 행의 예시와 같이 비정상적인 조명 조건을 가진 이미지를 처리할 수 있습니다.
 
 다음은 다중 Action Units 조절 결과입니다. 첫번째 열은 표정 $\mathrm{y_r}$을 가진 원본 이미지이고 가장 오른쪽 열은 목표 표정 $\mathrm{y_g}$를 조건으로 합성된 생성 이미지 결과입니다. 나머지 열은 기존 표정과 목표 표정의 선형 보간으로 조건화된 생성 모델의 결과입니다($\alpha \mathrm{y_g} + (1-\alpha) \mathrm{y_r}$).
 
@@ -199,9 +203,11 @@ $\lambda_A, \lambda_y, \lambda_{idt}$는 hyper-parameter로 모든 loss term의 
 다음으로는 여러 baseline 모델들과 비교합니다. DIAT[20], CycleGAN[28], IcGAN[26], StarGAN[4]가 baseline 모델들이고 RaFD 데이터 셋[16]에서 불연속적인 감정 범주(예: 행복, 슬픔, 두려움)를 렌더링합니다. DIAT[20], CycleGAN[28]은 condition GAN이 아니라 조건화를 허용하지 않기 때문에 가능한 모든 source/target 감정 쌍에 대해 독립적으로 학습한 결과를 사용합니다.
 
 <div>
-  <img src="/assets/images/posts/ganimation/paper/fig1.png" width="600" height="400">
+  <img src="/assets/images/posts/ganimation/paper/fig6.png" width="600" height="400">
 </div>
-> Fig.6.
+> Fig.6. State-of-the-art 와의 질적 비교.<br>
+DIAT, CycleGAN, IcGAN, StarGAN, GANimation(Ours)을 사용한 얼굴 표정 합성의 결과들로 입력 이미지와 7가지 다른 얼굴 표정을 나타냅니다. 그림에서 볼 수 있듯이, GANimation(Ours)는 시각적 정확도와 공간 해상도 사이의 최상의 균형을 만듭니다. 현재 최고의 접근 방식인 StarGAN은 결과 중 일부 흐린 부분을 보여줍니다.
+
 
 논문에서 GANimation은 2가지 주요 측면에서 baseline 모델들의 접근 방식과는 차이가 있다고 언급합니다. 첫번째로 GANimation은 별개의 감정 카테고리를 만들어 모델을 조건화하지 않지만 표현을 연속적으로 생성할 수 있도록 학습합니다.
 
@@ -212,7 +218,8 @@ $\lambda_A, \lambda_y, \lambda_{idt}$는 hyper-parameter로 모든 loss term의 
 <div>
   <img src="/assets/images/posts/ganimation/paper/fig7.png" width="600" height="350">
 </div>
-> Fig.7.
+> Fig.7. 얼굴 표정 분포 공간에서 샘플링한 결과들.<br>
+벡터 $\mathrm{y_g}$를 통해 여러 AU를 적용한 결과 동일한 소스 이미지 $\mathrm{I _{y_r}}$에서 다양한 현실적인 이미지를 합성할 수 있습니다.
 
 GANimation은 입력 이미지의 인물 정체성을 보존하면서 해부학적으로 그럴듯하게 광범위한 표정으로 변환한 이미지를 생성합니다. Fig.7 에서 모든 얼굴들은 14 AUs 만으로 정의된 얼굴 구성으로 왼쪽 상단 모서리 입력 이미지를 조정한 결과들입니다. 14 AUs로만 합성할 수 있는 해부학적으로 그럴듯 한 표정의 큰 변동성을 볼 수 있습니다.
 
@@ -221,7 +228,9 @@ GANimation은 입력 이미지의 인물 정체성을 보존하면서 해부학�
 <div>
   <img src="/assets/images/posts/ganimation/paper/fig8.png" width="600" height="250">
 </div>
-> Fig.8.
+> Fig.8. Wild 이미지에 대한 정성적 평가.<br>
+상단 : 영화 "캐리비안의 해적"의 이미지(왼쪽)과 GANimation 방식으로 생성한 생성 이미지(오른쪽)을 나타냅니다.<br>
+하단 : 비슷한 방식으로 "왕좌의 게임" 시리즈의 이미지 프레임(왼쪽)을 사용해 표현이 다른 5개의 새로운 이미지를 합성했습니다.
 
 Fig. 5에서 봤던 것처럼 attention mechanism은 얼굴의 특정 부분에 초점을 맞추는 것을 학습할 뿐만 아니라 원본 이미지 배경과 생성된 이미지 배경을 융합할 수 있습니다. Attention에서 설명했던 3단계를 통해 GANimation은 고해상도 이미지를 유지하면서 wild 이미지에 쉽게 적용할 수 있습니다.
 1. face detector를 이용해 얼굴 부분을 잘라낸다
@@ -236,7 +245,10 @@ Fig.8은 Wild 이미지에 GANimation을 적용한 2가지 예시를 보여줍�
 <div>
   <img src="/assets/images/posts/ganimation/paper/fig9.png" width="600" height="430">
 </div>
-> Fig.9.
+> Fig.9. 성공 그리고 실패 사례들.<br>
+모든 경우에서 소스 이미지는 $\mathrm{I _{y_r}}$, 목표 이미지는 $\mathrm{I _{y_g}}$, color mask와 attention mask는 $C$와 $A$로 각각 표시합니다.<br>
+상단 : 극단적인 이미지에서의 몇몇 성공 사례들<br>
+하단 : 몇몇 실패 사례들
 
 검은 점선의 위는 성공 사례, 아래는 실패 사례를 의미합니다.
 
@@ -249,15 +261,11 @@ Fig.8은 Wild 이미지에 GANimation을 적용한 2가지 예시를 보여줍�
 다음은 실패 사례입니다. 4행의 오른쪽 사진처럼 안대를 착용해 얼굴의 속성이 일부 누락된 경우 아티팩트를 유발함을 볼 수 있습니다. 마지막 행은 인간이 아닌 경우에 대한 테스트 결과로 왼쪽 사이클롭스 이미지와 오른쪽 사자 이미지에 모델을 적용한 결과 사람 얼굴 특징과 같은 아티팩트들을 발견했습니다.
 
 논문에서 Fig.9의 실패 사례는 모두 학습 데이터가 부족하기 때문이라고 추측합니다.
-
-
-
-
-
 <br><br>
 
 ---
 
+<br>
 GANimation 논문 리뷰는 여기서 끝입니다!<br>
 해부학적 접근이 특이해서 시작한 GANimation이였는데 Attention mask, Color mask 분리 또한 인상이 깊었습니다. 재미있어요...! :sunglasses: <br> 논문 구현 결과가 조금 기대됩니다. 히히히
 
