@@ -128,9 +128,12 @@ $\mathrm{I _{y_o}}$는 원본 이미지 조건(condition) $\mathrm{y_o}$와 있�
 $\lambda _{gp}$는 panalty 계수입니다.
 
 ### Attention Loss
-모델을 학습할 때 Attetion mask A는 Color mask C와 마찬가지로 Critic의 결과에 따라 gradients와 loss로부터 학습됩니다. 그러나 attetion mask는 쉽게 1로 포화될 수 있으므로 $\mathrm{I _{y_o}} = G(\mathrm{I _{y_o}|y_f})$, 즉 생성 모델이 아무런 영향을 미치지 않습니다.
 
-이런 상황을 예방하기 위해 L2-weight penalty로 mask를 정규화합니다. 또한 입력 이미지의 픽셀과 color transformation C를 결합할 때, 원활한 색 변환을 수행하기 위해 A에 대한 Total Variation regualrization을 수행합니다. Attention loss $\lambda _A(G, \mathrm{I _{y_o}}, \mathrm{y_f})$은 아래와 같이 정의됩니다.
+Attention loss는 원본 이미지에서 자연스러운 변환을 위해 사용하는 Attention mask $A$을 사용한 loss입니다. 입력 이미지의 픽셀과 color transformation C를 결합할 때, 원활한 색 변환을 수행하기 위해 A에 대한 Total Variation regularization $\sum^{H, W} _{i, j}[(A _{i+1, j} - A _{i,j})^2 + (A _{i, j+1} - A _{i, j})^2]$ 을 수행합니다. TV loss라고도 불리는 Total Variation은 생성한 이미지의 픽셀들을 부드럽게 처리하고 노이즈를 줄일 수 있는 방법으로 인접하고 있는 픽셀 간의 차이를 계산해 loss로 사용합니다.
+
+모델을 학습할 때 Attetion mask $A$는 Color mask $C$와 마찬가지로 Critic의 결과에 따라 gradients와 loss로부터 학습됩니다. 그러나 $C$의 출력 범위는 [0, 255] 인 것에 비해 $A$는 [0, 1]로 범위가 좁아 생성모델 $G$의 몇몇 weight 값들이 커지면 쉽게 1로 포화될 수 있어 L2-wight penalty로 regularization을 하기 위해 $\mathbb{E} _{\mathrm{I _{y_o}} \sim \mathbb{P} _{\mathrm{o}}}[\parallel A \parallel _2]$을 Attention loss에 추가합니다.
+
+Attention loss $\lambda _A(G, \mathrm{I _{y_o}}, \mathrm{y_f})$은 아래와 같이 정의됩니다.
 
 $$
 \lambda _{TV} \mathbb{E} _{\mathrm{I _{y_o}} \sim \mathbb{P} _{\mathrm{o}}} \left[ \sum^{H, W} _{i, j}[(A _{i+1, j} - A _{i,j})^2 + (A _{i, j+1} - A _{i, j})^2] \right] + \mathbb{E} _{\mathrm{I _{y_o}} \sim \mathbb{P} _{\mathrm{o}}}[\| A \|_2]
@@ -144,7 +147,7 @@ $A=G_A(I_{y_o}\|y_f)$와 $A_{i, j}$의 $i$, $j$의 entry이고 $\lambda _{TV}$�
 Conditional Expression Loss $\mathcal{L} _Y(G, D_Y, \mathrm{I _{y_o}}, \mathrm{y_o}, \mathrm{y_f})$는 아래와 같이 계산됩니다.
 
 $$
-\mathbb{E} _{\mathrm{I _{y_o}} \sim \mathbb{P}_\mathrm{o}} [\| D _{\mathrm{y}}(G(\mathrm{I _{y_o}} | \mathrm{y_f})) - \mathrm{y_f} \| ^2 _2] + \mathbb{E} _{\mathrm{I _{y_o}} \sim \mathbb{P} _{\mathrm{o}}} [\| D _\mathrm{y}(\mathrm{I _{y_o}}) - \mathrm{y_o} \| ^2 _2]
+\mathbb{E} _{\mathrm{I _{y_o}} \sim \mathbb{P} _\mathrm{o}} [\| D _{\mathrm{y}}(G(\mathrm{I _{y_o}} | \mathrm{y_f})) - \mathrm{y_f} \| ^2 _2] + \mathbb{E} _{\mathrm{I _{y_o}} \sim \mathbb{P} _{\mathrm{o}}} [\| D _\mathrm{y}(\mathrm{I _{y_o}}) - \mathrm{y_o} \| ^2 _2]
 $$
 
 Conditional Expression Loss 수식은 $D$에게 $G$가 생성한 가짜 이미지를 사용한 경우와 진짜 이미지를 사용한 경우, 2가지 경우로 나뉩니다.
