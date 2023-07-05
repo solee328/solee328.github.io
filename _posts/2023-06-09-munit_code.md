@@ -21,9 +21,9 @@ use_math: true
 </div>
 > **Fig.6.** Animal image 변환의 결과 (MUNIT 논문)
 
-논문에서 사용된 데이터 셋 중에서 Animal Translation dataset을 사용해 동물 간의 변환을 구현하는 것으로 목표를 잡았습니다. 이유는 하나입니다. 귀여우니까요 :see_no_evil: :dog: :cat: :tiger:
+논문에서 사용된 데이터 셋은 Edges $\leftrightarrow$ shoes/handbas, Animal image translation, Street scene images, Yosemete summer $\leftrightarrow$ winter가 있는데, 저는 그 중에서 Animal Translation dataset을 사용해 동물 간의 변환을 구현하는 것으로 목표를 잡았습니다. 이유는 하나입니다. 귀여우니까요 :see_no_evil: :dog: :cat: :tiger:
 
-MUNIT에서 Animal Translation을 수행할 때는 ImageNET의 데이터를 사용했습니다. 하지만 MUNIT의 <a href="https://github.com/NVlabs/MUNIT/issues/22" target="_blank">issue</a>에서 ImageNet 데이터셋의 저작권 때문에 사용한 데이터를 공개할 수는 없다는 것을 보게 되었습니다. 사용할 수 있는 다른 유사한 데이터셋을 찾아보다 <a href="https://github.com/clovaai/stargan-v2/blob/master/README.md#animal-faces-hq-dataset-afhq" target="_blank">Animal-Faces-HQ(AFHQ)</a>를 찾게 되어 AFHQ 데이터셋을 사용했습니다. AFHQ 데이터셋을 사용해 강아지와 고양이 두 도메인 변환을 시도해보겠습니다!
+MUNIT에서 Animal Translation을 수행할 때는 ImageNET의 데이터를 사용했습니다. 하지만 MUNIT의 <a href="https://github.com/NVlabs/MUNIT/issues/22" target="_blank">issue</a>에서 ImageNet 데이터셋의 저작권 때문에 사용한 데이터를 공개할 수는 없다는 것을 보게 되었습니다. 사용할 수 있는 다른 유사한 데이터셋을 찾아보다 <a href="https://github.com/clovaai/stargan-v2/blob/master/README.md#animal-faces-hq-dataset-afhq" target="_blank">Animal-Faces-HQ(AFHQ)</a>를 찾게 되어 AFHQ 데이터셋을 사용했습니다. AFHQ 데이터셋을 사용해 개와 고양이 두 도메인 간 변환을 시도해보겠습니다!
 
 
 ### AFHQ 소개
@@ -216,7 +216,7 @@ class Residual(nn.Module):
 > Fig.3에서 표현된 Content Encoder 부분
 
 <br>
-Content Encoder는 이미지를 입력받아 이미지의 내용을 담고 있는 Content code를 만드는 것이 목적입니다. 크게 Down-sampling, Residual Blocks 2단계로 이루어져 있습니다.
+Content Encoder는 이미지를 입력받아 이미지의 내용을 담고 있는 Content code를 만드는 것이 목적입니다. Content Encoder의 구조는 $\mathsf{c7s1-64}$, $\mathsf{d128}$, $\mathsf{d256}$, $\mathsf{R256}$, $\mathsf{R256}$, $\mathsf{R256}$, $\mathsf{R256}$으로 Down-sampling, Residual Blocks 2단계로 이루어져 있습니다.
 
 Down-sampling 부분은 $\mathsf{c7s1-64}$, $\mathsf{d128}$, $\mathsf{d256}$으로 위의 `class xk`로 객체를 만들었습니다.
 
@@ -256,9 +256,7 @@ class ContentEncoder(nn.Module):
 > Fig.3에서 표현된 Style Encoder 부분
 
 <br>
-Style Encoder는 이미지를 입력으로 받아 이미지의 스타일을 나타내는 Style code를 출력하는 것이 목표입니다. Down-sampling, Global pooling, Fully connected layer 단계로 이루어져 있습니다.
-
-$\mathsf{c7s1-64, d128, d256, d256, d256, GAP, fc8}$
+Style Encoder는 이미지를 입력으로 받아 이미지의 스타일을 나타내는 Style code를 출력하는 것이 목표입니다. Style Encoder의 구조는 $\mathsf{c7s1-64, d128, d256, d256, d256, GAP, fc8}$으로 Down-sampling, Global pooling, Fully connected layer 단계로 이루어져 있습니다.
 
 Down-sampling 부분은 $\mathsf{c7s1-64, d128, d256, d256, d256}$으로 Content Encoder와 마찬가지로 `class xk`를 사용해 만들었습니다.
 
@@ -658,7 +656,7 @@ Bidirectional Reconstruction Loss는 Image reconstruction과 Latent reconstructi
 
 Image reconstruction은 이미지 $x_1$를 encode해 style, content code를 만든 후 두 code를 다시 decode했을 때 결과 이미지 $G_1(E_1(x_1))$와 원본 이미지 $x$ 간의 차이($\|G_1(E_1(x_1)) - x_1\|_1$)를 계산합니다.
 
-Latent reconstruction은 style reconstruction, content reconstruction으로 latent code($c_1$, $s_2$)를 이용해 decode해 생성한 이미지($G_2(c_1, s_2)$)를 만든 후 해당 이미지를 encode한 결과인 latent code($E_2(G_2(c_1, s_2))$)를 이미지를 만들 때 사용한 latent code와의 차이를 계산합니다. content reconstruction은 $\| E ^c _2(G_2(c_1, s_2)) - c_1\|_1$, style reconstruction은 $\| E ^s _2(G_2(c_1, s_2)) - s_2 \|_1$를 계산합니다.
+Latent reconstruction은 style reconstruction, content reconstruction이 있으며 latent code($c_1$, $s_2$)를 이용해 decode해 생성한 이미지($G_2(c_1, s_2)$)를 만든 후 해당 이미지를 encode한 결과인 latent code($E_2(G_2(c_1, s_2))$)를 이미지를 만들 때 사용한 latent code와의 차이를 계산합니다. content reconstruction은 $\| E ^c _2(G_2(c_1, s_2)) - c_1\|_1$, style reconstruction은 $\| E ^s _2(G_2(c_1, s_2)) - s_2 \|_1$를 계산합니다.
 
 Reconstruction loss는 모두 L1 distance를 계산하기 때문에 pytorch에서 제공하는 `nn.L1Loss`를 사용해 계산했으며 아래의 코드는 Generator 학습시 사용되는 Reconstruction 계산을 구현한 부분입니다.
 
