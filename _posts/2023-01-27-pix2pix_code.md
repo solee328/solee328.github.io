@@ -477,4 +477,4 @@ history graph에서도 generator(G)의 loss가 줄어들고 있는 모습을 확
 
 Pix2Pix 글은 여기서 끝입니다! 봐주셔서 감사합니다!!<br>
 이번 논문을 구현하면서는 transform에 대한 교훈이 가장 중요했던 것 같습니다.... 문제가 생겼을 때 모델이나 하이퍼 파라미터 종류만 수정하는 것 위주였는데 시간을 날리면서 깨우침을 얻은 기분입니다 :joy:<br>
-최종코드는 <a href="gan/Pix2Pix.ipynb" target="_blank">github</a>에서 확인하실 수 있습니다:)
+최종코드는 <a href="https://github.com/solee328/post-code/blob/main/gan/Pix2Pix.ipynb" target="_blank">github</a>에서 확인하실 수 있습니다:)
