@@ -16,15 +16,15 @@ use_math: true
 
 ## 소개
 
-Generative Adversarial Network가 발전함에 따라 <a href="https://arxiv.org/abs/1711.09020" target="_blank">StarGAN</a>과 같은 구조로 많은 발전이 이루어졌습니다. 나이, 머리색, 성별과 같이 여러 얼굴 속성을 변경할 수 있는 StarGAN은 데이터셋에 정의된 속성으로만 변경할 수 있으며 연속적인 변환이 불가능합니다. 예시로 <a href="https://www.tandfonline.com/doi/abs/10.1080/02699930903485076" target="_blank">RaFD</a> 데이터셋을 학습했다면 얼굴 표정에 대한 8개의 이진 라벨, 즉 슬픔, 중립, 분노, 경멸, 혐오, 놀람, 두려움, 행복함에 대해 얼굴 표정 변환이 가능하며 다른 표정으로는 변환할 수 없습니다.
+Generative Adversarial Network는 발전하며 <a href="https://arxiv.org/abs/1711.09020" target="_blank">StarGAN</a>과 같은 구조로 많은 발전이 이루어졌습니다. 나이, 머리색, 성별과 같이 여러 얼굴 속성을 변경할 수 있는 StarGAN은 데이터셋에 정의된 속성으로만 입력 이미지를 변환할 수 있으며 연속적인 변환이 불가능합니다. 예시로 <a href="https://www.tandfonline.com/doi/abs/10.1080/02699930903485076" target="_blank">RaFD</a> 데이터셋을 학습했다면 얼굴 표정에 대한 8개의 이진 라벨, 즉 슬픔, 중립, 분노, 경멸, 혐오, 놀람, 두려움, 행복함에 대해 얼굴 표정 변환이 가능하며 다른 표정으로는 변환할 수 없습니다.
 
-GANimation에서는 특정 표정 도메인에 해당하는 데이터셋이 없더라도 다양한 표정으로 변환이 연속적으로 가능하고 고해상도 이미지에도 자연스럽게 모델을 적용할 수 있는 것이 장점입니다. 이와 같은 장점을 가지기 위한 GANimation의 큰 특징 두가지는 Action Units와 Attention Layer입니다.
+GANimation에서는 특정 표정 도메인에 해당하는 데이터셋이 없더라도 다양한 표정으로 변환이 연속적으로 가능하고 고해상도 이미지에도 자연스럽게 모델을 적용할 수 있는 것이 장점입니다. 이와 같은 장점을 가지기 위한 GANimation의 특징 두가지는 Action Units와 Attention Layer입니다.
 
 ### Action Units
 
-논문에서 얼굴 표정은 얼굴 근육으로 결합되고 조절된 행동의 결과로 하나의 라벨로 정의될 수 없다 언급합니다. 따라서 GANimation에서는 해부학적 관점으로 얼굴 표정을 변환하기 위해 Action Units이라 불리는 근육 별 움직임을 사용합니다. Action Units은 Pal Ekman과 Wallace Friesen이 개발한 Facial Action Coding System(FACS)에서 얼굴 근육을 기반으로 얼굴 표정을 분석하기 위해 사용되는 얼굴 근육 동작 단위입니다. Action Units의 수는 많지 않지만 7,000개 이상의 다른 AU 조합이 가능하다고 합니다.
+논문에서 얼굴 표정은 얼굴 근육으로 결합되고 조절된 행동의 결과로 하나의 라벨로 정의될 수 없다 언급합니다. 따라서 GANimation에서는 슬픔, 행복함과 같은 정의된 표정 라벨로 얼굴 표정을 변환하는 것이 아니라 해부학적 관점으로 얼굴 표정을 변환하기 위해 Action Units이라 불리는 근육 별 움직임을 사용합니다. Action Units은 Pal Ekman과 Wallace Friesen이 개발한 Facial Action Coding System(FACS)에서 얼굴 근육을 기반으로 얼굴 표정을 분석하기 위해 사용되는 얼굴 근육 동작 단위입니다. Action Units의 수는 많지 않지만 7,000개 이상의 다른 AU 조합이 가능하다고 합니다.
 
-각각 AU에 대한 정보는 <a href="https://www.cs.cmu.edu/~face/facs.htm" target="_blank">FACS-Facial Action Coding System</a>에서 확인할 수 있습니다. 공포에 대한 얼굴 표정은 일반적으로 Inner Brow Raiser(AU1), Outer Brow Raiser(AU2), Brow Lowerer(AU4), Upper Lid Raiser(AU5), Lid Tighttener(AU7), Lip Stretcher(AU20), Jaw Drop(AU26)에 의해 생성되며 각 AU의 크기에 따라 표현하는 공포의 감정 크기가 달라집니다.
+각각 AU에 대한 정보는 <a href="https://www.cs.cmu.edu/~face/facs.htm" target="_blank">FACS-Facial Action Coding System</a>에서 확인할 수 있습니다. 예시로 공포에 대한 표정을 표현하기 위해서는 일반적으로 Inner Brow Raiser(AU1), Outer Brow Raiser(AU2), Brow Lowerer(AU4), Upper Lid Raiser(AU5), Lid Tighttener(AU7), Lip Stretcher(AU20), Jaw Drop(AU26)를 사용하며 각 AU의 크기에 따라 표현하는 공포의 감정 크기가 달라집니다.
 
 GANimation은 StarGAN와 같이 특정 도메인에 해당하는 이미지를 조건화하는 대신 각 action unit의 존재 유무와 크기를 나타내는 1차원 벡터에 조건화되는 GAN 구조를 구축합니다.
 
@@ -39,7 +39,7 @@ Attention mask $\mathrm{A}$의 어두운 영역은 이미지의 해당 영역이
 
 이전에 다뤘던 모델들과는 다르게 GANimation의 생성 모델은 2개의 이미지를 결과로 출력합니다. 바로 Attention mask와 Color mask입니다. Attention mask $\mathrm{A}$는 AUs에 집중하기 위한 이미지로 표정 변화와 관련된 픽셀들만 추측할 수 있도록 도와주는 mask입니다. 입력 이미지에서 배경에 해당하는 부분은 $\mathrm{A}$에서는 하얀색으로, 표정 변화와 관련이 깊은 픽셀일 수록 검은색에 가까운 색으로 표현됩니다. 배경 픽셀로 판단된 픽셀은 원본 이미지에서 복사해서 가져오는 방식을 사용해 자연스러운 결과 이미지를 생성하는 것이 GANimation의 장점입니다.
 
-Fig.5의 이미지에서 Attention mask 와 Color mask $\mathrm{C}$의 예시를 볼 수 있습니다. 크게 변형되는 얼굴 근육이 검은색에 가까운 색을 띄고 있는 $\mathrm{A}$와 배경과 관련된 픽셀들은 사용되지 않기에 색상이 녹색 파란색 널뛰고 있는 $\mathrm{C}$를 볼 수 있습니다.
+Fig.5의 이미지에서 Attention mask 와 Color mask $\mathrm{C}$의 예시를 볼 수 있습니다. 크게 변형되는 얼굴 근육이 검은색에 가까운 색을 띄고 있는 $\mathrm{A}$와 $\mathrm{A}$에서 하얀색으로 표현되어 배경과 관련된 영역이라 판단된 픽셀들은 원본 이미지에서 픽셀 값을 가져오기 때문에 해당 픽셀들은 $\mathrm{C}$에서 사용되지 않습니다. Fig.5의 $\mathrm{C}$의 외곽 부분은 $\mathrm{A}$에서 배경 픽셀인 하얀색에 해당해 사용되지 않기에 색상이 녹색 파란색 널뛰고 있는 $\mathrm{C}$를 볼 수 있습니다.
 <br><br>
 
 ---
@@ -47,10 +47,10 @@ Fig.5의 이미지에서 Attention mask 와 Color mask $\mathrm{C}$의 예시를
 ## 사용 데이터셋 & 라벨링
 GANimation은 데이터셋으로 AU 라벨링이된 얼굴 표정 이미지를 가진 <a href="http://cbcsl.ece.ohio-state.edu/EmotionNetChallenge/" target="_blank">EmotionNet Dataset</a>을 사용했으며 전체 약 100만개의 데이터 중 약 200,0000개를 사용했다 합니다.
 
-이미지 $\mathrm{I}$에 대한 AU 라벨링 값은 $\mathrm{y_o}$로 표현합니다. 입력 이미지가 $\mathrm{I _{y_r}}$ 일 때 이 이미지의 AU 라벨링 값은 $\mathrm{y_r}$이 됩니다. 모든 표정 표현은 $N$개의 action unit으로 이루어져 있으며 $\mathrm{y_r} = (y_1, \dots, y_N)^{\mathsf{T}}$에 인코딩됩니다. 이때 각 $y_n$은 n번째 action unit의 크기를 0과 1 사이의 정규화된 값을 나타냅니다. 0부터 1 사이의 값으로 표현 덕분에 continuous한 표현이 가능하며 여러 표정 사이 자연스러운 보간이 가능해 사실적이고 부드러운 얼굴 표정을 표현할 수 있습니다.
+이미지 $\mathrm{I}$에 대한 AU 라벨링 값은 $\mathrm{y}$로 표현합니다. 입력 이미지가 $\mathrm{I _{y_r}}$ 일 때 이 이미지의 AU 라벨링 값은 $\mathrm{y_r}$이 됩니다. 모든 표정 표현은 $N$개의 action unit으로 이루어져 있으며 $\mathrm{y_r} = (y_1, \dots, y_N)^{\mathsf{T}}$에 인코딩됩니다. 이때 각 $y_n$은 n번째 action unit의 크기를 0과 1 사이의 정규화된 값을 나타냅니다. 0부터 1 사이의 값으로 표현 덕분에 continuous한 표현이 가능하며 여러 표정 사이 자연스러운 보간이 가능해 사실적이고 부드러운 얼굴 표정을 표현할 수 있습니다.
 
 
-GANimation의 목표는 action unit $\mathrm{y_r}$에 해당하는 입력 이미지 $\mathrm{I _{y_r}}$을 목표 action unit $\mathrm{y_g}$에 해당하는 결과 이미지 $\mathrm{I _{y_g}}$로 변환할 수 있는 매핑 $\mathcal{M}$을 학습하는 것입니다. 매핑 $\mathcal{M} : (\mathrm{I _{y_r}}, y_g) \rightarrow \mathrm{I _{y_g}} $을 추정하기 위해 목표 action unit $\mathrm{y}^m_g$를 랜덤하게 생성해 사용합니다. 입력 이미지의 표정을 변환하기 위해 목표 표현을 가진 페어 이미지 $\mathrm{I _{y_g}}$가 필요하지 않은 비지도 방식을 사용합니다.
+GANimation의 목표는 action unit $\mathrm{y_r}$에 해당하는 입력 이미지 $\mathrm{I _{y_r}}$을 목표 action unit $\mathrm{y_g}$에 해당하는 결과 이미지 $\mathrm{I _{y_g}}$로 변환할 수 있는 매핑 $\mathcal{M}$을 학습하는 것입니다. 매핑 $\mathcal{M} : (\mathrm{I _{y_r}}, y_g) \rightarrow \mathrm{I _{y_g}} $을 추정하기 위해 목표 action unit $\mathrm{y^m_g}$를 랜덤하게 생성해 사용합니다. 목표 action unit인 $\mathrm{y_g}$를 랜덤으로 생성하기 때문에 입력 이미지의 표정을 변환하기 위해 목표 표현을 가진 페어 이미지 $\mathrm{I _{y_g}}$가 필요하지 않은 비지도 방식을 사용합니다.
 <br><br>
 
 ---
@@ -64,7 +64,7 @@ GANimation의 목표는 action unit $\mathrm{y_r}$에 해당하는 입력 이미
 제안된 구조는 2개의 메인 블록으로 이루어져 있습니다. Color mask와 Attention mask를 생성하는 모델 $G$와 생성된 이미지가 사실적인지 판별하는 $D_I$와 조건에 충족하는 표현 $\hat{y_g}$에 대해 평가하는 판별 모델 $D$가 있습니다.<br>
 이 방법은 지도 학습이 필요하지 않습니다. 즉, 표현이 다른 동일한 사람에 대한 이미지페어나 목표 이미지 $\mathrm{I _{y_g}}$가 필요하지 않습니다.
 
-Fig.2는 GANimation의 이미지 생성에 대한 개요를 보여줍니다. GANimation은 2개의 주요 모듈로 구성되어 사실적인 조건부 이미지를 생성하는 새로운 접근 방식을 설명합니다.
+Fig.2는 GANimation의 이미지 생성에 대한 개요를 보여줍니다. GANimation은 2개의 주요 모듈로 구성되어 사실적인 조건부 이미지를 생성하는 새로운 접근 방식을 제안합니다.
 
 첫번째 주요 모듈은 bidirectional adversarial architecture입니다. 표정 $\mathrm{y_r}$을 가지고 있는 입력 이미지 $\mathrm{I _{y_r}}$을 목표 조건 $\mathrm{y_g}$에 해당하는 이미지로 변환한 이미지 $\mathrm{I _{y_g}}$를 생성 모델로 생성합니다. 판별 모델은 $\mathrm{I _{y_g}}$가 진짜 이미지인지 아닌지 판별하고 이미지의 표정을 분석해 $\hat{\mathrm{y}} _{\mathrm{g}}$를 얻어 이미지를 생성할 때 사용한 $\mathrm{y_g}$와의 차이를 계산해 loss에 사용합니다.
 
@@ -86,7 +86,7 @@ Fig.2는 GANimation의 이미지 생성에 대한 개요를 보여줍니다. GAN
 
 Color mask $C$는 입력 이미지 $\mathrm{I _{y_o}}$와 조건부에 해당하는 action unit 라벨 $\mathrm{y_f}$을 입력받아 $\mathrm{y_f}$에 해당하는 RGB 이미지 $G_C(\mathrm{I _{y_o}} \| \mathrm{y_f})$를 만든 것으로 RGB color 이미지이므로 $C = G_C(\mathrm{I _{y_o}} \| \mathrm{y_f}) \in \mathbb{R}^{H \times W \times 3}$입니다.
 
-Attention mask $A$는 입력 이미지 $\mathrm{I _{y_o}}$와 조건부에 해당하는 action unit 라벨 $\mathrm{y_f}$을 입력받아 흑백 이미지(gray scale) 이미지 $G_A (\mathrm{I _{y_o}} \| \mathrm{y_f})$를 만든 것으로 흑백 이미지이므로 $A = G_A(\mathrm{I _{y_o}} \| \mathrm{y_f}) \in \lbrace 0, \dots ,1 \rbrace ^{H \times W}$입니다.
+Attention mask $A$는 입력 이미지 $\mathrm{I _{y_o}}$와 조건부에 해당하는 action unit 라벨 $\mathrm{y_f}$을 입력받아 흑백 이미지(gray scale) 이미지 $G_A (\mathrm{I _{y_o}} \| \mathrm{y_f})$를 만든 것으로 흑백 이미지이고 [0, 1] 범위 안에서 표현되기 때문에 $A = G_A(\mathrm{I _{y_o}} \| \mathrm{y_f}) \in \lbrace 0, \dots ,1 \rbrace ^{H \times W}$입니다.
 
 $A$는 $C$의 각 픽셀들이 변형되고 확장되는 정도를 나타냅니다. 얼굴 움직임을 정의하고 변형되어야 하는 픽셀들은 0에 가까운 검은 색으로, 변형되지 않은 픽셀들은 1에 가까운 하얀색으로 표현됩니다. 변형되지 않아도 되는 하얀 픽셀들은 원본 이미지 $\mathrm{I _{y_o}}$ 에서 픽셀 값을 가져오고 변형되어야 하는 검은 픽셀들은 Color mask $C$에서 가져옵니다.
 
@@ -131,7 +131,7 @@ $\lambda _{gp}$는 panalty 계수입니다.
 
 Attention loss는 원본 이미지에서 자연스러운 변환을 위해 사용하는 Attention mask $A$을 사용한 loss입니다. 입력 이미지의 픽셀과 color transformation C를 결합할 때, 원활한 색 변환을 수행하기 위해 A에 대한 Total Variation regularization $\sum^{H, W} _{i, j}[(A _{i+1, j} - A _{i,j})^2 + (A _{i, j+1} - A _{i, j})^2]$ 을 수행합니다. TV loss라고도 불리는 Total Variation은 생성한 이미지의 픽셀들을 부드럽게 처리하고 노이즈를 줄일 수 있는 방법으로 인접하고 있는 픽셀 간의 차이를 계산해 loss로 사용합니다.
 
-모델을 학습할 때 Attetion mask $A$는 Color mask $C$와 마찬가지로 Critic의 결과에 따라 gradients와 loss로부터 학습됩니다. 그러나 $C$의 출력 범위는 [0, 255] 인 것에 비해 $A$는 [0, 1]로 범위가 좁아 생성모델 $G$의 몇몇 weight 값들이 커지면 쉽게 1로 포화될 수 있어 L2-wight penalty로 regularization을 하기 위해 $\mathbb{E} _{\mathrm{I _{y_o}} \sim \mathbb{P} _{\mathrm{o}}}[\parallel A \parallel _2]$을 Attention loss에 추가합니다.
+모델을 학습할 때 Attetion mask $A$는 Color mask $C$와 마찬가지로 Critic의 결과에 따라 gradients와 loss로부터 학습됩니다. 그러나 $C$의 출력 범위는 [0, 255] 인 것에 비해 $A$는 [0, 1]로 범위가 좁아 생성모델 $G$의 몇몇 weight 값들이 커지면 쉽게 1로 포화될 수 있어 L2-wight penalty로 regularize합니다. L2를 $A$에 적용한 수식 $\mathbb{E} _{\mathrm{I _{y_o}} \sim \mathbb{P} _{\mathrm{o}}}[\parallel A \parallel _2]$을 Attention loss에 추가합니다.
 
 Attention loss $\lambda _A(G, \mathrm{I _{y_o}}, \mathrm{y_f})$은 아래와 같이 정의됩니다.
 
@@ -186,7 +186,7 @@ $\lambda_A, \lambda_y, \lambda_{idt}$는 hyper-parameter로 모든 loss term의 
 
 결과에서는 단일 Action Unit 조절, 다중 Action Units 조절을 연속적으로 테스트한 결과, 베이스 라인 모델들과 표정 변화를 불연속적으로 테스트해 비교한 결과, wild 이미지 결과 그리고 모델의 한계와 실패 사례에 대해 보여줍니다.
 
-일부 실험에서는 이미지 내의 얼굴 부분이 crop 되지 않았습니다. 논문에서는 detector(face detector from <a>https://github.com/ageitgey/face_recognition</a>)를 사용해 얼굴 부분을 잘라내고, GANimation로 표정 변환을 적용한 후 생성된 얼굴을 영상의 워낼 위치로 다시 배치했습니다. Attention mechanism은 crop한 얼굴과 원본 이미지 간의 원활한 변환을 보장하기에 다른 모델들에 비해 고해상도 이미지를 처리할 수 있다고 합니다.
+GANimation은 고해상도 이미지를 처리하기 위해 얼굴을 crop한 이미지 데이터셋을 만들지 않아도 되기 때문에 일부 실험의 고해상도 이미지를 처리하기 위해 이미지 내의 얼굴 부분을 crop하지 않았다고 합니다. 논문에서는 detector(face detector from <a>https://github.com/ageitgey/face_recognition</a>)를 사용해 얼굴 부분을 잘라내고, GANimation로 표정 변환을 적용한 후 생성된 얼굴을 영상의 워낼 위치로 다시 배치했습니다. Attention mechanism은 crop한 얼굴과 원본 이미지 간의 원활한 변환을 보장하기에 다른 모델들에 비해 고해상도 이미지를 처리할 수 있다고 합니다.
 
 ### Action Units Edition
 
@@ -197,9 +197,9 @@ $\lambda_A, \lambda_y, \lambda_{idt}$는 hyper-parameter로 모든 loss term의 
 > Fig.4. Single AUs Edution.<br>
 특정 AU는 강도 레벨이 증가할 때 활성화됩니다. 첫번째 행은 모든 경우에 원본 영상을 생성하는 AU 강도 0을 적용한 것에 해당합니다.
 
-사람의 identity를 유지하면서 다양한 강도의 AU를 활성화하는 모델의 능력을 평가했으며 Figure 4는 4단계의 강도(0, 0.33, 0.66, 1)로 변환된 9개의 AU 집합을 보여줍니다. identity(정체성) 능력은 원하지 않는 얼굴 움직임이 도입하지 않도록 보장하는데 필수적입니다.
+사람의 identity를 유지하면서 다양한 강도의 AU를 활성화하는 모델의 능력을 평가했으며 Figure 4는 4단계의 강도(0, 0.33, 0.66, 1)로 변환된 9개의 AU 집합을 보여줍니다.
 
-0인 경우 AU는 변하지 않으며 0이 아닌 경우 각 AU가 점진적으로 강조되는 것을 관찰할 수 있습니다. 대부분의 경우 실제 이미지와 구별하기 어려운 복잡한 얼굴 움직임을 그럴싸 하게 렌더링함을 볼 수 있습니다. 또한 얼굴 근육 집합의 독립성이 생성 모델에 의해 학습되었는데, 눈과 얼굴의 절반 위 부분에 상대적인 AU(AU 1, 2, 4, 5, 45)는 입의 근육에 영향을 주지 않습니다. 마찬가지로 구강 관련 변형(AU 10, 12, 15, 25)는 눈이나 눈썹 근육에 영향을 주지 않습니다.
+강도가 0인 경우 AU 근육은 변하지 않으며 0이 아닌 경우 각 AU가 점진적으로 강조되는 것을 관찰할 수 있습니다. 대부분의 경우 실제 이미지와 구별하기 어려운 복잡한 얼굴 움직임을 그럴싸 하게 렌더링함을 볼 수 있습니다. 또한 얼굴 근육 집합의 독립성이 생성 모델에 의해 학습되었는데, 눈과 얼굴의 절반 위 부분에 상대적인 AU(AU 1, 2, 4, 5, 45)는 입의 근육에 영향을 주지 않습니다. 마찬가지로 구강 관련 변형(AU 10, 12, 15, 25)는 눈이나 눈썹 근육에 영향을 주지 않습니다.
 
 <div>
   <img src="/assets/images/posts/ganimation/paper/fig1.png" width="600" height="400">
@@ -207,7 +207,7 @@ $\lambda_A, \lambda_y, \lambda_{idt}$는 hyper-parameter로 모든 loss term의 
 > Fig.1. 단일 이미지에서 얼굴 애니메이션.<br>
 불연속적인 수의 표현에 제한되지 않고 주어진 이미지를 연속적으로 새로운 표현으로 렌더링할 수 있는 해부학적으로 일관된 접근 방식을 제안합니다. 예시에서 가장 왼쪽에 있는 입력 이미지 $\mathrm{I _{y_r}}$(녹색 사각형으로 강조됨)만 제공하며, 매개 변수 $\alpha$는 미소와 같은 표정과 관련된 action unit의 활성화 정도를 제어합니다. 또한 이 시스템은 맨 아래 행의 예시와 같이 비정상적인 조명 조건을 가진 이미지를 처리할 수 있습니다.
 
-다음은 다중 Action Units 조절 결과입니다. 첫번째 열은 표정 $\mathrm{y_r}$을 가진 원본 이미지이고 가장 오른쪽 열은 목표 표정 $\mathrm{y_g}$를 조건으로 합성된 생성 이미지 결과입니다. 나머지 열은 기존 표정과 목표 표정의 선형 보간으로 조건화된 생성 모델의 결과입니다($\alpha \mathrm{y_g} + (1-\alpha) \mathrm{y_r}$).
+다음은 다중 Action Units 조절 결과입니다. 첫번째 열은 표정 $\mathrm{y_r}$을 가진 원본 이미지이고 가장 오른쪽 열은 목표 표정 $\mathrm{y_g}$를 조건으로 합성된 생성 이미지 결과입니다. 나머지 열은 기존 표정과 목표 표정의 선형 보간($\alpha \mathrm{y_g} + (1-\alpha) \mathrm{y_r}$)으로 조건화된 생성 모델의 결과입니다.
 
 프레임 별 일관된 변환이 매끄럽고 원활하다는 것을 볼 수 있으며 다양한 조명 조건에서도 좋은 결과를 보여주었음은 물론이고 아바타(영화) 이미지의 경우 CG 이미지인만큼 현실이 아닌 비현실 데이터 분포임에도 불구하고 좋은 결과를 보여주었습니다.
 
