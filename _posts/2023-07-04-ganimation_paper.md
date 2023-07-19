@@ -9,7 +9,7 @@ use_math: true
 ---
 
 안녕하세요!<br>
-이번 글은 이미지의 표정을 해부학적으로 의미있고 연속적으로 변환할 수 있어 표정 애니메이션을 만들 수 있는 GANimation 논문에 대해 살펴보겠습니다.
+이번 글은 이미지의 표정을 해부학적으로 의미있고 연속적으로 변환할 수 있어 표정 애니메이션을 만들 수 있어 GANimation이라 불리는 <a href="https://arxiv.org/abs/1807.09251" target="_blank">GANimation: Anatomically-aware Facial Animation from a Single Image</a> 논문에 대해 살펴보겠습니다.
 <br><br>
 
 ---
