@@ -362,7 +362,7 @@ class Discriminator(nn.Module):
     return x_src, x_cls
 ```
 
-이미지가 진짜인지 가짜인지 판별하는 PathGAN 역할은 x_src로 출력하고 이미지의 도메인이 무엇인지 예측하는 부분은 x_cls로 출력합니다. 도메인을 예측하는 cls는 각자 선택한 도메인의 수에 따라 달라지는데 저는 celebA의 도메인 수는 5 개이고 CelebB의 도메인 수는 4 개이므로 9(5+4)가 self.cls의 out_feature가 됩니다.
+이미지가 진짜인지 가짜인지 판별하는 PatchGAN 역할은 x_src로 출력하고 이미지의 도메인이 무엇인지 예측하는 부분은 x_cls로 출력합니다. 도메인을 예측하는 cls는 각자 선택한 도메인의 수에 따라 달라지는데 저는 celebA의 도메인 수는 5 개이고 CelebB의 도메인 수는 4 개이므로 9(5+4)가 self.cls의 out_feature가 됩니다.
 <br><br>
 
 ---
