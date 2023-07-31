@@ -21,7 +21,7 @@ use_math: true
 
 GANimation은 action unit이라는 condition을 사용하는 condition GAN입니다. 조건을 사용하기 위해 CelebA를 다운받은 후에는 AU 라벨링 과정을 거쳐야 하며 <a href="https://github.com/TadasBaltrusaitis/OpenFace/wiki/Action-Units" target="_blank">OpenFace</a>를 사용해 AU 라벨링이 가능합니다.
 
-
+OpenFace를 사용하기 위해서는 모델을 다운받아야 하는데 <a href="https://github.com/TadasBaltrusaitis/OpenFace/wiki/Model-download" target="_blank">github</a>에서 관련 설명을 볼 수 있습니다. 링크에는 PowerShell(Windows), bash script(Mac)를 사용해 자동으로 다운받거나 OneDrive, GoogleDrive를 통해 다운받을 수 있는 링크가 있었습니다. 저는 PowerShell을 이용해서 다운받았습니다.
 
 
 
