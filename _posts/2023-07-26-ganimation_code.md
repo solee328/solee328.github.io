@@ -144,9 +144,7 @@ CycleGAN(2) - 논문 구현에서 사용한 것과 3가지 차이점이 존재�
 
 첫번째 차이점은 이미지 해상도에 따른 Residual block의 개수로 CycleGAN에서는 256x256 해상도 이미지를 사용해 9개의 Residual block을 사용했으며 GANimation에서는 128x128 크기의 이미지 데이터를 사용해 6개의 Residual block을 사용합니다.
 
-두번째 차이점은 condition이 입력에 추가되어 입력 이미지와 합쳐지는 것입니다. CycleGAN은 condition GAN이 아니라 condition이 입력되지 않았지만 GANimation은 Action Unit 값이 condition으로 입력되기에 입력 x와 condition c를 합쳐주어야 합니다.
-
-Generator
+위의 ck, dk, uk, residual을 사용해 6개의 Residual block을 사용한 모델을 만들어주었습니다.
 
 ```python
 class Generator(nn.Module):
@@ -189,8 +187,39 @@ class Generator(nn.Module):
         return color, attention
 ```
 
+두번째 차이점은 condition이 입력에 추가되어 입력 이미지와 합쳐지는 것입니다. CycleGAN은 condition GAN이 아니라 condition이 입력되지 않았지만 GANimation은 Action Unit 값이 condition으로 입력되기에 입력 x와 condition c를 합쳐주어야 합니다.
+
+```
+x + c 그림
+```
+
+마지막 차이점은 출력 layer가 color mask, attention mask를 출력하기 위해 병렬 layer로 구조된다는 것입니다. color mask는 RGB color 이미지니까 channel을 3으로 줄이기 위해 nn.Conv2d(64, 3)을 적용한 후 nn.Tanh()로 이미지를 생성합니다. attention mask는 gray scale이므로 channel을 1로 줄이기 위해 nn.Conv2d(64, 1)을 적용한 후 Sigmoid()를 적용해 이미지를 생성합니다.
 
 ### Discriminator
+
+```python
+class Discriminator(nn.Module):
+    def __init__(self):
+        super(Discriminator, self).__init__()
+
+        self.model = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1),
+            nn.LeakyReLU(0.2)
+        )
+
+        self.cls = nn.Conv2d(256, 1, kernel_size=3, padding=1)
+        self.aus = nn.Conv2d(256, len_aus, kernel_size=16)
+
+    def forward(self, x):
+        feature = self.model(x)
+        cls = self.cls(feature)
+        aus = self.aus(feature)
+        return cls, aus.squeeze()
+```
 
 <br><br>
 
@@ -201,9 +230,29 @@ class Generator(nn.Module):
 
 ### Adversarial Loss
 
+```python
+def gradient_penalty(x, y):
+    gradients, *_ = torch.autograd.grad(outputs=y,
+                                        inputs=x,
+                                        grad_outputs=y.new_ones(y.shape),
+                                        create_graph=True)
+
+    gradients = gradients.view(gradients.size(0), -1)  # norm 계산을 위한 reshape
+    norm = gradients.norm(2, dim=-1)  # L2 norm
+    return torch.mean((norm -1) ** 2)  # mse (norm - 1)
+```
 
 
 ### Attention Loss
+
+
+```python
+def total_variation_loss(img):
+    bs_img, c_img, h_img, w_img = img.size()
+    tv_h = torch.pow(img[:,:,1:,:]-img[:,:,:-1,:], 2).sum()
+    tv_w = torch.pow(img[:,:,:,1:]-img[:,:,:,:-1], 2).sum()
+    return tv_h + tv_w
+```
 
 
 ### Conditional Expression Loss
