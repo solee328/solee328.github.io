@@ -226,9 +226,19 @@ class Discriminator(nn.Module):
 ---
 
 ## 3. Loss
+Loss는 생성된 이미지의 분포를 학습 이미지 분포로 변화시키는 WGAN-GP[9]의 Adversarial loss, attention mask가 포화되는 것을 예방하고 결과 이미지의 질감을 매끄럽게 표현하기 위한 attention loss, 생성된 이미지들이 원하는 조건(AUs)의 이미지를 표현하도록 하는 Conditional expression loss, 입력 이미지의 사람의 정체성을 보존하기 위한 identity loss로 이루어져 있습니다.
 
 
 ### Adversarial Loss
+
+Adversarial loss는 StarGAN에서도 사용했던 <a href="https://arxiv.org/abs/1704.00028" target="_blank">WGAN-GP</a>를 사용합니다.
+
+$$
+\mathbb{E} _{I _{y_o} \sim \mathbb{P}_o} [D _I(G(I _{y_o} | y_f))] - \mathbb{E} _{I _{y_o} \sim \mathbb{P}_o}[D _I(I _{y_o})] + \lambda _{gp} \mathbb{E} _{\tilde{I} \sim \mathbb{P} _{\tilde{I}}}[(\| \nabla _{\tilde{I}} D _I(\tilde{I})\| -1 )^2]
+$$
+
+
+수식 설명
 
 ```python
 def gradient_penalty(x, y):
@@ -242,8 +252,17 @@ def gradient_penalty(x, y):
     return torch.mean((norm -1) ** 2)  # mse (norm - 1)
 ```
 
+코드 설명
+
 
 ### Attention Loss
+
+Attention loss는 2가지 목적이 있습니다.
+
+$$
+\lambda_{TV} \mathbb{E} _{I _{y_o} \sim \mathbb{P} _o} \left[ \sum ^{H, W} _{i, j}[(A _{i+1, j} - A _{i,j})^2 + (A _{i, j+1} - A _{i, j})^2] \right] + \mathbb{E} _{I _{y_o} \sim \mathbb{P}_o}[\| A \|_2]
+$$
+
 
 
 ```python
@@ -258,12 +277,22 @@ def total_variation_loss(img):
 ### Conditional Expression Loss
 
 
+$$
+\mathbb{E} _{I _{y_o} \sim \mathbb{P}_o} [\| D _y(G(I _{y_o}|y_f)) - y_f \|^2_2] + \mathbb{E} _{I _{y_o} \sim \mathbb{P}_o} [\| D _y(I _{y_o}) - y_o \|^2_2]
+$$
+
 ### Identity Loss
+
+$$
+\mathcal{L} _{idt}(G, I _{y_o}, y_o, y_f) = \mathbb{E} _{I_{y_o} \sim \mathbb{P}_o}[\| G(G(I _{y_o}|y_f)|y_o) \|_1]
+$$
 
 
 ###  Full Loss
 
+D의 경우 코드
 
+G의 경우 코드
 
 ---
 
