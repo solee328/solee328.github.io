@@ -237,8 +237,14 @@ $$
 \mathbb{E} _{I _{y_o} \sim \mathbb{P}_o} [D _I(G(I _{y_o} | y_f))] - \mathbb{E} _{I _{y_o} \sim \mathbb{P}_o}[D _I(I _{y_o})] + \lambda _{gp} \mathbb{E} _{\tilde{I} \sim \mathbb{P} _{\tilde{I}}}[(\| \nabla _{\tilde{I}} D _I(\tilde{I})\| -1 )^2]
 $$
 
+수식은 adversarial loss와 gradient penalty 부분으로 나뉩니다.
 
-수식 설명
+
+```python
+```
+
+
+gradient penalty는
 
 ```python
 def gradient_penalty(x, y):
@@ -257,13 +263,16 @@ def gradient_penalty(x, y):
 
 ### Attention Loss
 
-Attention loss는 2가지 목적이 있습니다.
+Attention loss는 이미지를 부드럽게 처리하고 노이즈를 줄일 수 있는 Total Variation loss와 Attention mask의 포화를 막을 수 있는 L2 regularize로 이루어져 있습니다.
 
 $$
 \lambda_{TV} \mathbb{E} _{I _{y_o} \sim \mathbb{P} _o} \left[ \sum ^{H, W} _{i, j}[(A _{i+1, j} - A _{i,j})^2 + (A _{i, j+1} - A _{i, j})^2] \right] + \mathbb{E} _{I _{y_o} \sim \mathbb{P}_o}[\| A \|_2]
 $$
 
 
+우선 Total Variation Loss부터 살펴보겠습니다. TV loss라고도 불리는데 <a href="https://solee328.github.io/style_transfer/2022/07/12/neural-transfer_1.html#h-42-regularization" target="_blank">Style Transfer(1)</a>글에서도 노이즈를 줄이기 위해 사용했었습니다. 이때와 같은 코드를 사용했습니다.
+
+아래 코드가 사용한 코드로 이미지를 smooth하게 만들기 위해 인접한 픽셀의 값을 뺀 값들을 모두 더해 제곱한 형태입니다. 인접한 픽셀들이 값이 차이가 적도록 만들기 때문에 튀는 노이즈 값들을 줄이는데 효과적입니다.
 
 ```python
 def total_variation_loss(img):
@@ -271,22 +280,61 @@ def total_variation_loss(img):
     tv_h = torch.pow(img[:,:,1:,:]-img[:,:,:-1,:], 2).sum()
     tv_w = torch.pow(img[:,:,:,1:]-img[:,:,:,:-1], 2).sum()
     return tv_h + tv_w
+
+loss_tv = (total_variation_loss(attention) + total_variation_loss(attention_hat)) * lambda_tv
+```
+
+두번째는 L2 regularize입니다. $\| A \|_2$가 끝! Attentnion mask와 크기 가 같은 0으로 초기화된 tensor인 aus_zero와 torch.nn.MSELoss()를 이용해서 계산했습니다.
+
+```python
+loss_mse = torch.nn.MSELoss().cuda()
+
+aus_zero = torch.autograd.Variable(torch.randn((batch_size, 1, 128, 128)).cuda(), requires_grad=False)
+loss_a = (loss_mse(attention, aus_zero) + loss_mse(attention_hat, aus_zero)) * lambda_a
 ```
 
 
 ### Conditional Expression Loss
-
+조건에 맞는 AUs 이미지를 생성하기 위한 Conditional Expression Loss입니다. $D$는 이미지의 조건인 AUs를 정확히 맞추기 위한 학습을, $G$는 조건 AUs를 표현하고 있는 이미지를 생성하기 위한 학습을 진행합니다.
 
 $$
 \mathbb{E} _{I _{y_o} \sim \mathbb{P}_o} [\| D _y(G(I _{y_o}|y_f)) - y_f \|^2_2] + \mathbb{E} _{I _{y_o} \sim \mathbb{P}_o} [\| D _y(I _{y_o}) - y_o \|^2_2]
 $$
 
+수식은 $D$를 학습할 때, $G$를 학습할 때로 나눌 수 있습니다.
+
+$D$를 학습할 때 수식은 $[\| D _y(I _{y_o}) - y_o \|^2_2]$에 해당합니다. D가 입력 이미지 $I _{y_o}$에 대해 어떤 AUs를 조건으로 가지고 있는지 판별합니다. 판별의 정답값인 $y_o$에 근사한 값을 예측할 수록 loss 값이 작아지게 되므로 $D$는 이미지의 조건 AUs을 판별할 수 있게 됩니다.
+
+$G$를 학습할 때는 $G$에게 조건 $y_f$에 대한 $I _{y_o}$를 생성하게 한 후 $D$가 생성된 이미지가 표현한 조건이 무엇인지 판별하게 합니다. $G$가 조건 $y_f$에 맞는 이미지를 생성할 수록 판별모델이 판별한 조건 값이 $y_f$과 차이가 적어지기에 $[\| D _y(G(I _{y_o}|y_f)) - y_f \|^2_2]$ 수식으로 생성모델은 조건 $y_f$에 맞는 이미지를 생성할 수 있게 됩니다.
+
+두 경우 모두 L2 loss를 사용하기에 torch.nn.MSELoss()를 사용했습니다.
+
+
+```python
+loss_mse = torch.nn.MSELoss().cuda()
+
+# Discriminator 학습 시
+loss_y = loss_mse(aus, real_aus) * lambda_y
+
+# Generator 학습
+loss_y = loss_mse(aus_target, fake_aus) * lambda_y
+```
+
+
+
 ### Identity Loss
+Identity loss는 사람의 정체성을 유지하기 위한 loss라 합니다. 수식을 보면 익숙하실 것 같다는 생각이 듭니다.
 
 $$
-\mathcal{L} _{idt}(G, I _{y_o}, y_o, y_f) = \mathbb{E} _{I_{y_o} \sim \mathbb{P}_o}[\| G(G(I _{y_o}|y_f)|y_o) \|_1]
+\mathcal{L} _{idt}(G, I _{y_o}, y_o, y_f) = \mathbb{E} _{I _{y_o} \sim \mathbb{P}_o}[\| G(G(I _{y_o}|y_f)|y_o) \|_1]
 $$
 
+Cycle consistency loss와 수식이 같은 모양을 하고 있습니다. reconstruction image와 입력 image 간의 차이를 L1 loss로 계산한 값입니다. reconstruction image인 hat_image와 입력 image인 images를 torcn.nn.L1loss()를 이용해 계산해주었습니다.
+
+```python
+loss_l1 = torch.nn.L1Loss().cuda()
+loss_idt = loss_l1(images, hat_images) * lambda_idt
+```
 
 ###  Full Loss
 
@@ -316,5 +364,8 @@ G의 경우 코드
 <br><br>
 
 ---
+
+깃코드가 이상함. TV loss도 no 제곱, L2로 한다는 것도 L1으로 처리한 부분이 있었다. 참고하세오.
+
 
 <br>
