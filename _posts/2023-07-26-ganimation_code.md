@@ -348,6 +348,15 @@ G의 경우 코드
 
 ### scheduler
 
+```python
+scheduler_patience = 19
+scheduler_last = 10
+scheduler_lambda = lambda epoch: 1.0 - max(0, epoch - scheduler_patience) / float(scheduler_last)
+
+scheduler_gen = torch.optim.lr_scheduler.LambdaLR(optimizer_gen, lr_lambda=scheduler_lambda)
+scheduler_dis = torch.optim.lr_scheduler.LambdaLR(optimizer_dis, lr_lambda=scheduler_lambda)
+```
+
 ### 학습
 <br><br>
 
