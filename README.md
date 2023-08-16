@@ -46,5 +46,7 @@ MUNIT(Multimodal Unsupervised Image-to-Image Translation)<br>
 GANimation(GANimation: Anatomically-aware Facial Animation from a Single Image)<br>
 [<a href="https://solee328.github.io/gan/2023/07/04/ganimation_paper.html" target="_blank">paper_post</a>][][]
 
+SAGAN(Self-Attention Generative Adversarial Netwkrs)
+
 BigGAN
 []
