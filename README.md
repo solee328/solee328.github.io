@@ -49,5 +49,5 @@ GANimation(GANimation: Anatomically-aware Facial Animation from a Single Image)<
 SAGAN(Self-Attention Generative Adversarial Netwkrs)<br>
 [][][]
 
-BigGAN
+BigGAN<br>
 []
