@@ -50,4 +50,4 @@ SAGAN(Self-Attention Generative Adversarial Networks)<br>
 [][][]
 
 BigGAN<br>
-[]
+[][]
