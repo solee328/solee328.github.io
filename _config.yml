@@ -152,6 +152,7 @@ translate_langs: []
 #   - categories.html
 #   - tags.html
 #   - about.md
+#   - search.html
 
 # Page default value
 # defaults:
