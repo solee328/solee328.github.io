@@ -223,3 +223,17 @@ plugins:
   - jekyll-paginate
   - jekyll-spaceship
   - jemoji
+
+
+# tipue for search
+tipue_search:
+  include:
+    # pages 레이아웃에 해당하는 일반 html 페이지는 검색 제외
+    pages: false
+    collections: []
+
+  # 해당 페이지들은 검색에서 제외
+  exclude:
+    files: [search.html, index.html, tags.html]
+    categires: []
+    tags: []
