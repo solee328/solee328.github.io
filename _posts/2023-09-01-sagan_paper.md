@@ -56,31 +56,60 @@ GANs는 ImageNet과 같은 multi-class를 모델링 시 문제는 가지고 있�
 
 self-attention 외에도, conditioning(조건)에 대한 기술을 추가합니다. <a href="https://arxiv.org/abs/1802.08768" target="_blank">Is Generator Conditioning Causally Related to GAN Performance?</a>는 well-condition 생성 모델이 더 나은 성능을 보이는 경향을 보여주었는데, 더 좋은 conditioning을 위해 <a href="https://arxiv.org/abs/1802.05957" target="_blank">Spectral Normalization for Generative Adversarial Networks</a>에서 판별 모델에만 적용되었던 spectral normalization 기술을 생성 모델에 적용합니다.
 
-제안된 방법들로 Inception score의 최고점을 36.8에서 52.52로 높였고 Fréchet Inception Distance를 27.62에서 18.65로 줄임으로써 이전 SOTA를 능가함을 보여주었다 합니다. 지금부터 좀 더 자세하게 사용한 방법에 대해서 살펴보겠습니다.
+제안된 방법들로 Inception score의 최고점을 36.8에서 52.52로 높였고 Fréchet Inception Distance를 27.62에서 18.65로 줄임으로써 이전 SOTA를 능가함을 보여주었다 합니다. 코드는 <a href="https://github.com/brain-research/self-attention-gan/tree/master" target="_blank">self-attention-gan(TensorFlow)</a>와 <a href="https://github.com/heykeetae/Self-Attention-GAN/tree/master" target="_blank">Self-Attention-GAN(PyTorch)</a>를 참고했습니다.
 <br><br>
 
 ---
-## 데이터셋
+
+## Self-Attention
+
+
+$$
+\beta _{j, i} = \frac{exp(s _{ij})}{\sum ^N _{i=1}exp(s _{ij})}, \text{ where } s _{ij} = \boldsymbol{f}(\boldsymbol{x_i})^T \boldsymbol{g}(\boldsymbol{x_j})
+$$
+
+attention map은 픽셀 간의 관계를 나타내는데, 수식의 $\beta _{j, i}$는 $j$번째 영역을 합성 할 때 모델이 $i$번째 위치에 어느 정도 관심을 기울이는지를 나타냅니다.
+
+
+attention map visualize
+
+
+$$
+\boldsymbol{o_j} = \boldsymbol{v} \left ( \sum^N_{i=1}\beta_{j, i}\boldsymbol{h}(\boldsymbol{x_i}) \right ), \boldsymbol{h}(\boldsymbol{x_i}) = \boldsymbol{W_hx_i}, \boldsymbol{v}(\boldsymbol{x_i}) = \boldsymbol{W_v x_i}.
+$$
+
+self-attention feature maps는 각 픽셀과 전체 feature map 간의 관계를 나타냅니다.
+
+
+
+$$
+\boldsymbol{y_i} = \gamma \boldsymbol{o_i} + \boldsymbol{x_i}
+$$
+
+최종 출력은 위와 같은데,  $\gamma$는 학습 가능한 스칼라 값으로 0으로 초기화된 상태에서 학습을 시작합니다.
 
 
 <br><br>
----
-
-## 모델
-
-```
-Figure 2 삽입
-```
-
-
-<br><br>
 
 ---
+
 ## Loss
 
 <br><br>
 
 ---
+
+## Stabilize
+
+### Spectral normalization
+
+### TTUR
+different learning rate for G, D
+
+<br><br>
+
+---
+
 ## 결과
 
 
