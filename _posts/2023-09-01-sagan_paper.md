@@ -1,6 +1,6 @@
 ---
 layout: post
-title: SAGAN(1) - 논문 리뷰
+title: SAGAN - 논문 리뷰
 # subtitle:
 categories: gan
 tags: [gan, SAGAN, attention, spectral, TTUR, 생성 모델, 논문 리뷰]
@@ -8,19 +8,21 @@ tags: [gan, SAGAN, attention, spectral, TTUR, 생성 모델, 논문 리뷰]
 use_math: true
 ---
 
-이번 논문은 self-attention을 Generative model에 적용한 SAGAN(<a href="https://arxiv.org/abs/1805.08318" target="_blank">Self-Attention Generative Adversarial Network</a>)입니다. 지금부터 SAGAN을 살펴보겠습니다:lemon:
+이번 논문은 self-attention을 Generative model에 적용한 SAGAN(<a href="https://arxiv.org/abs/1805.08318" target="_blank">Self-Attention Generative Adversarial Network</a>)입니다. 사실 BIGGAN 논문을 보다 해당 논문이 SAGAN 모델을 바탕으로 한 걸 알게 되어서 SAGAN를 먼저 하게 되었습니다ㅎㅅㅎ
+
+Self-Attention Generative Adversarial Network(SAGAN)은 이미지 생성 작업에 대한 attention-driven, long-range dependency 모델링을 위해 제안된 모델입니다. 기존의 convolution GAN은 convolution을 사용하다보니 lower-resolutional feature maps에서 공간적으로 local 부분을 사용해 high-resolution 세부 정보를 생성했습니다. SAGAN은 ---, attention layer를 시각화해 생성 모델이 고정된 모양의 local 영역이 아닌 객체 모양에 해당하는 영역을 활용한다는 것을 확인할 수 있습니다.
+
+또한 GAN의 생성 모델에 spectral normliazation을 사용해 training dynamic를 향상시켜 Inception score, Frechet Inception Distance 모두에서 기존 State-of-the-art를 능가하는 성능을 보여주었습니다.지금부터 SAGAN을 살펴보겠습니다:lemon:
 <br><br>
 
 ---
 ## 소개
-GANs는 ImageNet과 같은 multi-class를 모델링 시 문제는 가지고 있었습니다. 당시 class conditional image generation task에서 SOTA인 <a href="https://arxiv.org/abs/1802.05637" target="_blank">CGANS with Projection Discriminator</a>는 간헐천, 계곡과 같이 객체의 구조적 제약이 거의 없는 이미지(텍스처(질감)으로 구별 가능한 바다, 하늘과 같은 풍경) 생성은 탁월하지만, 하프, 크로스워드 등 일부 클래스(개와 같은 클래스의 이미지는 개의 털 텍스처(질감)은 성공적으로 생성되지만 일부 발이 생성되지 않는 경우가 발생)에서 기하학적/구조적 패턴을 파악하지 못합니다 실제로 위 논문의 Figure 7에서 퓽경의 FID는 낮지만 객체에 대한 FID는 높은 것을 확인할 수 있습니다.
+
 
  ```
  Figure 7 사진 넣기
  ```
-
- 이에 대한 가능한 설명은 모델이 서로 다른 이미지 영역에 걸쳐 종속성(dependency)를 모델링하기 위해 convolution에 크게 의존한다는 것입니다.
-
+GANs는 ImageNet과 같은 multi-class를 모델링 시 문제는 가지고 있었습니다. 당시 class conditional image generation task에서 SOTA인 <a href="https://arxiv.org/abs/1802.05637" target="_blank">CGANS with Projection Discriminator</a>는 간헐천, 계곡과 같이 객체의 구조적 제약이 거의 없는 이미지(텍스처(질감)으로 구별 가능한 바다, 하늘과 같은 풍경) 생성은 탁월하지만, 하프, 크로스워드 등 일부 클래스(개와 같은 클래스의 이미지는 개의 털 텍스처(질감)은 성공적으로 생성되지만 일부 발이 생성되지 않는 경우가 발생)에서 기하학적/구조적 패턴을 파악하지 못합니다 실제로 위 논문의 Figure 7에서 퓽경의 FID는 낮지만 객체에 대한 FID는 높은 것을 확인할 수 있습니다.
 
 <details>
 <summary>FID(Fréchet Inception Distance)</summary>
@@ -44,9 +46,17 @@ GANs는 ImageNet과 같은 multi-class를 모델링 시 문제는 가지고 있�
 </details>
 <br>
 
-Self-Attention Generative Adversarial Network(SAGAN)은 이미지 생성 작업에 대한 attention-driven, long-range dependency 모델링을 위해 제안된 모델입니다. 기존의 convolution GAN은 convolution을 사용하다보니 lower-resolutional feature maps에서 공간적으로 local 부분을 사용해 high-resolution 세부 정보를 생성했습니다. SAGAN은 ---, attention layer를 시각화해 생성 모델이 고정된 모양의 local 영역이 아닌 객체 모양에 해당하는 영역을 활용한다는 것을 확인할 수 있습니다.
 
-또한 GAN의 생성 모델에 spectral normliazation을 사용해 training dynamic를 향상시켜 Inception score, Frechet Inception Distance 모두에서 기존 State-of-the-art를 능가하는 성능을 보여주었습니다.
+ ```
+ convolution 레이어를 통과한 후에만 long range dependency가 가능해짐을 설명하는 그림
+ ```
+이에 대한 가능한 설명은 모델이 서로 다른 이미지 영역에 걸쳐 종속성(dependency)를 모델링하기 위해 convolution에 크게 의존한다는 것입니다. convolution은 receptive field가 local에 해당하므로 long range dependency를 위해서는 여러 convolution 레이어를 통과한 후에만 처리할 수 있습니다. 따라서 작은 모델들은 layer 수가 작아 long range dependency 표현 자체가 어렵습니다. 모델이 아닌 최적화 알고리즘을 사용해서도 long range dependency를 포착하도록 할 수 있겠지만 이를 위한 파라미터 값을 발견하기 어려울 뿐만 아니라 이 경우 새로운 입력에 대해 실패하기도 쉬워집니다. convolution의 local을 키우기 위해 convolution kernel의 크기를 증가시키면 receptive field가 커지니 네트워크의 표현 용량을 증가시킬 수 있지만 local convolutional 구조를 사용해 얻은 계산 및 통계의 효율성이 손실됩니다.
+
+따라서 논문에서는 Self-Attention을 도입한 Self-Attention Generative Adversarial Networks(SAGANs)를 제안합니다. self-attention module은 모든 위치에서 feature의 가중치 합으로 위치 반응을 계산하며, attention vector는 적은 비용으로 계산이 가능하기에 long range dependency와 통계 효율성 사이의 더 나은 균형을 보여줍니다.
+
+self-attention 외에도, conditioning(조건)에 대한 기술을 추가합니다. <a href="https://arxiv.org/abs/1802.08768" target="_blank">Is Generator Conditioning Causally Related to GAN Performance?</a>는 well-condition 생성 모델이 더 나은 성능을 보이는 경향을 보여주었는데, 더 좋은 conditioning을 위해 <a href="https://arxiv.org/abs/1802.05957" target="_blank">Spectral Normalization for Generative Adversarial Networks</a>에서 판별 모델에만 적용되었던 spectral normalization 기술을 생성 모델에 적용합니다.
+
+제안된 방법들로 Inception score의 최고점을 36.8에서 52.52로 높였고 Fréchet Inception Distance를 27.62에서 18.65로 줄임으로써 이전 SOTA를 능가함을 보여주었다 합니다. 지금부터 좀 더 자세하게 사용한 방법에 대해서 살펴보겠습니다.
 <br><br>
 
 ---
@@ -55,7 +65,13 @@ Self-Attention Generative Adversarial Network(SAGAN)은 이미지 생성 작업�
 
 <br><br>
 ---
+
 ## 모델
+
+```
+Figure 2 삽입
+```
+
 
 <br><br>
 
