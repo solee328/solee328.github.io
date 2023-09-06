@@ -65,17 +65,17 @@ self-attention 외에도, conditioning(조건)에 대한 기술을 추가합니�
 
 
 $$
-\beta _{j, i} = \frac{exp(s _{ij})}{\sum ^N _{i=1}exp(s _{ij})}, \text{ where } s _{ij} = \boldsymbol{f}(\boldsymbol{x_i})^T \boldsymbol{g}(\boldsymbol{x_j})
+\beta _{j, i} = \frac{exp(s _{ij})}{\sum ^N _{i=1}exp(s _{ij})}, \text{ where } s _{ij} = \mathbf{f}(\mathbf{x_i})^T \mathbf{g}(\mathbf{x_j})
 $$
 
 attention map은 픽셀 간의 관계를 나타내는데, 수식의 $\beta _{j, i}$는 $j$번째 영역을 합성 할 때 모델이 $i$번째 위치에 어느 정도 관심을 기울이는지를 나타냅니다.
-
+attention 모듈은 생성 모델과 판별 모델 모두에 적용되었습니다.
 
 attention map visualize
 
 
 $$
-\boldsymbol{o_j} = \boldsymbol{v} \left ( \sum^N_{i=1}\beta_{j, i}\boldsymbol{h}(\boldsymbol{x_i}) \right ), \boldsymbol{h}(\boldsymbol{x_i}) = \boldsymbol{W_hx_i}, \boldsymbol{v}(\boldsymbol{x_i}) = \boldsymbol{W_v x_i}.
+\mathbf{o_j} = \mathbf{v} \left ( \sum^N_{i=1}\beta_{j, i}\mathbf{h}(\mathbf{x_i}) \right ), \mathbf{h}(\mathbf{x_i}) = \mathbf{W_h x_i}, \mathbf{v}(\mathbf{x_i}) = \mathbf{W_v x_i}.
 $$
 
 self-attention feature maps는 각 픽셀과 전체 feature map 간의 관계를 나타냅니다.
@@ -83,7 +83,7 @@ self-attention feature maps는 각 픽셀과 전체 feature map 간의 관계를
 
 
 $$
-\boldsymbol{y_i} = \gamma \boldsymbol{o_i} + \boldsymbol{x_i}
+\mathbf{y_i} = \gamma \mathbf{o_i} + \mathbf{x_i}
 $$
 
 최종 출력은 위와 같은데,  $\gamma$는 학습 가능한 스칼라 값으로 0으로 초기화된 상태에서 학습을 시작합니다.
@@ -95,17 +95,27 @@ $$
 
 ## Loss
 
+$$
+\begin{align} L_D & = -\mathbb{E} _{(x, y) \sim p _{data}}[min(0, -1 + D(x, y))] \\ & = - \mathbb{E} _{z \sim p_z, y \sim p _{data}}[min(0, -1-D(G(z), y))], \\ L_G &= -\mathbb{E} _{z \sim p_z, y \sim p _{data}} D(G(z), y) \end{align}
+$$
+
+Adversarial loss는 hinge를 최소화하는 방법으로 $D$와 $G$를 번갈아가며 학습합니다.
 <br><br>
 
 ---
 
 ## Stabilize
+GANs 학습을 안정화하기 위해 Spectral normalization과 Two Time Scale Update Rule(TTUR)을 사용합니다.
+
 
 ### Spectral normalization
+Spectral Normalizationd은 <a href="https://arxiv.org/abs/1802.05957" target="_blank">Spectral Normalization for Generative Adversarial Networks</a>에서 GANs 학습 안정화를 위해 판별 모델에 적용되었습니다. 각 layer의 spectral norm을 제한해 판별 모델의 Lipschitz 상수를 제한하는 방법으로 모든 가중치 레이어의 spectral norm은 1로 설정하는 것이 지속적으로 잘 수행되기 때문에 다른 normalization 방법과 비교해 추가적인 hyperparameter 튜닝을 필요로 하지 않는다 합니다. 또한 계산 비용이 적은 것이 장점입니다.
+
+SAGAN은 생성 모델에도 Spectral normalization을 적용하는 것으로 생성 모델의 파라미터 크기의 상승을 방지하고 비정상적인 gradient를 피할 수 있어 Spectral normalization을 생성 모델과 판별 모델 모두에 적용합니다. 이후 생성 모델과 판별 모델 모두의 Spectral normalization이 안정적인 학습을 보여줄 뿐만 아니라 생성 모델 업데이트 당 판별 모델 업데이트 수를 더 적게 만드는 것이 가능해 학습에 대한 계산 비용을 크게 감소시킨다는 것을 발견했다 합니다.
+
 
 ### TTUR
-different learning rate for G, D
-
+Two Time-Scale Update Rule(TTUR)은 <a href="https://arxiv.org/abs/1706.08500" target="_blank">GANs Trained by a Two Time-Scale Update Rule Converge to a Local Nash Equilibrium</a>에서 제안한 방법으로 생성 모델과 판별 모델에 별도의 learning rate를 사용하는 방법입니다. 판별 모델 학습 : 생성 모델 학습 = 5 : 1과 같이 판별 모델의 느린 학습 문제를 보완하기 위해 SAGAN에서는 TTUR을 사용해 판별 모델의 학습 step 수를 더 적게 사용해 동일한 시간에서 더 나은 결과를 얻고자 했습니다.
 <br><br>
 
 ---
