@@ -121,6 +121,17 @@ Two Time-Scale Update Rule(TTUR)은 <a href="https://arxiv.org/abs/1706.08500" t
 ---
 
 ## 결과
+정략적 평가를 위해 논문에서는 conditional class 분포와 marginal class 분포 사이의 KL divergence를 계산하는 Inception score와 생성된 이미지와 실제 이미지의 Inception-v3의 feature space의 Wasserstein-2 distance를 계산하는 FID, 각 class 내의 생성된 이미지와 실제 이미지 사이를 비교하는 Intra FID를 계산합니다.
+
+### Spectral $ TTUR
+
+
+### Self-attention
+
+
+### SOTA
+
+
 
 
 <br><br>
