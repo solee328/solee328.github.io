@@ -71,6 +71,10 @@ $$
 attention map은 픽셀 간의 관계를 나타내는데, 수식의 $\beta _{j, i}$는 $j$번째 영역을 합성 할 때 모델이 $i$번째 위치에 어느 정도 관심을 기울이는지를 나타냅니다.
 attention 모듈은 생성 모델과 판별 모델 모두에 적용되었습니다.
 
+
+```
+Figure 1 삽입
+```
 attention map visualize
 
 
@@ -123,14 +127,61 @@ Two Time-Scale Update Rule(TTUR)은 <a href="https://arxiv.org/abs/1706.08500" t
 ## 결과
 정략적 평가를 위해 논문에서는 conditional class 분포와 marginal class 분포 사이의 KL divergence를 계산하는 Inception score와 생성된 이미지와 실제 이미지의 Inception-v3의 feature space의 Wasserstein-2 distance를 계산하는 FID, 각 class 내의 생성된 이미지와 실제 이미지 사이를 비교하는 Intra FID를 계산합니다.
 
+SAGAN 모델은 128x128 이미지를 생성하도록 설계되었으며, Spectral normalization은 생성 모델과 판별 모델에 모두 사용되었습니다. TTUR을 사용하기 때문에 판별 모델의 learning rate는 0.0004이고 생성 모델의 learning rate는 0.0001로 설정되었으며 Adam optimizer(β1 = 0 and β2 = 0.9)를 사용했다 합니다.
+
 ### Spectral $ TTUR
+
+```
+Figure 3 삽입
+```
+
+```
+Figure 4 삽입
+```
+
+
+생성 모델과 판별 모델에 Spectral normalizatiokn(SN)을 적용하고 불균형한 learning rate(TTUR)을 적용해 제안된 안정화 기술의 효과를 평가하기 위한 실험을 진행합니다. `SN on G/D`와 `SN on G/D + TTUR`은 당시 SOTA로 baseline으로 사용된 <a href="https://arxiv.org/abs/1802.05637" target="_blank">CGANS with Projection Discriminator</a>와 비교됩니다. 이 baseline 모델은 SN이 판별 모델에만 사용되었기에 `baseline: SN on D`로 표시됩니다.
+
+판별 모델 $D$과 생성 모델 $G$에 대해 1:1, 즉 한번씩 번갈아가면서 학습을 하면 Figure 3의 가장 왼쪽 하단의 그림과 같이 학습이 매우 불안정해지며 학습 초기에 mode collapse를 보여줍니다. Figure 4의 가장 왼쪽 상단의 그림은 10k iteration에서 baseline 모델에 의해 무작위로 생성된 일부 이미지를 보여줍니다. 원본 논문에서 이런 불안정한 학습 동작들은 $D$와 $G$의 학습 비율을 5:1로 설정해 크게 완화할 수 있지만, 그만큼 학습 시간이 길어지게 됩니다. 제안된 기술은 1:1 학습을 하기 때문에 동인한 시간이 주어졌을 때 모델이 더 나은 결과를 얻을 수 있습니다.
+
+Figure 3의 중간 하단 그림에서 볼 수 있듯이, 생성 모델과 판별 모델에 SN을 적용해 1:1 학습을 진행했을 때 `SN on G/D`가 크게 안정화되었습니다. 그러나 학습 중 결과의 품질이 계속해서 좋아지지만은 않습니다. 260k iteration에서 FID와 IS가 떨어지기 시작합니다. Figure 4의 `SN on G/D`의 160k의 FID 값은 33.39였지만 `SN on G/D`의 260k의 FID값은 72.41로 오히려 결과 이미지의 품질이 떨어짐을 볼 수 있습니다.
+
+하지만 Spectral normalization 뿐만 아니라 생성 모델과 판별 모델에 다른 learning rate(TTUR)을 사용해 학습시킨 `SN on G/D + TTUR`에 의해 생성된 이미지의 품질은 전체 학습 과정 동안 계속해서 향상되어 1M iteration 동안 결과 품질이나 FID 또는 Inception score의 현저한 감소를 관찰되지 않아 정량적, 정성적 결과 모두 GAN에 Spectral normalization과 TTUR을 적용해 1:1 업데이트로 학습하는 것이 안정화에 효과적이라 할 수 있습니다. 또한 두 기법 모두 어떤 모델이던 부가적으로 적용할 수 있는 기술이므로 논문의 이후 실험들에는 생성 모델과 판별 모델에 모두 Spectral normalization과 TTUR을 사용해 1:1 업데이트로 학습했습니다.
 
 
 ### Self-attention
 
+```
+Table 1 삽입
+```
 
-### SOTA
+Self-attention mechanism의 효과를 확인하기 위해 feature map 크기에 따라 Self-attention을 적용해 비교합니다. 8x8 크기와 같이 feature map이 작은 경우 feature map이 작기 때문에 self-attention이 local convolution과 유사한 역할만을 수행하게 되고 feature map이 커질 경우 더 많은 condition을 선택할 수 있기 때문에 long-range dependency 모델링이 가능해지게 되며 FID 값도 향상됨을 볼 수 있습니다.
 
+동일한 파라미터의 상태에서 self-attention block은 residual block과 비교해 더 나은 결과를 얻을 수 있음을 볼 수 있습니다. 8x8 feature map에서 self-attention을 residual block으로 교체하면 학습이 안정적이지 않아 성능이 크게 저하되고 FID 값이 22.98에서 42.13으로 증가합니다. 학습이 순조롭게 진행되는 32x32 feature map에서도 self-attention block을 residual block으로 교체하면 FID와 Inception score가 더 나쁜 결과를 보여줌을 통해 SAGAN을 사용해 성능이 향상되는 것이 단순히 모델 깊이와 용량의 증가 때문이 아님을 알 수 있습니다.
+
+
+```
+Figure 5 삽입
+```
+SAGAN에서 다양한 이미지에 생성 모델의 attention weight를 시각한 결과를 Figure 5에서 확인할 수 있습니다.
+
+
+### SOTA와 비교
+
+```
+Table 2 삽입
+```
+
+당시 ImageNet의 class conditional 이미지 생성의 state-of-the-art GAN 모델인 <a href="https://arxiv.org/abs/1802.05637" target="_blank">CGANS with Projection Discriminator(SNGAN-projection)</a>와 Conditional GAN 모델인 <a href="https://arxiv.org/abs/1610.09585" target="_blank">AC-GAN</a>과 Inception Score, Intra FID, FID를 비교한 결과를 Table 2에서 확인하실 수 있습니다.
+SAGAN은 3 종류의 metric에서 모두 최고를 달성했습니다.
+
+
+```
+Figure 6 삽입
+```
+Figure 6은 ImageNet의 대표적인 클래스에 대한 생성된 이미지를 보여줍니다. SAGAN은 금붕어(goldfish), 세인트버나(saint bernard)와 같이 복잡한 기하학적, 구조적 패턴을 가진 클래스를 합성하기 위해 <a href="https://arxiv.org/abs/1802.05637" target="_blank">CGANS with Projection Discriminator(SNGAN-projection)</a>보다 Intra FID 점수가 낮아 더 나은 성능을 보임을 확인할 수 있습니다. 하지만 반대로 질감으로 구별될 수 있어 기하학적, 구조적 패턴이 거의 없는 돌담(stone wall), 산호 곰팡이(coral fungus)의 경우 오히려 성능이 낮다는 것 또한 확인할 수 있습니다.
+
+SAGAN은 기하학적, 구조적 패턴에 강해 self-attention mechanism을 long-range global dependency를 포착하기 위해 convolution과 같이 사용해 상호 보완적으로 작동해 좋은 결과를 이끌어 내지만, 단순 텍스터에 대한 dependency의 경우 local convolution과 유사한 역할을 해 좋은 결과를 이끌어 내지 못한다고 합니다.
 
 
 
