@@ -10,9 +10,7 @@ use_math: true
 
 이번 논문은 self-attention을 Generative model에 적용한 SAGAN(<a href="https://arxiv.org/abs/1805.08318" target="_blank">Self-Attention Generative Adversarial Network</a>)입니다. 사실 BIGGAN 논문을 보다 해당 논문이 SAGAN 모델을 바탕으로 한 걸 알게 되어서 SAGAN를 먼저 하게 되었습니다ㅎㅅㅎ
 
-Self-Attention Generative Adversarial Network(SAGAN)은 이미지 생성 작업에 대한 attention-driven, long-range dependency 모델링을 위해 제안된 모델입니다. 기존의 convolution GAN은 convolution을 사용하다보니 lower-resolutional feature maps에서 공간적으로 local 부분을 사용해 high-resolution 세부 정보를 생성했습니다. SAGAN은 ---, attention layer를 시각화해 생성 모델이 고정된 모양의 local 영역이 아닌 객체 모양에 해당하는 영역을 활용한다는 것을 확인할 수 있습니다.
-
-또한 GAN의 생성 모델에 spectral normliazation을 사용해 training dynamic를 향상시켜 Inception score, Frechet Inception Distance 모두에서 기존 State-of-the-art를 능가하는 성능을 보여주었습니다.지금부터 SAGAN을 살펴보겠습니다:lemon:
+Self-Attention Generative Adversarial Network(SAGAN)은 convolution을 self-attention으로 대체해 long-range dependency 모델링이 가능하도록 제안된 모델입니다. 또한 spectral normalization과 TTUR을 사용해 Inception Score, Fréchet Inception Distance 모두에서 기존 State-of-the-art를 능가하는 성능을 보여주었습니다. 이런 SAGAN에 대해서 지금부터 살펴보겠습니다.:lemon:
 <br><br>
 
 ---
