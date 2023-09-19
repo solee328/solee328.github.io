@@ -1,4 +1,4 @@
-## Gitblog Link
+## Blog Link
 https://solee328.github.io/
 
 
