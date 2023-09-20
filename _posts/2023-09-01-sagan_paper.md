@@ -61,7 +61,7 @@ self-attention 외에도, conditioning(조건)에 대한 기술을 추가합니�
 <div>
   <img src="/assets/images/posts/sagan/paper/fig1.png" width="600" height="200">
 </div>
-> Fig.1.
+> Figure 1. 각 행에서 첫번째 이미지는 색상이 지정된 점이 있는 5개의 대표적인 쿼리 위치를 보여줍니다. 나머지 5개의 이미지는 해당 쿼리 위치에 대한 attention map으로 해당 색상으로 표시된 화살표가 가장 주의(attention)를 기울이는 지역을 보여줍니다.
 
 
 $$
@@ -128,17 +128,17 @@ Two Time-Scale Update Rule(TTUR)은 <a href="https://arxiv.org/abs/1706.08500" t
 
 SAGAN 모델은 128x128 이미지를 생성하도록 설계되었으며, Spectral normalization은 생성 모델과 판별 모델에 모두 사용되었습니다. TTUR을 사용하기 때문에 판별 모델의 learning rate는 0.0004이고 생성 모델의 learning rate는 0.0001로 설정되었으며 Adam optimizer(β1 = 0 and β2 = 0.9)를 사용했다 합니다.
 
-### Spectral $ TTUR
+### Spectral & TTUR
 
 <div>
   <img src="/assets/images/posts/sagan/paper/fig3.png" width="600" height="400">
 </div>
-> Fig.3.
+> Figure 3. 제안된 안정화 기술인 "SN on $G/D$"와 two time scale learning rates(TTUR)을 사용한 SAGAN과 baseline 모델의 학습 곡선(Training curve). 모든 모델은 $G$와 $D$에 대해 1:1 균형 업데이트를 사용해 학습됩니다.
 
 <div>
-  <img src="/assets/images/posts/sagan/paper/fig4.png" width="600" height="400">
+  <img src="/assets/images/posts/sagan/paper/fig4.png" width="700" height="500">
 </div>
-> Fig.4.
+> Figure 4. baseline 모델과 SAGAN 모델에서 "SN on $G/D$"와 "SN on $G/D$ + TTUR"로 무작위 생성된 128x128 결과
 
 
 생성 모델과 판별 모델에 Spectral normalizatiokn(SN)을 적용하고 불균형한 learning rate(TTUR)을 적용해 제안된 안정화 기술의 효과를 평가하기 위한 실험을 진행합니다. `SN on G/D`와 `SN on G/D + TTUR`은 당시 SOTA로 baseline으로 사용된 <a href="https://arxiv.org/abs/1802.05637" target="_blank">CGANS with Projection Discriminator</a>와 비교됩니다. 이 baseline 모델은 SN이 판별 모델에만 사용되었기에 `baseline: SN on D`로 표시됩니다.
@@ -153,9 +153,10 @@ Figure 3의 중간 하단 그림에서 볼 수 있듯이, 생성 모델과 판�
 ### Self-attention
 
 <div>
-  <img src="/assets/images/posts/sagan/paper/table1.png" width="400" height="80">
+  <img src="/assets/images/posts/sagan/paper/table1.png" width="500" height="100">
 </div>
-> Table.1.
+> Table 1. GANs에서 Self-Attention과 Residual block의 비교.<br>
+모든 모델들은 100만번 iteration으로 학습되었으며 최고의 Inception Score(IS)와 Fréchet Inception Distance(FID)를 확인할 수 있습니다. $feat_k$은 kxk feature map에 block을 추가하는 것을 의미합니다.
 
 Self-attention mechanism의 효과를 확인하기 위해 feature map 크기에 따라 Self-attention을 적용해 비교합니다. 8x8 크기와 같이 feature map이 작은 경우 feature map이 작기 때문에 self-attention이 local convolution과 유사한 역할만을 수행하게 되고 feature map이 커질 경우 더 많은 condition을 선택할 수 있기 때문에 long-range dependency 모델링이 가능해지게 되며 FID 값도 향상됨을 볼 수 있습니다.
 
@@ -163,9 +164,12 @@ Self-attention mechanism의 효과를 확인하기 위해 feature map 크기에 
 
 
 <div>
-  <img src="/assets/images/posts/sagan/paper/fig5.png" width="600" height="400">
+  <img src="/assets/images/posts/sagan/paper/fig5.png" width="700" height="500">
 </div>
-> Fig.5.
+> Figure 5. attention map의 시각화로 이미지들은 SAGAN에 의해 생성되었습니다.<br>
+출력 픽셀에 가장 근접하고 해석하기 가장 직관적인 생성 모델의 마지막 layer에 있는 attention map을 시각화했습니다.<br>
+각 셀에서, 가장 첫번째 이미지는 색상이 지정된 점이 있는 4개의 대표적인 쿼리 위치를 보여줍니다. 다른 4개의 이미지들은 해당 쿼리 위치에 대한 attention map으로, 해당 색상으로 표시된 화살표는 가장 많이 주의를 기울인 영역을 보여줍니다.<br>
+우리는 네트워크가 단순히 공간적 인접(adjacency)이 아닌 색상과 질감의 유사성에 따라 attention을 할당하는  것을 학습한다는 것을 관찰했습니다.
 
 SAGAN에서 다양한 이미지에 생성 모델의 attention weight를 시각한 결과를 Figure 5에서 확인할 수 있습니다.
 
@@ -173,18 +177,19 @@ SAGAN에서 다양한 이미지에 생성 모델의 attention weight를 시각�
 ### SOTA와 비교
 
 <div>
-  <img src="/assets/images/posts/sagan/paper/table2.png" width="400" height="80">
+  <img src="/assets/images/posts/sagan/paper/table2.png" width="480" height="110">
 </div>
-> Table.2.
+> Table 2. ImageNet에서 class conditional 이미지 생성을 위해 제안된 SAGAN과 state-of-the-art GAN 모델(<a href="https://arxiv.org/abs/1610.09585" target="_blank">Odena et al., 2017</a>; <a href="https://arxiv.org/abs/1802.05637" target="_blank">Miyato & Koyama, 2018</a>)의 비교.
 
 당시 ImageNet의 class conditional 이미지 생성의 state-of-the-art GAN 모델인 <a href="https://arxiv.org/abs/1802.05637" target="_blank">CGANS with Projection Discriminator(SNGAN-projection)</a>와 Conditional GAN 모델인 <a href="https://arxiv.org/abs/1610.09585" target="_blank">AC-GAN</a>과 Inception Score, Intra FID, FID를 비교한 결과를 Table 2에서 확인하실 수 있습니다.
 SAGAN은 3 종류의 metric에서 모두 최고를 달성했습니다.
 
 
 <div>
-  <img src="/assets/images/posts/sagan/paper/fig6.png" width="600" height="400">
+  <img src="/assets/images/posts/sagan/paper/fig6.png" width="700" height="700">
 </div>
-> Fig.6.
+> Figure 6. 여러 클래스에 대해 SAGAN이 생성한 128x128 이미지 예시들.<br>
+각 행은 하나의 클래스에 대한 예시를 보여줍니다. 왼쪽 끝의 열은 SAGAN(left)와 state-of-the-art 방법(<a href="https://arxiv.org/abs/1802.05637" target="_blank">Miyato & Koyama, 2018</a>)(right)의 intra FID가 나열되어 있습니다.
 
 Figure 6은 ImageNet의 대표적인 클래스에 대한 생성된 이미지를 보여줍니다. SAGAN은 금붕어(goldfish), 세인트버나(saint bernard)와 같이 복잡한 기하학적, 구조적 패턴을 가진 클래스를 합성하기 위해 <a href="https://arxiv.org/abs/1802.05637" target="_blank">CGANS with Projection Discriminator(SNGAN-projection)</a>보다 Intra FID 점수가 낮아 더 나은 성능을 보임을 확인할 수 있습니다. 하지만 반대로 질감으로 구별될 수 있어 기하학적, 구조적 패턴이 거의 없는 돌담(stone wall), 산호 곰팡이(coral fungus)의 경우 오히려 성능이 낮다는 것 또한 확인할 수 있습니다.
 
