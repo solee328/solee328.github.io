@@ -98,6 +98,17 @@ $$
 
 ## Loss
 
+
+<div>
+  <img src="/assets/images/posts/sagan/paper/geometricgan.png" width="600" height="500">
+</div>
+> SVM hyperplane을 사용한 Geometric GAN. 판별 모델은 빨간 화살표의 방향으로, 생성 모델은 파란 화살표의 방향으로 업데이트된다.
+
+Adversarial loss는 hinge loss를 사용합니다. hinge loss는 보통 SVM에서 사용되었는데 Geometric GAN에서 SVM의 hyperplane을 GAN에 적용했습니다. 위의 그림에서 좌측 상단 부분이 실제 데이터($O$), 우측 하단이 생성된 데이터($X$)들로 모여있으며 hyperplane으로 판별 모델이 데이터를 분리하는 것을 볼 수 있습니다. hyperplane이 일부 관측치들의 분류를 틀리고 있는데, soft margin을 가지고 있기 때문입니다. Geometric GAN의 판별 모델은 최적의 hyperplane을 찾기 위해 허용된 오류 $\psi$ 안에서 margin을 최대화해 판별 성능을 올리고자 합니다. 생성 모델은 이런 판별 모델을 속이기 위해 실제 데이터($O$)에 유사한 데이터를 만들고자 합니다.
+
+
+
+
 $$
 \begin{align} L_D & = -\mathbb{E} _{(x, y) \sim p _{data}}[min(0, -1 + D(x, y))] \\ & = - \mathbb{E} _{z \sim p_z, y \sim p _{data}}[min(0, -1-D(G(z), y))], \\ L_G &= -\mathbb{E} _{z \sim p_z, y \sim p _{data}} D(G(z), y) \end{align}
 $$
