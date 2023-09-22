@@ -59,9 +59,14 @@ self-attention 외에도, conditioning(조건)에 대한 기술을 추가합니�
 ## Self-Attention
 
 <div>
-  <img src="/assets/images/posts/sagan/paper/fig1.png" width="600" height="200">
+  <img src="/assets/images/posts/sagan/paper/fig2.png" width="600" height="250">
 </div>
-> Figure 1. 각 행에서 첫번째 이미지는 색상이 지정된 점이 있는 5개의 대표적인 쿼리 위치를 보여줍니다. 나머지 5개의 이미지는 해당 쿼리 위치에 대한 attention map으로 해당 색상으로 표시된 화살표가 가장 주의(attention)를 기울이는 지역을 보여줍니다.
+> Figure 2. SAGAN의 self-attention 모듈. $\otimes$는 행렬 곱을 나타내며, softmax 연산은 각 행에 대해 수행됩니다.
+
+
+
+
+
 
 
 $$
@@ -92,6 +97,12 @@ $$
 최종 출력은 위와 같은데,  $\gamma$는 학습 가능한 스칼라 값으로 0으로 초기화된 상태에서 학습을 시작합니다.
 
 
+<div>
+  <img src="/assets/images/posts/sagan/paper/fig1.png" width="600" height="200">
+</div>
+> Figure 1. 각 행에서 첫번째 이미지는 색상이 지정된 점이 있는 5개의 대표적인 쿼리 위치를 보여줍니다. 나머지 5개의 이미지는 해당 쿼리 위치에 대한 attention map으로 해당 색상으로 표시된 화살표가 가장 주의(attention)를 기울이는 지역을 보여줍니다.
+
+
 <br><br>
 
 ---
@@ -106,14 +117,15 @@ $$
 
 Adversarial loss는 hinge loss를 사용합니다. hinge loss는 보통 SVM에서 사용되었는데 Geometric GAN에서 SVM의 hyperplane을 GAN에 적용했습니다. 위의 그림에서 좌측 상단 부분이 실제 데이터($O$), 우측 하단이 생성된 데이터($X$)들로 모여있으며 hyperplane으로 판별 모델이 데이터를 분리하는 것을 볼 수 있습니다. hyperplane이 일부 관측치들의 분류를 틀리고 있는데, soft margin을 가지고 있기 때문입니다. Geometric GAN의 판별 모델은 최적의 hyperplane을 찾기 위해 허용된 오류 $\psi$ 안에서 margin을 최대화해 판별 성능을 올리고자 합니다. 생성 모델은 이런 판별 모델을 속이기 위해 실제 데이터($O$)에 유사한 데이터를 만들고자 합니다.
 
-
+이 hinege loss는 SAGAN 논문 뿐만 아니라 state-of-the-art 논문으로 SAGAN과 비교하기 위한 baseline 모델인 <a href="https://arxiv.org/abs/1802.05637" target="_blank">CGANS with Projection Discriminator</a> 또한 adversarial loss로 hinge loss를 사용했습니다.
+<br><br>
 
 
 $$
 \begin{align} L_D & = -\mathbb{E} _{(x, y) \sim p _{data}}[min(0, -1 + D(x, y))] \\ & = - \mathbb{E} _{z \sim p_z, y \sim p _{data}}[min(0, -1-D(G(z), y))], \\ L_G &= -\mathbb{E} _{z \sim p_z, y \sim p _{data}} D(G(z), y) \end{align}
 $$
 
-Adversarial loss는 hinge를 최소화하는 방법으로 $D$와 $G$를 번갈아가며 학습합니다.
+위의 수식이 SAGAN에서 사용하는 adversarial hinge loss입니다. 판별 모델 $D$의 경우 $(x, y) ~ p_{data}$인 실제 데이터 $(x, y)$를 입력으로 받는다면 출력으로 1 이상의 값을, 생성 모델이 생성한 $G(z)$를 입력으로 받는다면 출력으로 0 이하의 값을 출력하는 것이 이상적입니다. 반대로 생성 모델 $G$는 $G$가 생성한 이미지 $G(z)$를 $D$에게 입력으로 준 결과가 0이 되는 것이 이상적입니다.
 <br><br>
 
 ---
