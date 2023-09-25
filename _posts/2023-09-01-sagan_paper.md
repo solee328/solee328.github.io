@@ -51,12 +51,21 @@ GANs는 ImageNet과 같은 multi-class를 모델링 시 문제는 가지고 있�
 
 self-attention 외에도, conditioning(조건)에 대한 기술을 추가합니다. <a href="https://arxiv.org/abs/1802.08768" target="_blank">Is Generator Conditioning Causally Related to GAN Performance?</a>는 well-condition 생성 모델이 더 나은 성능을 보이는 경향을 보여주었는데, 더 좋은 conditioning을 위해 <a href="https://arxiv.org/abs/1802.05957" target="_blank">Spectral Normalization for Generative Adversarial Networks</a>에서 판별 모델에만 적용되었던 spectral normalization 기술을 생성 모델에 적용합니다.
 
-제안된 방법들로 Inception score의 최고점을 36.8에서 52.52로 높였고 Fréchet Inception Distance를 27.62에서 18.65로 줄임으로써 이전 SOTA를 능가함을 보여주었다 합니다. 코드는 <a href="https://github.com/brain-research/self-attention-gan/tree/master" target="_blank">self-attention-gan(TensorFlow)</a>와 <a href="https://github.com/heykeetae/Self-Attention-GAN/tree/master" target="_blank">Self-Attention-GAN(PyTorch)</a>를 참고했습니다.
+제안된 방법들로 Inception score의 최고점을 36.8에서 52.52로 높였고 Fréchet Inception Distance를 27.62에서 18.65로 줄임으로써 이전 SOTA를 능가함을 보여주었다 합니다. 코드는 <a href="https://github.com/heykeetae/Self-Attention-GAN/tree/master" target="_blank">Self-Attention-GAN(PyTorch)</a>를 참고했습니다.
 <br><br>
 
 ---
 
 ## Self-Attention
+
+논문의 이름에도 들어가 있는 Self-Attention에 대해서 살펴보겠습니다. Self-Attention은 <a hef="https://arxiv.org/abs/1706.03762" target="_blank">Attention Is All You Need</a>에서 소개되었던 개념으로 RNN의 long term dependency 문제를 해결하기 위해 제안되었습니다.
+
+self attention은 입력 값 일부에 대해 입력 값 전체에 대한 관계를 계산합니다. 자연어라면 단어 하나와 전체 텍스트가 임베딩된 벡터 전체, 이미지처리라면 픽셀 하나와 이미지 전체가 임베딩된 feature map 사이의 관계를 계산하는 것이 됩니다. 입력 값 일부가 입력 값 전체에 대해 관계를 계산해 얼마나 관련되어 있는지, 값 사이의 연관성을 계산할 수 있게 됩니다.
+
+이를 위해서 입력 값을 key, query, value로 나뉘어 계산해 사용합니다. key 값은 입력 값의 일부, query는 입력 값 전체, value는
+
+
+SAGAN의 Self Attention은 아래 그림과 같습니다.
 
 <div>
   <img src="/assets/images/posts/sagan/paper/fig2.png" width="600" height="250">
@@ -64,17 +73,15 @@ self-attention 외에도, conditioning(조건)에 대한 기술을 추가합니�
 > Figure 2. SAGAN의 self-attention 모듈. $\otimes$는 행렬 곱을 나타내며, softmax 연산은 각 행에 대해 수행됩니다.
 
 
+convolution layer를 통과한 feature map($x$)를 입력으로 받아 key에 해당하는 $f(x)$, query에 해당하는 $g(x)$와 value에 해당하 $h(x)$로 입력 값 $x$를 연산합니다. 3가지 모두 kernel_size=1인 convolution을 사용합니다.
 
-
-
-
+attention map은 key와 query의 행렬 곱에 softmax 연산을 취해 아래와 같이 계산할 수 있습니다.
 
 $$
 \beta _{j, i} = \frac{exp(s _{ij})}{\sum ^N _{i=1}exp(s _{ij})}, \text{ where } s _{ij} = \mathbf{f}(\mathbf{x_i})^T \mathbf{g}(\mathbf{x_j})
 $$
 
 attention map은 픽셀 간의 관계를 나타내는데, 수식의 $\beta _{j, i}$는 $j$번째 영역을 합성 할 때 모델이 $i$번째 위치에 어느 정도 관심을 기울이는지를 나타냅니다.
-attention 모듈은 생성 모델과 판별 모델 모두에 적용되었습니다.
 
 
 
@@ -217,10 +224,8 @@ SAGAN은 3 종류의 metric에서 모두 최고를 달성했습니다.
 Figure 6은 ImageNet의 대표적인 클래스에 대한 생성된 이미지를 보여줍니다. SAGAN은 금붕어(goldfish), 세인트버나(saint bernard)와 같이 복잡한 기하학적, 구조적 패턴을 가진 클래스를 합성하기 위해 <a href="https://arxiv.org/abs/1802.05637" target="_blank">CGANS with Projection Discriminator(SNGAN-projection)</a>보다 Intra FID 점수가 낮아 더 나은 성능을 보임을 확인할 수 있습니다. 하지만 반대로 질감으로 구별될 수 있어 기하학적, 구조적 패턴이 거의 없는 돌담(stone wall), 산호 곰팡이(coral fungus)의 경우 오히려 성능이 낮다는 것 또한 확인할 수 있습니다.
 
 SAGAN은 기하학적, 구조적 패턴에 강해 self-attention mechanism을 long-range global dependency를 포착하기 위해 convolution과 같이 사용해 상호 보완적으로 작동해 좋은 결과를 이끌어 내지만, 단순 텍스터에 대한 dependency의 경우 local convolution과 유사한 역할을 해 좋은 결과를 이끌어 내지 못한다고 합니다.
-
-
-
 <br><br>
 
 ---
-ㅇㅇㅇ
+
+SAGAN 논문 리뷰글의 끝입니다. 학습까지 코드 짜서 돌려보면 좋겠지만 제 데탑에서는 돌아가지 않을 거 같아서 일단 코드글은 미뤄둘까 합니다. GPU 신청을 해놓은 게 있는데, 신청 성공하면 그때 돌려볼 수 있을 것 같습니다. 제발! 되기를!
