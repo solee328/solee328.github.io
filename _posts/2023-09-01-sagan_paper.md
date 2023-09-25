@@ -51,18 +51,24 @@ GANs는 ImageNet과 같은 multi-class를 모델링 시 문제는 가지고 있�
 
 self-attention 외에도, conditioning(조건)에 대한 기술을 추가합니다. <a href="https://arxiv.org/abs/1802.08768" target="_blank">Is Generator Conditioning Causally Related to GAN Performance?</a>는 well-condition 생성 모델이 더 나은 성능을 보이는 경향을 보여주었는데, 더 좋은 conditioning을 위해 <a href="https://arxiv.org/abs/1802.05957" target="_blank">Spectral Normalization for Generative Adversarial Networks</a>에서 판별 모델에만 적용되었던 spectral normalization 기술을 생성 모델에 적용합니다.
 
-제안된 방법들로 Inception score의 최고점을 36.8에서 52.52로 높였고 Fréchet Inception Distance를 27.62에서 18.65로 줄임으로써 이전 SOTA를 능가함을 보여주었다 합니다. 코드는 <a href="https://github.com/heykeetae/Self-Attention-GAN/tree/master" target="_blank">Self-Attention-GAN(PyTorch)</a>를 참고했습니다.
+제안된 방법들로 Inception score의 최고점을 36.8에서 52.52로 높였고 Fréchet Inception Distance를 27.62에서 18.65로 줄임으로써 이전 SOTA를 능가함을 보여주었다 합니다.
 <br><br>
 
 ---
 
 ## Self-Attention
 
+
+<div>
+  <img src="/assets/images/posts/sagan/paper/fig1.png" width="600" height="200">
+</div>
+> Figure 1. 각 행에서 첫번째 이미지는 색상이 지정된 점이 있는 5개의 대표적인 쿼리 위치를 보여줍니다. 나머지 5개의 이미지는 해당 쿼리 위치에 대한 attention map으로 해당 색상으로 표시된 화살표가 가장 주의(attention)를 기울이는 지역을 보여줍니다.
+
 논문의 이름에도 들어가 있는 Self-Attention에 대해서 살펴보겠습니다. Self-Attention은 <a hef="https://arxiv.org/abs/1706.03762" target="_blank">Attention Is All You Need</a>에서 소개되었던 개념으로 RNN의 long term dependency 문제를 해결하기 위해 제안되었습니다.
 
 self attention은 입력 값 일부에 대해 입력 값 전체에 대한 관계를 계산합니다. 자연어라면 단어 하나와 전체 텍스트가 임베딩된 벡터 전체, 이미지처리라면 픽셀 하나와 이미지 전체가 임베딩된 feature map 사이의 관계를 계산하는 것이 됩니다. 입력 값 일부가 입력 값 전체에 대해 관계를 계산해 얼마나 관련되어 있는지, 값 사이의 연관성을 계산할 수 있게 됩니다.
 
-이를 위해서 입력 값을 key, query, value로 나뉘어 계산해 사용합니다. key 값은 입력 값의 일부, query는 입력 값 전체, value는
+이를 위해서 입력 값을 key, query, value로 나뉘어 계산해 사용합니다. key 값은 입력 값의 일부, query는 입력 값 전체, value는 각각의 입력 값들이 가지고 있는 실제 값을 의미합니다.
 
 
 SAGAN의 Self Attention은 아래 그림과 같습니다.
@@ -86,30 +92,57 @@ attention map은 픽셀 간의 관계를 나타내는데, 수식의 $\beta _{j, 
 
 
 
-attention map visualize
-
-
+self-attention feature maps는 각 픽셀과 전체 feature map 간의 관계를 나타냅니다. 계산한 attentio map과 value인 $h(x)$를 곱한 후 1x1 convolution을 한번 더 취해 계산합니다.  <a hef="https://arxiv.org/abs/1706.03762" target="_blank">Attention Is All You Need</a>에서 Attention의 계산법은 $Attention(Q, K, V) = softmax(\frac{QK^T}{\sqrt{d_k}})V$ 였다면 SAGAN에서는 $v(x)$인 1x1 convolution이 하나 추가되어 계산하는 것이 차이입니다.
 $$
 \mathbf{o_j} = \mathbf{v} \left ( \sum^N_{i=1}\beta_{j, i}\mathbf{h}(\mathbf{x_i}) \right ), \mathbf{h}(\mathbf{x_i}) = \mathbf{W_h x_i}, \mathbf{v}(\mathbf{x_i}) = \mathbf{W_v x_i}.
 $$
 
-self-attention feature maps는 각 픽셀과 전체 feature map 간의 관계를 나타냅니다.
 
 
+최종 결과는 계산한 self-attention feature map인 $o$와 입력 값 $x$를 더해 출력합니다. 이때 학습 가능한 스칼라 값으로 0으로 초기화된 $\gamma$를 $o$에 곱해 self-attention feature map의 크기를 계산하는데, 논문에서는 학습 가능한 $\gamma$를 사용함으로써 네트워크가 처음에는 local 주변의 신호에 의존하다 점차 학습이 진행되며 non-local 신호에 더 많은 가중치를 부여하는 방법을 학습할 수 있다고 합니다. 0으로 초기화한 것에 대해서는 직관으로 쉬운 일을 먼저 학습하고 복잡성을 점진적으로 증가시켜 학습하기를 원했다고 합니다.
 
 $$
 \mathbf{y_i} = \gamma \mathbf{o_i} + \mathbf{x_i}
 $$
 
-최종 출력은 위와 같은데,  $\gamma$는 학습 가능한 스칼라 값으로 0으로 초기화된 상태에서 학습을 시작합니다.
 
+SAGAN의 Self-Attention에 대해 간단하고 명료하게 표현한 <a href="https://github.com/heykeetae/Self-Attention-GAN/issues/54#issuecomment-842042176" target="_blank">코드</a>가 있어 가져왔습니다.
+```python
+class Self_Attention(nn.Module):
+    def __init__(self, inChannels, k=8):
+        super(Self_Attention, self).__init__()
+        embedding_channels = inChannels // k  # C_bar
+        self.key      = nn.Conv2d(inChannels, embedding_channels, 1)
+        self.query    = nn.Conv2d(inChannels, embedding_channels, 1)
+        self.value    = nn.Conv2d(inChannels, embedding_channels, 1)
+        self.self_att = nn.Conv2d(embedding_channels, inChannels, 1)
+        self.gamma    = nn.Parameter(torch.tensor(0.0))
+        self.softmax  = nn.Softmax(dim=1)
 
-<div>
-  <img src="/assets/images/posts/sagan/paper/fig1.png" width="600" height="200">
-</div>
-> Figure 1. 각 행에서 첫번째 이미지는 색상이 지정된 점이 있는 5개의 대표적인 쿼리 위치를 보여줍니다. 나머지 5개의 이미지는 해당 쿼리 위치에 대한 attention map으로 해당 색상으로 표시된 화살표가 가장 주의(attention)를 기울이는 지역을 보여줍니다.
+    def forward(self,x):
+        """
+            inputs:
+                x: input feature map [Batch, Channel, Height, Width]
+            returns:
+                out: self attention value + input feature
+                attention: [Batch, Channel, Height, Width]
+        """
+        batchsize, C, H, W = x.size()
+        N = H * W                                       # Number of features
+        f_x = self.key(x).view(batchsize,   -1, N)      # Keys                  [B, C_bar, N]
+        g_x = self.query(x).view(batchsize, -1, N)      # Queries               [B, C_bar, N]
+        h_x = self.value(x).view(batchsize, -1, N)      # Values                [B, C_bar, N]
 
+        s =  torch.bmm(f_x.permute(0,2,1), g_x)         # Scores                [B, N, N]
+        beta = self.softmax(s)                          # Attention Map         [B, N, N]
 
+        v = torch.bmm(h_x, beta)                        # Value x Softmax       [B, C_bar, N]
+        v = v.view(batchsize, -1, H, W)                 # Recover input shape   [B, C_bar, H, W]
+        o = self.self_att(v)                            # Self-Attention output [B, C, H, W]
+
+        y = self.gamma * o + x                          # Learnable gamma + residual
+        return y, o
+```
 <br><br>
 
 ---
