@@ -39,13 +39,12 @@ GANs는 ImageNet과 같은 multi-class를 모델링 시 문제는 가지고 있�
 </details>
 <br>
 
+이에 대한 가능한 설명은 모델이 서로 다른 이미지 영역에 걸쳐 종속성(dependency)를 모델링하기 위해 convolution에 크게 의존한다는 것입니다. convolution은 receptive field가 local에 해당하므로 long range dependency를 위해서는 여러 convolution 레이어를 통과한 후에만 처리할 수 있습니다.
 
-<div>
-  <img src="/assets/images/posts/sagan/paper/conv.png" width="600" height="500">
-</div>
-> convolution이 깊어지면 longdependency가 가능
+  <img src="/assets/images/posts/sagan/paper/conv.png" width="500" height="400">
+> convolution이 1 layer가 깊어질수록 kernel 크기가 곱해진만큼을 커버할 수 있는 것을 볼 수 있습니다.
 
-이에 대한 가능한 설명은 모델이 서로 다른 이미지 영역에 걸쳐 종속성(dependency)를 모델링하기 위해 convolution에 크게 의존한다는 것입니다. convolution은 receptive field가 local에 해당하므로 long range dependency를 위해서는 여러 convolution 레이어를 통과한 후에만 처리할 수 있습니다. 따라서 작은 모델들은 layer 수가 작아 long range dependency 표현 자체가 어렵습니다. 모델이 아닌 최적화 알고리즘을 사용해서도 long range dependency를 포착하도록 할 수 있겠지만 이를 위한 파라미터 값을 발견하기 어려울 뿐만 아니라 이 경우 새로운 입력에 대해 실패하기도 쉬워집니다. convolution의 local을 키우기 위해 convolution kernel의 크기를 증가시키면 receptive field가 커지니 네트워크의 표현 용량을 증가시킬 수 있지만 local convolutional 구조를 사용해 얻은 계산 및 통계의 효율성이 손실됩니다.
+ 따라서 작은 모델들은 layer 수가 작아 long range dependency 표현 자체가 어렵습니다. 모델이 아닌 최적화 알고리즘을 사용해서도 long range dependency를 포착하도록 할 수 있겠지만 이를 위한 파라미터 값을 발견하기 어려울 뿐만 아니라 이 경우 새로운 입력에 대해 실패하기도 쉬워집니다. convolution의 local을 키우기 위해 convolution kernel의 크기를 증가시키면 receptive field가 커지니 네트워크의 표현 용량을 증가시킬 수 있지만 local convolutional 구조를 사용해 얻은 계산 및 통계의 효율성이 손실됩니다.
 
 따라서 논문에서는 Self-Attention을 도입한 Self-Attention Generative Adversarial Networks(SAGANs)를 제안합니다. self-attention module은 모든 위치에서 feature의 가중치 합으로 위치 반응을 계산하며, attention vector는 적은 비용으로 계산이 가능하기에 long range dependency와 통계 효율성 사이의 더 나은 균형을 보여줍니다.
 
@@ -64,11 +63,20 @@ self-attention 외에도, conditioning(조건)에 대한 기술을 추가합니�
 </div>
 > Figure 1. 각 행에서 첫번째 이미지는 색상이 지정된 점이 있는 5개의 대표적인 쿼리 위치를 보여줍니다. 나머지 5개의 이미지는 해당 쿼리 위치에 대한 attention map으로 해당 색상으로 표시된 화살표가 가장 주의(attention)를 기울이는 지역을 보여줍니다.
 
-논문의 이름에도 들어가 있는 Self-Attention에 대해서 살펴보겠습니다. Self-Attention은 <a hef="https://arxiv.org/abs/1706.03762" target="_blank">Attention Is All You Need</a>에서 소개되었던 개념으로 RNN의 long term dependency 문제를 해결하기 위해 제안되었습니다.
+논문의 이름에도 들어가 있는 Self-Attention에 대해서 살펴보겠습니다. Self-Attention은 <a hef="https://arxiv.org/abs/1706.03762" target="_blank">Attention Is All You Need</a>에서 소개되었던 개념으로 RNN의 long term dependency 문제를 해결하기 위해 제안되었으니 SAGAN에서는 image generation task에 Self-Attention을 사용해 long range dependency를 해결하고자 합니다.
 
 self attention은 입력 값 일부에 대해 입력 값 전체에 대한 관계를 계산합니다. 자연어라면 단어 하나와 전체 텍스트가 임베딩된 벡터 전체, 이미지처리라면 픽셀 하나와 이미지 전체가 임베딩된 feature map 사이의 관계를 계산하는 것이 됩니다. 입력 값 일부가 입력 값 전체에 대해 관계를 계산해 얼마나 관련되어 있는지, 값 사이의 연관성을 계산할 수 있게 됩니다.
 
-이를 위해서 입력 값을 key, query, value로 나뉘어 계산해 사용합니다. key 값은 입력 값의 일부, query는 입력 값 전체, value는 각각의 입력 값들이 가지고 있는 실제 값을 의미합니다.
+이를 위해서 입력 값을 key, query, value로 나뉘어 계산해 사용합니다. key 값은 입력 값 전체, query는 입력 값의 일부, value는 각각의 입력 값들이 가지고 있는 실제 값을 의미합니다.위의 Figure 1는 생성된 이미지(1열)의 여러 색상의 5개의 점이 query에 해당합니다. 2~5열은 각각의 query인 점들에 대한 attention map을 보여주는데 밝은 부분은 query와 관련이 깊다는 것을 의미합니다. query는 이미지의 모든 픽셀(실제로 모델에서는 feature map)을 key로 두고 key와의 연관성을 계산한 것이 attention map으로 위와 같이 나타납니다. self-attention은 attention map과 실제 값을 의미하는 value를 곱해 구할 수 있습니다.
+
+$$
+Attention(Q, K, V) = softmax(\frac{QK^T}{\sqrt{d_k}})V
+$$
+
+
+
+
+
 
 
 SAGAN의 Self Attention은 아래 그림과 같습니다.
@@ -79,7 +87,7 @@ SAGAN의 Self Attention은 아래 그림과 같습니다.
 > Figure 2. SAGAN의 self-attention 모듈. $\otimes$는 행렬 곱을 나타내며, softmax 연산은 각 행에 대해 수행됩니다.
 
 
-convolution layer를 통과한 feature map($x$)를 입력으로 받아 key에 해당하는 $f(x)$, query에 해당하는 $g(x)$와 value에 해당하 $h(x)$로 입력 값 $x$를 연산합니다. 3가지 모두 kernel_size=1인 convolution을 사용합니다.
+convolution layer를 통과한 feature map($x$)를 입력으로 받아 key에 해당하는 $f(x)$, query에 해당하는 $g(x)$와 value에 해당하는 $h(x)$로 입력 값 $x$를 연산합니다. 3가지 모두 kernel_size=1인 convolution을 사용합니다.
 
 attention map은 key와 query의 행렬 곱에 softmax 연산을 취해 아래와 같이 계산할 수 있습니다.
 
