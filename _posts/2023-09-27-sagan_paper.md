@@ -209,10 +209,10 @@ $$
 GANs 학습을 안정화하기 위해 Spectral normalization과 Two Time Scale Update Rule(TTUR)을 사용합니다.
 
 
-### Spectral normalization
+### Spectral Normalization
 Spectral Normalization은 <a href="https://arxiv.org/abs/1802.05957" target="_blank">Spectral Normalization for Generative Adversarial Networks</a>에서 GANs 학습 안정화를 위해 판별 모델에 적용되었습니다. 각 layer의 spectral norm을을 특정 상수로 제한하는 것으로 판별 모델의 Lipschitz 상수를 제한하는 방법으로 모든 가중치 레이어의 spectral norm은 1로 설정하는 것이 지속적으로 잘 수행되기 때문에 다른 normalization 방법과 비교해 추가적인 hyperparameter 튜닝을 필요로 하지 않는다 합니다. 또한 계산 비용이 적은 것이 장점입니다.
 
-SAGAN은 생성 모델에도 Spectral normalization을 적용하는 것으로 생성 모델의 파라미터 크기의 상승을 방지하고 비정상적인 gradient를 피할 수 있어 Spectral normalization을 생성 모델과 판별 모델 모두에 적용합니다. 이후 생성 모델과 판별 모델 모두의 Spectral normalization이 안정적인 학습을 보여줄 뿐만 아니라 생성 모델 업데이트 당 판별 모델 업데이트 수를 더 적게 만드는 것이 가능해 학습에 대한 계산 비용을 크게 감소시킨다는 것을 발견했다 합니다.
+SAGAN은 생성 모델에도 Spectral normalization을 적용하는 것으로 생성 모델의 파라미터 크기의 상승을 방지하고 비정상적인 gradient를 피할 수 있어 Spectral normalization을 생성 모델과 판별 모델 모두에 적용합니다. 이후 생성 모델과 판별 모델 모두의 Spectral normalization이 안정적인 학습을 보여줄 뿐만 아니라 생성 모델 업데이트 당 판별 모델 업데이트 수를 더 적게 만드는 것이 가능해 학습에 대한 계산 비용을 크게 감소시킨다는 것을 발견했습니다. SAGAN은 판별모델의 learning rate는 0.0004로, 생성 모델의 learning rate는 0.0001을 사용해 판별 모델과 생성 모델 업데이트 비율을 1:1로 학습합니다. 
 
 
 ### TTUR
