@@ -33,40 +33,58 @@ BigGAN은 GAN에서 생성된 이미지들과 실제 이미지인 ImageNet 간�
 
 ---
 
-### 개인 정리
-SAGAN처럼 spectral normalization(Miyato et al., 2018) 사용
-첫번째 단일 값의 실행 추정치(running estimates)로 파라미터들을 정규화(normalization)해 Lipschitz 연속성을 D에 적용하고 top singular direction을 adaptively regularize 해 역 역학(backwards dynamics)를 유도함.
-<br><br>
+## Setting
+우선 BigGAN이 사용한 구조와 설정에 대해서 살펴보겠습니다.
 
----
+BigGAN이 사용한 구조와 설정은 다음과 같습니다.
+- hinge loss를 adversarial loss로 사용한 SAGAN 구조를 사용합니다.
+- class 정보는 class-conditional BatchNorm으로 G에게 제공하고 projection으로 D에게 제공합니다.
+- Spectral Norm을 G에 적용하며, learning rate는 절반으로 줄여 D step per G step을 2로 사용하도록 수정해 사용합니다.
+- decay 0.9999인 moving averages of G's weight
+- Orthogonal Initialization을 사용합니다.
+
+
+### SAGAN
+SAGAN은 저번 글이고 hinge loss로 다뤘다
+
+Spectral Norm은 SAGAN을 따라함. 첫번째 단일 값의 실행 추정치(running estimates)로 파라미터들을 정규화(normalization)해 Lipschitz 연속성을 D에 적용하고 top singular direction을 adaptively regularize 해 역 역학(backwards dynamics)를 유도함.
+SAGAN에서는 1:1을 했지만 1:2로 수정한 것을 사용
+
+
+### Conditioning
+
+class-conditional BatchNorm(Dumoulin et al., 2017; de Vreis et al., 2017)
+projection(Miyato & Koyama, 2018)
+
+
+### weights moving
+G의 가중치 이동 평균(Karras et al.(2018); Mescheder et al. (2018); Yazc et al. (2018))
+
+
+### Initialization
+orthogonal Initialization(Saxe et al., 2014)
+
+
+
 
 ## Scaling Up GANs
-BigGAN의 첫번째 특징인 규모에 대해서 살펴보겠습니다.
-
-BigGan은 baseline으로 hinge loss를 GAN의 목적함수로 사용한 SAGAN 구조를 사용합니다. class 정보를 class-conditional BatchNorm으로 G에게 제공하고 projection으로 D에게 제공합니다.
-
-최적화 설정은 SAGAN을 따르는데 sepctral Norm을 G에게 적용하며 learning rate를 절반으로 줄여 D step per G step을 2로 사용하도록 수정해 사용합니다.
-
-평가를 위해서 BigGAN은 decay를 0.999로 설정한 ~~를 G의 가중치 평균 이동을 사용합니다.
-
-이전 연구들은 $\mathcal{N}$(0, 0.02$I$)(Radford et al., 2016) 또는 Xavier initialization(Glorot & Bengio, 2010)을 사용했으나 BigGAN은 Orthogonal Initialization을 사용합니다.
-
-- hinge loss를 adversarial loss로 사용한 SAGAN 구조를 사용합니다.
-- class 정보는 class-conditional BatchNorm으로 G에게 제공하고 projection으로 D에게 제공합니다
-- Spectral Norm을 G에 적용하며, learning rate는 절반으로 줄여 D step per G step을 2로 사용하도록 수정해 사용합니다.
-
-
 <div>
   <img src="/assets/images/posts/biggan/paper/table1.png" width="600" height="200">
 </div>
 > Table 1.
 
+SAGAN이 규모를 키워 어떤 성능을 냈는지 Table 1을 통해 확인할 수 있습니다.
+
+Table 1의 1~4행은 단순히 batch size를 최대 8배까지 증가시키는 것으로 IS 점수는 sota에서 46% 향상됨을 보여줍니다. 이런 scale up으로 인한 주목할 만한 부작용은 BigGAN이 더 적은 반복으로 최종 성능에 도달하지만, 불안정해지거나 완전한 training collapse를 겪는다는 것입니다. 이 실험의 경우 collapse 직전에 저장된 checkpoint의 점수를 보고한 것이라 합니다.
+
+이후 channel 수를 50% 증가시켜 파라미터 수를 약 2배로 늘려 IS가 21% 더 개선되었습니다. 깊이를 2배로 늘리는 것은 처음엔 개선으로 이어지지 않았지만 residual block 구조를 사용하는 BigGAN-deep 모델에서 해결되었다고 합니다.
+
 
 <br><br>
 
 ---
 
-## Stabilize
+## Collapse
 
 <br><br>
 
