@@ -53,7 +53,30 @@ SAGAN에서는 1:1을 했지만 1:2로 수정한 것을 사용
 
 ### Conditioning
 
+class 정보를 G와 D에 다른 방식으로 제공합니다.
+
+
+
 class-conditional BatchNorm(Dumoulin et al., 2017; de Vreis et al., 2017)
+
+G에는 Conditional Batch Nromalization(CBN) 방식을 사용합니다.
+<a href="https://arxiv.org/abs/1707.00683" target="_blank">Modulating early visual processing by language</a>에서 소개되었으며, 기존의 Batch Normalization(BN)으로 클래스 정보가 batch normalization의 learnable parameter인 $\gamma$, $\beta$에 영향을 미칠 수 있도록 해 conditional 정보를 BN에 주는 방법입니다. 주고자 하는 정보 $e_q$를 MLP layer에 통과시켜 channel 수 마다 2개의 값 $\Delta \beta$와 $\Delta \gamma$를 계산합니다.
+
+$$
+\Delta \beta = MLP(e_q) \quad \quad \Delta \gamma = MLP(e_q)
+$$
+
+이후 Batch Normalization의 $\beta$, $\gamma$에 계산된 값을 더해 Conditional Batch Normalization으로 사용합니다.
+
+$$
+\hat{\beta_c} = \beta_c + \Delta \beta_c \quad \quad \hat{\gamma_c} = \gamma_c + \Delta \gamma_c
+$$
+
+
+
+
+
+
 projection(Miyato & Koyama, 2018)
 
 
@@ -65,6 +88,11 @@ G의 가중치 이동 평균(Karras et al.(2018); Mescheder et al. (2018); Yazc 
 orthogonal Initialization(Saxe et al., 2014)
 
 
+## Truncation trick
+대부분의 이전 연구들은 $z$를 $N(0, I)$ 또는 $U[-1, 1]$에서 선택해 사용했습니다. BigGAN 저자들은 이것에 의문을 가지고 Appendix E에서 대안을 탐구했습니다.
+
+
+놀랍게도, 가장 좋은 결과는 학습에서 사용된 것과 다른 잠재 분포에서 샘플링한 것이였습니다. $z \sim N(0, I)$으로 학습된 모델과 normal 분포에서 truncated(범위 밖의 값이 해당 범위에 속하도록 다시 샘플링됨)된 $z$를 사용하는 것은 즉시 IS와 FID 점수를 향상시킵니다. 이것을 Truncation Trick이라 부릅니다. 임계값 이상의 크기의 값을 다시 샘플링한 truncated $z$를 사용하면 전체 샘
 
 
 ## Scaling Up GANs
