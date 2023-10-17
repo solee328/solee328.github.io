@@ -52,15 +52,19 @@ SAGAN에서는 1:1을 했지만 1:2로 수정한 것을 사용
 
 
 ### Conditioning
-
 class 정보를 G와 D에 다른 방식으로 제공합니다.
 
-
-
+#### CBN(G)
 class-conditional BatchNorm(Dumoulin et al., 2017; de Vreis et al., 2017)
 
+<div>
+  <img src="/assets/images/posts/biggan/paper/CBN.png" width="500" height="200">
+</div>
+> Modulating early visual processing by language의 Figure. 2<br>
+왼쪽이 일반적인 batch normalization이고 오른쪽이 conditional batch normalization의 개요를 나타냅니다.
+
 G에는 Conditional Batch Nromalization(CBN) 방식을 사용합니다.
-<a href="https://arxiv.org/abs/1707.00683" target="_blank">Modulating early visual processing by language</a>에서 소개되었으며, 기존의 Batch Normalization(BN)으로 클래스 정보가 batch normalization의 learnable parameter인 $\gamma$, $\beta$에 영향을 미칠 수 있도록 해 conditional 정보를 BN에 주는 방법입니다. 주고자 하는 정보 $e_q$를 MLP layer에 통과시켜 channel 수 마다 2개의 값 $\Delta \beta$와 $\Delta \gamma$를 계산합니다.
+<a href="https://arxiv.org/abs/1707.00683" target="_blank">Modulating early visual processing by language</a>에서 소개되었으며, 기존의 Batch Normalization(BN)으로 클래스 정보가 batch normalization의 learnable parameter인 $\gamma$, $\beta$에 영향을 미칠 수 있도록 해 conditional 정보를 BN에 주는 방법입니다. 주고자 하는 condition에 해당하는 $e_q$를 MLP layer에 통과시켜 channel 수 마다 2개의 값 $\Delta \beta$와 $\Delta \gamma$를 계산합니다.
 
 $$
 \Delta \beta = MLP(e_q) \quad \quad \Delta \gamma = MLP(e_q)
@@ -72,12 +76,26 @@ $$
 \hat{\beta_c} = \beta_c + \Delta \beta_c \quad \quad \hat{\gamma_c} = \gamma_c + \Delta \gamma_c
 $$
 
+<a href="https://arxiv.org/abs/1707.00683" target="_blank">Modulating early visual processing by language</a>의 경우 VQA(Visual Question Answering) 논문으로 자연어 처리를 위해 위의 Figure 2에서 question이 LSTM과 MLP를 거쳐 $\Delta \beta$와 $\Delta \gamma$를 계산해 CBN에 사용했지만 BigGAN에서는 LSTM 없이 feature map을 MLP의 입력으로 넣어 $\Delta \beta$와 $\Delta \gamma$를 계산하게 됩니다.
+
+또한 <a href="https://arxiv.org/abs/1707.00683" target="_blank">Modulating early visual processing by language</a>에서는 $\beta$, $\gamma$는 pretrained된 ResNet에서 학습된 pretrained $\beta$, $\gamma$로 고정됩니다. BigGAN에서는 pretrained된 값을 사용하거나 임의의 값으로 초기화된 값을 사용해 학습하는 것 모두 가능할 거 같습니다.
 
 
 
+#### Projection(D)
 
+<div>
+  <img src="/assets/images/posts/biggan/paper/projection.png" width="500" height="250">
+</div>
+> CGANS with Projection Discriminator의 Figure 1.<br>
+conditional GANs의 Discriminator 모델을 보여줍니다. 가장 우측의 모델이 BigGAN에서도 사용한 Projection Discriminator의 모양입니다.
 
 projection(Miyato & Koyama, 2018)
+
+
+
+
+Projection Disrciminator를 사용한다.
 
 
 ### weights moving
