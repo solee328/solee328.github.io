@@ -145,8 +145,8 @@ class SNResNetProjectionDiscriminator(chainer.Chain):
 
 
 
-### weights moving
-G의 가중치 이동 평균(Karras et al.(2018); Mescheder et al. (2018); Yazc et al. (2018))
+### EMA(EWA)
+$G$의 weight에 moving average를 사용한다고 해 인용을 확인해보니 PGGAN, ProGAN이라 불리는 <a href="https://arxiv.org/abs/1710.10196" target="_blank">Progressive Growing of GANs for Improved Quality, Stability, and Variation</a>에서 사용한 것으로 learning rate를 decay하도록 따로 설정하지는 않지만 $G$의 출력을 시각화하기 위해 exponential weight average를 사용한다고 합니다. exponential weight average는 가장 최신의 weight의 가중치를 더 크게 반영하고자 이전의 가중치들은 iteration이 반복될 때마다 decay 값인 0.999가 곱해져 축적되어 average 값이 가중치로 사용됩니다.
 
 
 ### Initialization
