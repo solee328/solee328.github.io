@@ -149,8 +149,22 @@ class SNResNetProjectionDiscriminator(chainer.Chain):
 $G$의 weight에 moving average를 사용한다고 해 인용을 확인해보니 PGGAN, ProGAN이라 불리는 <a href="https://arxiv.org/abs/1710.10196" target="_blank">Progressive Growing of GANs for Improved Quality, Stability, and Variation</a>에서 사용한 것으로 learning rate를 decay하도록 따로 설정하지는 않지만 $G$의 출력을 시각화하기 위해 exponential weight average를 사용한다고 합니다. exponential weight average는 가장 최신의 weight의 가중치를 더 크게 반영하고자 이전의 가중치들은 iteration이 반복될 때마다 decay 값인 0.999가 곱해져 축적되어 average 값이 가중치로 사용됩니다.
 
 
-### Initialization
+
+### Orthogonal
+
+#### Initialization
 orthogonal Initialization(Saxe et al., 2014)
+
+논문에서는 $N(0, 0.2I)$ 또는 Xavier initialization이 아닌 orthogonal initialization을 사용했다고 합니다. Orthogonal initialization은 <a href="https://arxiv.org/abs/1312.6120" target="_blank">Exact solutions to the nonlinear dynamics of learning in deep linear neural networks</a>에서 사용된 방법으로 random weight를 svd를 통해 얻은 orthogonal matrix를 initial weight로 사용하는 방법입니다.
+
+
+
+
+
+#### Regularization
+
+
+
 
 
 ## Truncation trick
