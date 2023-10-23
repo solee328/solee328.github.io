@@ -149,6 +149,12 @@ class SNResNetProjectionDiscriminator(chainer.Chain):
 $G$의 weight에 moving average를 사용한다고 해 인용을 확인해보니 PGGAN, ProGAN이라 불리는 <a href="https://arxiv.org/abs/1710.10196" target="_blank">Progressive Growing of GANs for Improved Quality, Stability, and Variation</a>에서 사용한 것으로 learning rate를 decay하도록 따로 설정하지는 않지만 $G$의 출력을 시각화하기 위해 exponential weight average를 사용한다고 합니다. exponential weight average는 가장 최신의 weight의 가중치를 더 크게 반영하고자 이전의 가중치들은 iteration이 반복될 때마다 decay 값인 0.999가 곱해져 축적되어 average 값이 가중치로 사용됩니다.
 
 
+### Truncation trick
+대부분의 이전 연구들은 $z$를 $N(0, I)$ 또는 $U[-1, 1]$에서 선택해 사용했습니다. BigGAN 저자들은 이것에 의문을 가지고 Appendix E에서 대안을 탐구했습니다.
+
+
+놀랍게도, 가장 좋은 결과는 학습에서 사용된 것과 다른 잠재 분포에서 샘플링한 것이였습니다. $z \sim N(0, I)$으로 학습된 모델과 normal 분포에서 truncated(범위 밖의 값이 해당 범위에 속하도록 다시 샘플링됨)된 $z$를 사용하는 것은 즉시 IS와 FID 점수를 향상시킵니다. 이것을 Truncation Trick이라 부릅니다. 임계값 이상의 크기의 값을 다시 샘플링한 truncated $z$를 사용하면 전체 샘
+
 
 ### Orthogonal
 
@@ -158,20 +164,34 @@ orthogonal Initialization(Saxe et al., 2014)
 논문에서는 $N(0, 0.2I)$ 또는 Xavier initialization이 아닌 orthogonal initialization을 사용했다고 합니다. Orthogonal initialization은 <a href="https://arxiv.org/abs/1312.6120" target="_blank">Exact solutions to the nonlinear dynamics of learning in deep linear neural networks</a>에서 사용된 방법으로 random weight를 svd를 통해 얻은 orthogonal matrix를 initial weight로 사용하는 방법입니다.
 
 
-
-
-
 #### Regularization
+$z$를 $N(0, I)$나 $U[-1, 1]$에서 추출해 사용하는 것이 일반적이지만 저자들은 여기에 의문을 가지고 여러 분포를 테스트했습니다.
+
+---테스트들 나열---
 
 
+```
+figure 2
+```
+
+학습에서는 $N(0, I)$을 사용, threshold 밖으로 나가는 경우 다시 샘플링하는 방법을 사용하는 것
+
+figure 2의 a에서 threshold 값에 따라서 좌측으로 갈수록 다양한 샘플이 나오지만 우측으로 갈수록 하나의 결과가 나오는 것을 볼 수 있습니다. figure 2의 b의 경우는 truncation trick이 통하지 않는 경우로 이런 경우는 해결하기 위해 orthogonal regularization을 도입합니다.
 
 
+$$
+R_{\beta}(W) = \beta \| W^{\top} W -I \|^2_F
+$$
 
-## Truncation trick
-대부분의 이전 연구들은 $z$를 $N(0, I)$ 또는 $U[-1, 1]$에서 선택해 사용했습니다. BigGAN 저자들은 이것에 의문을 가지고 Appendix E에서 대안을 탐구했습니다.
+weight를 orthogonal하게 제한시키는 경우 문제가 발생
+다른 방식을 사용
 
+$$
+R_{\beta}(W) = \beta \|W^{\top}W \odot(1-I) \|^2_F
+$$
 
-놀랍게도, 가장 좋은 결과는 학습에서 사용된 것과 다른 잠재 분포에서 샘플링한 것이였습니다. $z \sim N(0, I)$으로 학습된 모델과 normal 분포에서 truncated(범위 밖의 값이 해당 범위에 속하도록 다시 샘플링됨)된 $z$를 사용하는 것은 즉시 IS와 FID 점수를 향상시킵니다. 이것을 Truncation Trick이라 부릅니다. 임계값 이상의 크기의 값을 다시 샘플링한 truncated $z$를 사용하면 전체 샘
+orthogonal regularization이 없는 경우 16%의 경우에만 truncation trick을 적용할 수 있는 반면, orthogonal regularization을 사용해 학습한 경우 60%로 늘어났다고 합니다.
+
 
 
 ## Scaling Up GANs
