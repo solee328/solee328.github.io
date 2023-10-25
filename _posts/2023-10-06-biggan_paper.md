@@ -149,13 +149,6 @@ class SNResNetProjectionDiscriminator(chainer.Chain):
 $G$의 weight에 moving average를 사용한다고 해 인용을 확인해보니 PGGAN, ProGAN이라 불리는 <a href="https://arxiv.org/abs/1710.10196" target="_blank">Progressive Growing of GANs for Improved Quality, Stability, and Variation</a>에서 사용한 것으로 learning rate를 decay하도록 따로 설정하지는 않지만 $G$의 출력을 시각화하기 위해 exponential weight average를 사용한다고 합니다. exponential weight average는 가장 최신의 weight의 가중치를 더 크게 반영하고자 이전의 가중치들은 iteration이 반복될 때마다 decay 값인 0.999가 곱해져 축적되어 average 값이 가중치로 사용됩니다.
 
 
-### Truncation trick
-대부분의 이전 연구들은 $z$를 $N(0, I)$ 또는 $U[-1, 1]$에서 선택해 사용했습니다. BigGAN 저자들은 이것에 의문을 가지고 Appendix E에서 대안을 탐구했습니다.
-
-
-놀랍게도, 가장 좋은 결과는 학습에서 사용된 것과 다른 잠재 분포에서 샘플링한 것이였습니다. $z \sim N(0, I)$으로 학습된 모델과 normal 분포에서 truncated(범위 밖의 값이 해당 범위에 속하도록 다시 샘플링됨)된 $z$를 사용하는 것은 즉시 IS와 FID 점수를 향상시킵니다. 이것을 Truncation Trick이라 부릅니다. 임계값 이상의 크기의 값을 다시 샘플링한 truncated $z$를 사용하면 전체 샘
-
-
 ### Orthogonal
 
 #### Initialization
@@ -165,14 +158,18 @@ orthogonal Initialization(Saxe et al., 2014)
 
 
 #### Regularization
-$z$를 $N(0, I)$나 $U[-1, 1]$에서 추출해 사용하는 것이 일반적이지만 저자들은 여기에 의문을 가지고 여러 분포를 테스트했습니다.
+대부분의 이전 연구들은 $z$를 $N(0, I)$ 또는 $U[-1, 1]$에서 선택해 사용했습니다. BigGAN 저자들은 이것에 의문을 가지고 대안을 탐구했습니다.
 
----테스트들 나열---
+놀랍게도, 가장 좋은 결과는 학습에서 사용된 것과 다른 잠재 분포에서 샘플링한 것이였습니다. $z \sim N(0, I)$으로 학습된 모델과 normal 분포에서 truncated(범위 밖의 값이 해당 범위에 속하도록 다시 샘플링됨)된 $z$를 사용하는 것은 즉시 IS와 FID 점수를 향상시킵니다. 이것을 Truncation Trick이라 부릅니다. threshold 이상의 크기의 값을 다시 샘플링한 truncated $z$를 사용하면 전체 샘
+
+truncation 없이 가장 잘 작동하는 2개의 latent는 Bernoulli $\{ 0, 1 \}$와 Censored Normal max($N(0, I), 0$)로 두 가지 모두 학습 속도를 향상시키고 최종 성능을 약간 향상시켰지만 truncation에는 덜 적합하다고 합니다.
 
 
-```
-figure 2
-```
+<div>
+  <img src="/assets/images/posts/biggan/paper/fig2.png" width="750" height="230">
+</div>
+> Figure 2. (a) truncation 증가에 대한 효과. 왼쪽에서 오른쪽으로 threshold 2, 1, 0.5, 0.04로 설정되었습니다.<br>
+(b)truncation을 적용해 상태가 좋지 않은 모델의 Saturation artifacts
 
 학습에서는 $N(0, I)$을 사용, threshold 밖으로 나가는 경우 다시 샘플링하는 방법을 사용하는 것
 
@@ -196,9 +193,11 @@ orthogonal regularization이 없는 경우 16%의 경우에만 truncation trick�
 
 ## Scaling Up GANs
 <div>
-  <img src="/assets/images/posts/biggan/paper/table1.png" width="600" height="200">
+  <img src="/assets/images/posts/biggan/paper/table1.png" width="600" height="220">
 </div>
-> Table 1.
+> Table 1. ablation 실험을 위한 Fréchet Inception Distance(FID, 낮은 점수가 더 좋음)와 Inception Score(IS, 높은 점수가 더 좋음).<br>
+Batch는 batch size, Param은 parameter의 수, CH는 각 계층의 단위 수를 나타내는 channel의 수, Shared는 shared embedding의 사용 여부, Skip-z는 잠재 계층에서 다른 계층으로의 skip connection 사용 여부, Ortho.는 Orthogonal Regularization, Itr는 $10^6$ iteration에서 안정적인지 또는 주어진 iteration에서 붕괴(collapse)되는 나타냅니다.<br>
+1 ~ 4행 외에는 8번의 random initialization에 걸쳐 결과가 계산됩니다.
 
 SAGAN이 규모를 키워 어떤 성능을 냈는지 Table 1을 통해 확인할 수 있습니다.
 
