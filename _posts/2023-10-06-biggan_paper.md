@@ -45,16 +45,40 @@ BigGAN이 사용한 구조와 설정은 다음과 같습니다.
 
 
 ### SAGAN
-SAGAN은 저번 글이고 hinge loss로 다뤘다
+BigGAN은 지난 글인 <a href="https://solee328.github.io/gan/2023/09/27/sagan_paper.html" target="_blank">SAGAN - 논문리뷰</a>에서 다뤘던 SAGAN이 모델 기반으로 사용됩니다.
 
-Spectral Norm은 SAGAN을 따라함. 첫번째 단일 값의 실행 추정치(running estimates)로 파라미터들을 정규화(normalization)해 Lipschitz 연속성을 D에 적용하고 top singular direction을 adaptively regularize 해 역 역학(backwards dynamics)를 유도함.
-SAGAN에서는 1:1을 했지만 1:2로 수정한 것을 사용
+SAGAN과 마찬가지로 adversarial loss로 hinge loss를 사용하며 G와 D 모두에 Spectral Normalization을 사용합니다.
+
+Spectral Norm은 첫번째 단일 값의 실행 추정치(running estimates)로 파라미터들을 정규화(normalization)해 Lipschitz 연속성을 D에 적용하고 top singular direction을 adaptively regularize 해 역 역학(backwards dynamics)를 유도함.
+
+SAGAN에서는 G와 D의 학습 step 수를 1:1로 설정해 동일한 시간에서 더 나은 결과를 얻고자 한 것이 특징이지만 BigGAN에서는 G와 D 학습 step 수를 1:2로 수정한 것을 사용합니다.
+<br><br>
+
+---
 
 
 ### Conditioning
+
+<div>
+  <img src="/assets/images/posts/biggan/paper/fig15.png" width="600" height="300">
+</div>
+> figure 15. (a) BigGAN의 $G$의 대표적인 구조<br>
+(b) BigGAN의 $G$에 사용되는 Residual Block($ResBlock up$)<br>
+(c) BigGAN의 $D$에 사용되는 Residual Block($ResBlock down$)
+
+
 class 정보를 G와 D에 다른 방식으로 제공합니다.
 
-#### CBN(G)
+G에는 single shared class embedding으로 Conditional Batch Normliazation(CBN)과 skip connection(skip-z)를 사용합니다. $z$는 모델 입력에서 한번만 쓰이는게 일반적이지만 BigGAN은 Residual Block마다 class 정보와 함께 입력되는 걸 볼 수 있습니다.
+
+latent vector $z$가 channel 차원에 따라 동일한 크기로 분할되고 각 분할된 $z$는 shared class embedding인 CBN과 연결되어 residual block에 conditioning vector로 전달됩니다. 이 $z$를 hierarchical latent space라 하고 skip connection처럼 여러 계층에 전달되는 $z$를 skip-z라 합니다. skip-z는 약 4% 성능 향상과 함께 학습 속도 또한 18% 향상시켰다고 합니다.
+
+D는 Projection Discriminator 방식을 사용합니다. Residual Block과 Scalar function을 사용해 class 정보를 사용하는 것이 특징입니다.
+
+G와 D에 어떤 방식으로 Condition 정보를 주었는지 하나하나 살펴보겠습니다.
+
+
+#### Shared embedding / CBN(G)
 class-conditional BatchNorm(Dumoulin et al., 2017; de Vreis et al., 2017)
 
 <div>
@@ -63,7 +87,7 @@ class-conditional BatchNorm(Dumoulin et al., 2017; de Vreis et al., 2017)
 > Modulating early visual processing by language의 Figure. 2<br>
 왼쪽이 일반적인 batch normalization이고 오른쪽이 conditional batch normalization의 개요를 나타냅니다.
 
-G에는 Conditional Batch Nromalization(CBN) 방식을 사용합니다.<br>
+G에는 Conditional Batch Normalization(CBN) 방식을 사용합니다.<br>
 <a href="https://arxiv.org/abs/1707.00683" target="_blank">Modulating early visual processing by language</a>에서 소개되었으며, 기존의 Batch Normalization(BN)으로 클래스 정보가 batch normalization의 learnable parameter인 $\gamma$, $\beta$에 영향을 미칠 수 있도록 해 conditional 정보를 BN에 주는 방법입니다. 주고자 하는 condition에 해당하는 $e_q$를 MLP layer에 통과시켜 channel 수 마다 2개의 값 $\Delta \beta$와 $\Delta \gamma$를 계산합니다.
 
 $$
@@ -76,10 +100,16 @@ $$
 \hat{\beta_c} = \beta_c + \Delta \beta_c \quad \quad \hat{\gamma_c} = \gamma_c + \Delta \gamma_c
 $$
 
-<a href="https://arxiv.org/abs/1707.00683" target="_blank">Modulating early visual processing by language</a>의 경우 VQA(Visual Question Answering) 논문으로 자연어 처리를 위해 위의 Figure 2에서 question이 LSTM과 MLP를 거쳐 $\Delta \beta$와 $\Delta \gamma$를 계산해 CBN에 사용했지만 BigGAN에서는 LSTM 없이 feature map을 MLP의 입력으로 넣어 $\Delta \beta$와 $\Delta \gamma$를 계산하게 됩니다.
 
-또한 <a href="https://arxiv.org/abs/1707.00683" target="_blank">Modulating early visual processing by language</a>에서는 $\beta$, $\gamma$는 pretrained된 ResNet에서 학습된 pretrained $\beta$, $\gamma$로 고정됩니다. BigGAN에서는 pretrained된 값을 사용하거나 임의의 값으로 초기화된 값을 사용해 학습하는 것 모두 가능할 거 같습니다.
+<div>
+  <img src="/assets/images/posts/biggan/paper/fig15_b.png" width="600" height="300">
+</div>
+> Figure 15. (b) BigGAN의 $G$에 사용되는 Residual Block($ResBlock up$)
 
+
+<a href="https://arxiv.org/abs/1707.00683" target="_blank">Modulating early visual processing by language</a>의 경우 VQA(Visual Question Answering) 논문으로 자연어 처리를 위해 위의 Figure 2에서 question이 LSTM과 MLP를 거쳐 $\Delta \beta$와 $\Delta \gamma$를 계산해 CBN에 사용했지만 BigGAN에서는 LSTM 없이 feature map을 Linear의 입력으로 넣어 $\Delta \beta$와 $\Delta \gamma$를 계산해 CBN을 사용합니다.
+
+각 block의 conditioning은 각 block의 BatchNorm layer에 대한 sample 당 gain과 bias를 생성하도록 선형적으로 projection됩니다. bias projection은 zero-centered되며 gain projection은 1을 중심으로 합니다. residual block 수는 영상 해상도에 따라 달라지므로 z의 전체 차원 128x128일 경우 120, 256x256일 경우 140, 512x512일 경우 160입니다.
 
 
 #### Projection(D)
@@ -142,12 +172,16 @@ class SNResNetProjectionDiscriminator(chainer.Chain):
 ```
 
 논문에 씌여있는 github 코드를 가져온건데 $y^T V \phi(x)$ 부분에서 embedding된 $y$가 $\phi(x)$와 합쳐지지 않고 그냥 $\psi$ 값과 합쳐지는 것 같습니다. ~~$\phi$는 어디로 갔을까요..?~~
+<br><br>
 
+---
 
 
 ### EMA(EWA)
 $G$의 weight에 moving average를 사용한다고 해 인용을 확인해보니 PGGAN, ProGAN이라 불리는 <a href="https://arxiv.org/abs/1710.10196" target="_blank">Progressive Growing of GANs for Improved Quality, Stability, and Variation</a>에서 사용한 것으로 learning rate를 decay하도록 따로 설정하지는 않지만 $G$의 출력을 시각화하기 위해 exponential weight average를 사용한다고 합니다. exponential weight average는 가장 최신의 weight의 가중치를 더 크게 반영하고자 이전의 가중치들은 iteration이 반복될 때마다 decay 값인 0.999가 곱해져 축적되어 average 값이 가중치로 사용됩니다.
+<br><br>
 
+---
 
 ### Orthogonal
 
@@ -188,7 +222,9 @@ R_{\beta}(W) = \beta \|W^{\top}W \odot(1-I) \|^2_F
 $$
 
 orthogonal regularization이 없는 경우 16%의 경우에만 truncation trick을 적용할 수 있는 반면, orthogonal regularization을 사용해 학습한 경우 60%로 늘어났다고 합니다.
+<br><br>
 
+---
 
 
 ## Scaling Up GANs
@@ -211,9 +247,58 @@ Table 1의 1~4행은 단순히 batch size를 최대 8배까지 증가시키는 �
 ---
 
 ## Collapse
+위에서 언급된 모델과 기술들의 사용으로 BigGAN은 대규모 모델 사용과 대규모 batch 학습으로 기존 state of the art를 개선했습니다. 하지만 BigGAN은 training collapse를 겪기 때문에 조기 중단(early stopping) 실행을 필요로 합니다.
+
+BigGAN의 저자들은 이전 논문들에서는 안정적이였던 설정들이 BigGAN과 같은 대규모 모델에 적용될 때 불안정해지는 이유를 G와 D의 weight spectra를 분석해 모델의 collapse 원인에 대해 분석합니다.
+
+
+### Collapse 원인
+
+#### G
+<div>
+  <img src="/assets/images/posts/biggan/paper/fig3_a.png" width="400" height="300">
+</div>
+> Figure 3. (a) Spectral Normalization 전 $G$ layer들의 첫번째 single value $\sigma_0$의 plot<br>
+$G$의 대부분의 layer들은 잘 작동하는 spectra를 가지고 있지만, 제약이 없는 경우 일부가 학습 내내 값이 상승하고 collapse 시 값이 폭발합니다.
+
+
+
+#### D
+<div>
+  <img src="/assets/images/posts/biggan/paper/fig3_b.png" width="400" height="300">
+</div>
+> Figure 3. (b) Spectral Normalization 전 $G$ layer들의 첫번째 single value $\sigma_0$의 plot<br>
+$D$의 spectra는 noise가 있지만 더 잘 작동합니다.
+
+
+
+R1 zero-centered gradient penalty
+$$
+R_1 := \frac{\gamma}{2} \mathbb{E} _{p \mathcal{D}(x)}[\| \nabla D(x) \|^2_F]
+$$
+
+
+
+
+
+### Collapse 방지
+collapse의 증상은 갑작스럽게 발생해 수 백번 iteration 내에 최고치의 결과 품질이 최저치로 떨어진다고 합니다. 저자들은 G의 Singular value가 갑작스럽게 커질 때 collapse를 감지할 수 있지만 singular value가 특정 값(threshold) 이상이 될 때 collapse하는 것은 아니라 합니다. 모델이 collapse되기 1~2만 iteration의 모델 checkpoint에서 일부 hyperparameter를 수정해 collapse를 방지하거나 지연시킬 수 있는지에 대한 실험들을 진행했습니다.
+
+- G, D, G&D의 learning rate를 초기 값에 비해 높이면 즉각적인 collapse가 발생. 초기 learning rate로 설정했을 때 문제 없던 값으로 변경했을 때도 collapse가 발생.
+- G의 learning rate를 줄이되 D의 learning rate를 그대로 유지하면 경우에 따라 10만 iteration 이상 collapse를 지연시킬 수 있으나 학습이 실패할 가능성이 있다. 반대로 G의 learning rate를 유지하면서 D의 learning rate를 낮추면 즉각적인 collapse로 이어짐. 저자들은 D의 learning rate를 줄이는 것이 D가 G를 따라잡을 수 없어(keep up) 학습이 collapse 된다고 생각해 G와 D 학습 step 수를 조절했지만 영향을 미치지 않거나 collapse를 지연시키며 학습이 실패함.
+
+위의
+
+Appendix G 참고해 더 적을 것
+
+
 
 <br><br>
 
 ---
 
 BIGGAN 논문 리뷰글의 끝입니다. 끝까지 봐주셔서 감사합니다:)
+
+지금까지 논문 리뷰의 논문 중 appendix가 가장 긴 논문이였고 정말 다양하고 많은 실험들을 진행했다는 것을 알 수 있는 논문이었습니다.
+
+글에는 적지 않았지만 논문의 Appendix H에서는 실험을 진행했지만 성능을 저하시키거나 영향을 미치지 못한 작업들이 나열되어 있으며 Appendix I에는 실험에 사용한 learning rate, R1 gradient penalty, Dropout rate, Adam $\beta_1$, Orthogonal Regularization penalty 수치들이 정리되어 있습니다. 직접 모델을 실험해 성능 또는 안정성을 개선하고자 하시는 분들에게는 많은 도움이 될 것 같으니 참고하시면 좋겠습니다.
