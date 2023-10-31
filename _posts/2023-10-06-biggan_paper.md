@@ -42,7 +42,9 @@ BigGAN이 사용한 구조와 설정은 다음과 같습니다.
 - Spectral Norm을 G에 적용하며, learning rate는 절반으로 줄여 D step per G step을 2로 사용하도록 수정해 사용합니다.
 - decay 0.9999인 moving averages of G's weight
 - Orthogonal Initialization을 사용합니다.
+<br><br>
 
+---
 
 ### SAGAN
 BigGAN은 지난 글인 <a href="https://solee328.github.io/gan/2023/09/27/sagan_paper.html" target="_blank">SAGAN - 논문리뷰</a>에서 다뤘던 SAGAN이 모델 기반으로 사용됩니다.
@@ -251,48 +253,93 @@ Table 1의 1~4행은 단순히 batch size를 최대 8배까지 증가시키는 �
 
 BigGAN의 저자들은 이전 논문들에서는 안정적이였던 설정들이 BigGAN과 같은 대규모 모델에 적용될 때 불안정해지는 이유를 G와 D의 weight spectra를 분석해 모델의 collapse 원인에 대해 분석합니다.
 
-
-### Collapse 원인
-
-#### G
 <div>
   <img src="/assets/images/posts/biggan/paper/fig3_a.png" width="400" height="300">
 </div>
 > Figure 3. (a) Spectral Normalization 전 $G$ layer들의 첫번째 single value $\sigma_0$의 plot<br>
 $G$의 대부분의 layer들은 잘 작동하는 spectra를 가지고 있지만, 제약이 없는 경우 일부가 학습 내내 값이 상승하고 collapse 시 값이 폭발합니다.
 
+$G$의 경우 일부 layer의 weight 행렬의 singular values $\sigma$ 값이 학습 내내 상승하고 collapse 될 때 폭발하는 spectral norms를 가지고 있었습니다. 이를 방지하기 위해 $G$에 추가 조건을 부과해 폭발하는 spectral을 막아 training collapse를 방지하고자 했으나 Spectral Normalization을 사용하더라도 일부의 경우 성능이 약간 개선되기만 할 뿐 training collapse를 막지 못했다고 합니다.
 
 
-#### D
 <div>
   <img src="/assets/images/posts/biggan/paper/fig3_b.png" width="400" height="300">
 </div>
 > Figure 3. (b) Spectral Normalization 전 $G$ layer들의 첫번째 single value $\sigma_0$의 plot<br>
 $D$의 spectra는 noise가 있지만 더 잘 작동합니다.
 
+$G$에서 안정성을 보장하지 못해 $D$의 spectra를 조사한 결과 $G$와 달리 spectra가 noisy하고 singular value가 학습 내내 증가하지만 폭발하지는 않으며 collapse 시에만 값이 뛰는 것을 관찰하게 됩니다.
 
+$D$의 Frobeniuse norm이 매우 smooth하다는 것을 발견해
+$D$의 Jacobian 변화를 regularize하는 gradient penalty를 사용하며, <a href="https://arxiv.org/abs/1801.04406" target="_blank">Which Training Methods for GANs do actually Converge?</a>에서 사용한 R1 zero-cetered gradient penalty를 사용합니다.
 
-R1 zero-centered gradient penalty
 $$
 R_1 := \frac{\gamma}{2} \mathbb{E} _{p \mathcal{D}(x)}[\| \nabla D(x) \|^2_F]
 $$
 
+논문에서 제안된 $\gamma$ 강도 10으로 학습을 하면 안정적이지만 성능이 심각하게 저하되어 IS가 45% 감소했다고 합니다. penalty를 줄이면 성능 감소는 완화되지만 안정되었던 spectra가 다시 불안정해지며 penalty 강도는 갑작스러운 collapse가 발생하지 않는 최저 강도인 1로 설정할 경우 IS는 20% 감소합니다.
 
+collapse를 방지하기 위해 $D$에게 높은 penalty를 주는 것으로 안정성을 강제할 수 있지만 성능이 떨어지는 것을 확인했지만 다양한 collapse 방지를 위한 기술들을 사용해 collapse를 미뤄 더 나은 성능을 달성하기 위한 방법을 연구합니다.
+<br><br>
 
+---
 
-
-### Collapse 방지
+## Collapse 방지 실험
 collapse의 증상은 갑작스럽게 발생해 수 백번 iteration 내에 최고치의 결과 품질이 최저치로 떨어진다고 합니다. 저자들은 G의 Singular value가 갑작스럽게 커질 때 collapse를 감지할 수 있지만 singular value가 특정 값(threshold) 이상이 될 때 collapse하는 것은 아니라 합니다. 모델이 collapse되기 1~2만 iteration의 모델 checkpoint에서 일부 hyperparameter를 수정해 collapse를 방지하거나 지연시킬 수 있는지에 대한 실험들을 진행했습니다.
 
 - G, D, G&D의 learning rate를 초기 값에 비해 높이면 즉각적인 collapse가 발생. 초기 learning rate로 설정했을 때 문제 없던 값으로 변경했을 때도 collapse가 발생.
 - G의 learning rate를 줄이되 D의 learning rate를 그대로 유지하면 경우에 따라 10만 iteration 이상 collapse를 지연시킬 수 있으나 학습이 실패할 가능성이 있다. 반대로 G의 learning rate를 유지하면서 D의 learning rate를 낮추면 즉각적인 collapse로 이어짐. 저자들은 D의 learning rate를 줄이는 것이 D가 G를 따라잡을 수 없어(keep up) 학습이 collapse 된다고 생각해 G와 D 학습 step 수를 조절했지만 영향을 미치지 않거나 collapse를 지연시키며 학습이 실패함.
+- collapse 전 $D$를 freeze되면 $G$는 즉시 collapse 되어 loss가 300 이상의 값으로 뛰며, 반대로 $G$를 freeze 시키면 $D$가 안정적으로 유지되며 loss가 0으로 천천히 감소됨. $D$가 안정적이기 위해 $G$에게 최적으로 유지되어야 하는데 $G$가 이 minmax 게임에서 이기게 되는 것($D$를 freeze하는 것)은 학습이 완전하게 collapse됨.
+<br><br>
 
-위의
+---
 
-Appendix G 참고해 더 적을 것
+## 결과
 
 
+<div>
+  <img src="/assets/images/posts/biggan/paper/fig4.png" width="700" height="250">
+</div>
+> Figure 4. truncation threshold 0.5(a, b, c)로 생성한 BigGAN의 결과들과 부분적으로 학습된 모델에서 class leakage 예시(d)
 
+Table 1의 8행 설정을 사용해 ImageNet으로 128x128, 256x256, 512x512 해상도로 평가했으며, 모델이 생성한 결과를 Figure 4를 통해 확인할 수 있습니다.
+
+
+<div>
+  <img src="/assets/images/posts/biggan/paper/table2.png" width="700" height="220">
+</div>
+> Table 2. 다양한 해상도에서의 모델 평가.<br>
+truncation이 없는 경우의 점수(3열), 가장 높은 FID 점수(4열), validation data의 IS 점수(5열), 가장 높은 IS 점수(6열)을 보고합니다.<br>
+표준 편차는 최소 3개의 랜덤 초기화에서 계산됩니다.
+
+BigGAN은 다양성(variety)과 충실도(fidelity) 간의 trade off에 따라 품질이 달라지기에, 품질을 극대화하기 위 각 모델이 달성하는 IS와 FID를 보고하며 모든 경우에서 BigGAN은 Miyato와 Zhang이 달성한 이전 state of the art의 IS와 FID 점수를 능가합니다.
+
+논문은 BigGAN 외에도 residual block 구성을 사용하는 4배 더 깊은 모델인 BigGAN-deep을 제안합니다. Table 2에서 볼 수 있듯이 BigGAN-deep은 모든 해상도와 metric에서 BigGAN을 크게 능가하는 것을 볼 수 있는데 이는 논문의 연구 결과가 다른 구조로 확장되고 깊이가 증가하면 결과 품질이 향상된다는 것을 확인시켜줍니다. BigGAN과 BigGAN-deep의 해상도 별 구조들은 모두 논문의 Appendix B에 설명되어 있으니 구조를 보실 분들을 논문의 Appendix B를 참고해주세요!
+
+
+<div>
+  <img src="/assets/images/posts/biggan/paper/table3.png" width="550" height="120">
+</div>
+> Table 3. 256x256 해상도에서 JFT-300M으로 학습된 BigGAN의 결과<br>
+FID, IS 열은 JFT-300M으로 학습되었으며 noise 분포가 $z \sim \mathcal{N}(0, I)$인 Inception v2 판별 모델로 truncated되지 않은 상태에서 주어진 점수입니다.<br>
+(min FID) / IS와 FID / (max IS)열은 $\sigma = 0$에서 $\sigma = 2$ 범위에서 truncated된 noise 분포에서 보고된 가장 높은 FID와 IS를 보고합니다.<br>
+JFT-300M validation set의 이미지들에서는 IS가 50.88이고 FID가 1.94입니다.
+
+저자들은 BigGAN이 ImageNet보다 훨씬 더 크고 복잡한 데이터에 효과적이라는 것을 확인하기 위해 JFT-300M의 부분 데이터에 대한 결과도 제시합니다. JFT-300M 데이터셋에는 18K개의 카테고리와 라벨이 지정된 300M 개의 이미지가 포함되어 있는데, 범주가 상당히 넓기 때문에 8.5K개의 의 일반적인 라벨을 가진 이미지만 유지해 데이터셋을 추출했으며 ImageNet보다 2배 큰 292M개의 이미지가 포함되어 있습니다.
+
+이 데이터셋으로 학습한 Inception v2 판별 모델을 사용해 IS 및 FID를 계산했으며 결과는 Table 3에서 확인할 수 있습니다. 모든 모델은 batch size 2048로 학습됩니다. 또한 이런 규모의 데이터 셋인 경우, 모델의 channel을 확장함으로써 추가적인 개선 효과를 볼 수 있었다고 합니다.
+
+
+<div>
+  <img src="/assets/images/posts/biggan/paper/fig19.png" width="650" height="600">
+</div>
+> Figure 19. 256x256에서 JFT-300M IS vs FID. (2개 이미지 중 상단 이미지만 가져왔습니다)<br>
+truncation value는  $\sigma = 0$에서 $\sigma = 2$입니다.<br>
+각 곡선은 Table 3의 한 행에 해당합니다.<br>
+baseline으로 표시된 곡선만 orthogonal regularization과 여러 기술이 사용되지 않은 경우(Table 3, 1행)에 해당하며, 다른 곡선들은 같은 구조에서 다른 channel을 가진 Table 3의 2~4행에 해당합니다.
+
+
+Figure 19에서 JFT-300M에서 학습된 모델에 대한 truncation plot을 제시합니다.
 <br><br>
 
 ---
