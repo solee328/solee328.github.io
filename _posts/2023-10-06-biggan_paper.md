@@ -10,16 +10,14 @@ use_math: true
 
 이번 논문은 <a href="https://arxiv.org/abs/1809.11096" target="_blank">Large Scale GAN Training for High Fidelity Natural Image Synthesis</a>로 BigGAN이라 불리는 논문입니다.
 
-BigGAN이란 이름에서도 나타내는 것처럼 BigGAN은 기존 GAN의 파라미터의 2~4배의 파라미터를 가지고 있으며
-
-ImageNet의 128x128 해상도에서 Inception Score(IS) Fréchet Inception Distance(FID)를 각각 166.5와 7.4로 이전 글인 SAGAN의 IS인 52.52와 FID 18.65를 넘어서는 class-conditional 이미지 합성 state of the art 모델입니다. BIGGAN에 대해서 지금부터 살펴보겠습니다.:lemon:
+BigGAN이란 이름에서도 나타내는 것처럼 BigGAN은 기존 GAN의 파라미터의 2~4배의 파라미터를 가지고 있으며 ImageNet의 128x128 해상도에서 Inception Score(IS) Fréchet Inception Distance(FID)를 각각 166.5와 7.4로 이전 글인 SAGAN의 IS인 52.52와 FID 18.65를 넘어서는 class-conditional 이미지 합성 state of the art 모델입니다. BIGGAN에 대해서 지금부터 살펴보겠습니다.:lemon:
 <br><br>
 
 ---
 ## 소개
 conditional GAN은 많은 발전을 해왔지만 SOTA 모델(SAGAN)조차 아직 실제 이미지(ImageNet)와 차이가 크며, 실제 이미지의 Inception Score는 233에 비교해 SAGAN은 52.5의 Inception Score를 달성했다 소개합니다.
 
-BigGAN은 GAN에서 생성된 이미지들과 실제 이미지인 ImageNet 간의 fidelity(재현성), variety(다양성) 격차를 줄인다는 목표를 가지고 다음과 같은 3가지를 따릅니다.
+BigGAN은 GAN에서 생성된 이미지들과 실제 이미지인 ImageNet 간의 fidelity(품질), variety(다양성) 격차를 줄인다는 목표를 가지고 다음과 같은 3가지를 따릅니다.
 
 - GANs가 규모를 키움으로써 큰 이득을 얻는 것을 증명하고 기존에 비해 2~4배 많은 수의 파라미터를 사용하고 8배 큰 batch size 모델을 학습합니다. BigGAN은 일반적인 구조에서 규모 확장성을 개선한 것과 regularization scheme를 수정해 conditioning을 개선한 예시를 소개해 성능을 끌어올린 것을 증명합니다.
 - BigGAN은 간단한 sampling 기술로 결과의 fidelity와 variety 사이 trade-off를 명시적으로 find-grained control이 가능한 "truncation trick"에 따를 수 있게 합니다.
@@ -104,7 +102,7 @@ $$
 
 
 <div>
-  <img src="/assets/images/posts/biggan/paper/fig15_b.png" width="600" height="300">
+  <img src="/assets/images/posts/biggan/paper/fig15_b.png" width="400" height="300">
 </div>
 > Figure 15. (b) BigGAN의 $G$에 사용되는 Residual Block($ResBlock up$)
 
@@ -117,7 +115,7 @@ $$
 #### Projection(D)
 
 <div>
-  <img src="/assets/images/posts/biggan/paper/projection.png" width="500" height="250">
+  <img src="/assets/images/posts/biggan/paper/projection.png" width="600" height="300">
 </div>
 > CGANS with Projection Discriminator의 Figure 1.<br>
 conditional GANs의 Discriminator 모델을 보여줍니다. 가장 우측의 모델이 BigGAN에서도 사용한 Projection Discriminator의 모양입니다.
@@ -312,7 +310,7 @@ Table 1의 8행 설정을 사용해 ImageNet으로 128x128, 256x256, 512x512 해
 truncation이 없는 경우의 점수(3열), 가장 높은 FID 점수(4열), validation data의 IS 점수(5열), 가장 높은 IS 점수(6열)을 보고합니다.<br>
 표준 편차는 최소 3개의 랜덤 초기화에서 계산됩니다.
 
-BigGAN은 다양성(variety)과 충실도(fidelity) 간의 trade off에 따라 품질이 달라지기에, 품질을 극대화하기 위 각 모델이 달성하는 IS와 FID를 보고하며 모든 경우에서 BigGAN은 Miyato와 Zhang이 달성한 이전 state of the art의 IS와 FID 점수를 능가합니다.
+BigGAN은 다양성(variety)과 품질(fidelity) 간의 trade off에 따라 품질이 달라지기에, 품질을 극대화하기 위 각 모델이 달성하는 IS와 FID를 보고하며 모든 경우에서 BigGAN은 Miyato와 Zhang이 달성한 이전 state of the art의 IS와 FID 점수를 능가합니다.
 
 논문은 BigGAN 외에도 residual block 구성을 사용하는 4배 더 깊은 모델인 BigGAN-deep을 제안합니다. Table 2에서 볼 수 있듯이 BigGAN-deep은 모든 해상도와 metric에서 BigGAN을 크게 능가하는 것을 볼 수 있는데 이는 논문의 연구 결과가 다른 구조로 확장되고 깊이가 증가하면 결과 품질이 향상된다는 것을 확인시켜줍니다. BigGAN과 BigGAN-deep의 해상도 별 구조들은 모두 논문의 Appendix B에 설명되어 있으니 구조를 보실 분들을 논문의 Appendix B를 참고해주세요!
 
@@ -331,6 +329,21 @@ JFT-300M validation set의 이미지들에서는 IS가 50.88이고 FID가 1.94�
 
 
 <div>
+  <img src="/assets/images/posts/biggan/paper/fig8.png" width="650" height="600">
+</div>
+> Figure 8. $z$, $c$ 페어 사이의 보간
+
+
+<div>
+  <img src="/assets/images/posts/biggan/paper/fig10.png" width="650" height="500">
+</div>
+> Figure 10. VGG-16-fc16 feature space에서 Nearest neightbor. 생성된 이미지는 가장 윗 행 왼쪽입니다.
+
+
+또한 figure 8에서 이미지 간의 보간(interpolation)을, figure 10으로 결과 이미지의 nearest neighbor들을 제시합니다. BigGAN이 서로 다른 결과 사이를 설득력있게 보간하며 결과의 nearest neighbor들을 시각적으로 구별되는 것을 통해 모델이 단순히 학습 데이터를 기억하지 않음을 보여줍니다.
+
+
+<div>
   <img src="/assets/images/posts/biggan/paper/fig19.png" width="650" height="600">
 </div>
 > Figure 19. 256x256에서 JFT-300M IS vs FID. (2개 이미지 중 상단 이미지만 가져왔습니다)<br>
@@ -339,13 +352,16 @@ truncation value는  $\sigma = 0$에서 $\sigma = 2$입니다.<br>
 baseline으로 표시된 곡선만 orthogonal regularization과 여러 기술이 사용되지 않은 경우(Table 3, 1행)에 해당하며, 다른 곡선들은 같은 구조에서 다른 channel을 가진 Table 3의 2~4행에 해당합니다.
 
 
-Figure 19에서 JFT-300M에서 학습된 모델에 대한 truncation plot을 제시합니다.
+Figure 19에서 JFT-300M에서 학습된 모델에 대한 truncation plot을 제시합니다. $\sigma \approx 0$의 truncation limit에서 가장 높은 품질(fidelity)로 생성하는 경향이 있는 ImageNet과는 달리 JFT-300M에서는 truncation value $\sigma$가 0.5에서 1 사이일 때 최대화됩니다. 저자들은 JFT-300M 이미지 분포의 상대적 복잡성 때문에 원인 중 하나라 추측합니다.
+
+흥미롭게도 무거운 regularization이 없다면 학습이 중단되는 경향이 있는 ImageNet 학습 모델과는 달리 JFT-300M에서 학습된 모델은 수십만 번의 iteration에 걸쳐 안정적으로 유지됩니다. 이는 ImageNet을 넘어 더 큰 데이터셋으로 이동할 경우 GAN 안정성 문제가 부분적을로 완화될 수 있음을 시사합니다.
+
+BigGAN은 품질(fidelity)와 다양성(variety) 모두에서 scaling up으로 큰 이득을 받는다는 것을 입증했으며 ImageNet GAN 모델 중 state of the art를 크게 향상시켰습니다. 또한 대규모 GAN에 대한 분석을 제시하고 가중치의 single value를 이용해 안정성을 부여하는 방법으로 안정성과 성능 사이의 상호작용에 대한 분석을 제시합니다.
 <br><br>
 
 ---
 
+<br>
 BIGGAN 논문 리뷰글의 끝입니다. 끝까지 봐주셔서 감사합니다:)
 
-지금까지 논문 리뷰의 논문 중 appendix가 가장 긴 논문이였고 정말 다양하고 많은 실험들을 진행했다는 것을 알 수 있는 논문이었습니다.
-
-글에는 적지 않았지만 논문의 Appendix H에서는 실험을 진행했지만 성능을 저하시키거나 영향을 미치지 못한 작업들이 나열되어 있으며 Appendix I에는 실험에 사용한 learning rate, R1 gradient penalty, Dropout rate, Adam $\beta_1$, Orthogonal Regularization penalty 수치들이 정리되어 있습니다. 직접 모델을 실험해 성능 또는 안정성을 개선하고자 하시는 분들에게는 많은 도움이 될 것 같으니 참고하시면 좋겠습니다.
+지금까지 논문 리뷰의 논문 중 appendix가 가장 긴 논문이였고 정말 다양하고 많은 실험들을 진행했다는 것을 알 수 있는 논문이었습니다. 글에는 적지 않았지만 논문의 Appendix H에서는 실험을 진행했지만 성능을 저하시키거나 영향을 미치지 못한 작업들이 나열되어 있으며 Appendix I에는 실험에 사용한 learning rate, R1 gradient penalty, Dropout rate, Adam $\beta_1$, Orthogonal Regularization penalty 수치들이 정리되어 있습니다. 직접 모델을 실험해 성능 또는 안정성을 개선하고자 하시는 분들에게는 많은 도움이 될 것 같으니 참고하시면 좋겠습니다.
