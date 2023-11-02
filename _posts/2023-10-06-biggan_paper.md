@@ -3,29 +3,31 @@ layout: post
 title: BigGAN - 논문 리뷰
 # subtitle:
 categories: gan
-tags: [gan, BigGAN, 생성 모델, 논문 리뷰]
+tags: [gan, BigGAN, shared embedding, orthogonal, 생성 모델, 논문 리뷰]
 # sidebar: []
 use_math: true
 ---
 
 이번 논문은 <a href="https://arxiv.org/abs/1809.11096" target="_blank">Large Scale GAN Training for High Fidelity Natural Image Synthesis</a>로 BigGAN이라 불리는 논문입니다.
 
-BigGAN이란 이름에서도 나타내는 것처럼 BigGAN은 기존 GAN의 파라미터의 2~4배의 파라미터를 가지고 있으며 ImageNet의 128x128 해상도에서 Inception Score(IS) Fréchet Inception Distance(FID)를 각각 166.5와 7.4로 이전 글인 SAGAN의 IS인 52.52와 FID 18.65를 넘어서는 class-conditional 이미지 합성 state of the art 모델입니다. BIGGAN에 대해서 지금부터 살펴보겠습니다.:lemon:
+BigGAN이란 이름에서도 Big을 쓰는만큼 나타내는 것처럼 BigGAN은 기존 GAN의 파라미터의 2~4배의 파라미터를 가지고 있으며 ImageNet의 128x128 해상도에서 Inception Score(IS) Fréchet Inception Distance(FID)를 각각 166.5와 7.4로 이전 글인 SAGAN의 IS인 52.52와 FID 18.65를 넘어서는 class-conditional 이미지 합성 state of the art 모델입니다. BigGAN에 대해서 지금부터 살펴보겠습니다.:lemon::lemon:
 <br><br>
 
 ---
 ## 소개
-conditional GAN은 많은 발전을 해왔지만 SOTA 모델(SAGAN)조차 아직 실제 이미지(ImageNet)와 차이가 크며, 실제 이미지의 Inception Score는 233에 비교해 SAGAN은 52.5의 Inception Score를 달성했다 소개합니다.
+conditional GAN은 많은 발전을 해왔지만 SOTA 모델(SAGAN)조차 아직 실제 이미지(ImageNet)와 차이가 크며, 실제 이미지의 Inception Score인 233에 비교해 SAGAN은 52.5의 Inception Score에 그칩니다.
 
-BigGAN은 GAN에서 생성된 이미지들과 실제 이미지인 ImageNet 간의 fidelity(품질), variety(다양성) 격차를 줄인다는 목표를 가지고 다음과 같은 3가지를 따릅니다.
+BigGAN은 GAN에서 생성된 이미지들과 실제 이미지인 ImageNet 간의 fidelity(품질), variety(다양성) 격차를 줄인다는 목표를 가지고 다음의 3가지를 증명합니다.
 
-- GANs가 규모를 키움으로써 큰 이득을 얻는 것을 증명하고 기존에 비해 2~4배 많은 수의 파라미터를 사용하고 8배 큰 batch size 모델을 학습합니다. BigGAN은 일반적인 구조에서 규모 확장성을 개선한 것과 regularization scheme를 수정해 conditioning을 개선한 예시를 소개해 성능을 끌어올린 것을 증명합니다.
-- BigGAN은 간단한 sampling 기술로 결과의 fidelity와 variety 사이 trade-off를 명시적으로 find-grained control이 가능한 "truncation trick"에 따를 수 있게 합니다.
-- 특정 대규모 GANs가 불안정한 것을 발견했고 이를 묘사하며 분석을 통해 새로운 기술과 기존 기술을 결합한 것이 이런 불안정을 줄일 수 있지만 완벽한 학습의 안정성은 성능을 위해 굉장한 cost를 지불해야만 달성할 수 있다는 것을 증명합니다.
+- 기존에 비해 2~4배 많은 수의 파라미터를 가진 모델을 사용하고 8배 이상의 큰 batch size로 모델을 학습해 GANs가 규모를 키움으로써 큰 이득을 얻는 것을 증명합니다. BigGAN은 일반적인 구조에서 규모를 확장한 것과 이전에 제안한 regularization을 수정해 conditioning을 개선한 예시를 통해 성능을 끌어올린 것을 증명합니다.
+- "truncation trick"을 사용해 결과 이미지의 fidelity와 variety 사이 trade-off 조절을 가능하게 합니다.
+- 특정 대규모 GANs가 불안정한 것을 발견해 분석을 통해 새로운 기술과 기존 기술을 결합한 것이 이런 불안정을 줄일 수 있지만 완벽한 학습의 안정성은 성능을 위해 굉장한 cost를 지불해야만 달성할 수 있다는 것을 증명합니다.
 
-이런 과정을 통해 BigGAN은 class-conditional GANs를 개선해 IS, FID 모두에서 점수를 갱신합니다. ImageNet의 128x128 해상도의 경우 SOTA의 IS, FID인 52.52와 18.65를 BigGAN은 IS, FID를 166.5와 7.4로 향상시킵니다.
+<br>
 
-그리고 ImageNet보다 훨씬 더 큰 데이터셋 JFT-300M에서도 BigGAN을 학습하며 ImageNet의  128x128, 256x256, 512x512에서 학습된 모델의 가중치 값을 <a href="https://tfhub.dev/s?q=biggan" target="_blank">TF HUB</a>에서 제공합니다.
+이런 과정을 통해 BigGAN은 class-conditional GANs를 개선해 IS, FID 모두에서 점수를 갱신합니다. ImageNet의 128x128 해상도의 경우 SOTA의 IS, FID인 52.52와 18.65를 BigGAN은 IS, FID를 166.5와 7.4로 향상시킵니다. 또한 ImageNet보다 훨씬 더 크고 복잡한 데이터셋인 JFT-300M에서도 BigGAN을 학습해 분석을 진행했습니다.
+
+ImageNet의  128x128, 256x256, 512x512에서 학습된 모델의 가중치 값을 <a href="https://tfhub.dev/s?q=biggan" target="_blank">TF HUB</a>에서 제공합니다.
 <br><br>
 
 
@@ -34,24 +36,21 @@ BigGAN은 GAN에서 생성된 이미지들과 실제 이미지인 ImageNet 간�
 ## Setting
 우선 BigGAN이 사용한 구조와 설정에 대해서 살펴보겠습니다.
 
-BigGAN이 사용한 구조와 설정은 다음과 같습니다.
+BigGAN이 사용한 구조와 설정을 정리하다면 아래와 같습니다.
 - hinge loss를 adversarial loss로 사용한 SAGAN 구조를 사용합니다.
-- class 정보는 class-conditional BatchNorm으로 G에게 제공하고 projection으로 D에게 제공합니다.
-- Spectral Norm을 G에 적용하며, learning rate는 절반으로 줄여 D step per G step을 2로 사용하도록 수정해 사용합니다.
-- decay 0.9999인 moving averages of G's weight
-- Orthogonal Initialization을 사용합니다.
+- class 정보 conditioning을 위해 Shared embedding을 사용합니다.
+- Exponential Weight Averate를 G에 적용합니다.
+- Orthogonal Initialization / Regularization을 사용합니다.
+
+사용한 기술들을 하나씩 살펴보겠습니다.
 <br><br>
 
 ---
 
 ### SAGAN
-BigGAN은 지난 글인 <a href="https://solee328.github.io/gan/2023/09/27/sagan_paper.html" target="_blank">SAGAN - 논문리뷰</a>에서 다뤘던 SAGAN이 모델 기반으로 사용됩니다.
+BigGAN은 지난 글인 <a href="https://solee328.github.io/gan/2023/09/27/sagan_paper.html" target="_blank">SAGAN - 논문리뷰</a>에서 다뤘던 SAGAN이 모델 기반으로 사용됩니다. 자세한 SAGAN의 구조는 <a href="https://solee328.github.io/gan/2023/09/27/sagan_paper.html" target="_blank">SAGAN - 논문리뷰</a> 글을 확인해주세요:)
 
-SAGAN과 마찬가지로 adversarial loss로 hinge loss를 사용하며 G와 D 모두에 Spectral Normalization을 사용합니다.
-
-Spectral Norm은 첫번째 단일 값의 실행 추정치(running estimates)로 파라미터들을 정규화(normalization)해 Lipschitz 연속성을 D에 적용하고 top singular direction을 adaptively regularize 해 역 역학(backwards dynamics)를 유도함.
-
-SAGAN에서는 G와 D의 학습 step 수를 1:1로 설정해 동일한 시간에서 더 나은 결과를 얻고자 한 것이 특징이지만 BigGAN에서는 G와 D 학습 step 수를 1:2로 수정한 것을 사용합니다.
+SAGAN과 마찬가지로 adversarial loss로 hinge loss를 사용하며 $G$와 $D$ 모두에 Spectral Normalization을 사용합니다. SAGAN에서는 G와 D의 학습 step 수를 1:1로 설정해 동일한 시간에서 더 나은 결과를 얻고자 한 것이 특징이지만 BigGAN에서는 $G$와 $D$ 학습 step 수를 1:2로 수정한 것을 사용합니다.
 <br><br>
 
 ---
@@ -62,54 +61,54 @@ SAGAN에서는 G와 D의 학습 step 수를 1:1로 설정해 동일한 시간에
 <div>
   <img src="/assets/images/posts/biggan/paper/fig15.png" width="600" height="300">
 </div>
-> figure 15. (a) BigGAN의 $G$의 대표적인 구조<br>
+> Figure 15. (a) BigGAN의 $G$의 대표적인 구조<br>
 (b) BigGAN의 $G$에 사용되는 Residual Block($ResBlock up$)<br>
 (c) BigGAN의 $D$에 사용되는 Residual Block($ResBlock down$)
 
 
-class 정보를 G와 D에 다른 방식으로 제공합니다.
+BigGAN은 class 정보를 $G$와 $D$에 제공하기 위해 $G$에는 Shared embedding, hierarchical latent space를 사용하고 $D$에는 Projection Discriminator를 사용합니다.
 
-G에는 single shared class embedding으로 Conditional Batch Normliazation(CBN)과 skip connection(skip-z)를 사용합니다. $z$는 모델 입력에서 한번만 쓰이는게 일반적이지만 BigGAN은 Residual Block마다 class 정보와 함께 입력되는 걸 볼 수 있습니다.
+$G$에는 single shared class embedding으로 Conditional Batch Normliazation(CBN)과 skip connection(skip-z)를 사용합니다.
 
-latent vector $z$가 channel 차원에 따라 동일한 크기로 분할되고 각 분할된 $z$는 shared class embedding인 CBN과 연결되어 residual block에 conditioning vector로 전달됩니다. 이 $z$를 hierarchical latent space라 하고 skip connection처럼 여러 계층에 전달되는 $z$를 skip-z라 합니다. skip-z는 약 4% 성능 향상과 함께 학습 속도 또한 18% 향상시켰다고 합니다.
+$z$는 모델 입력에서 한번만 쓰이는게 일반적이지만 BigGAN은 Residual Block마다 class 정보와 함께 입력되며 Figure 15의 (a)와 (b)에서 구조를 확인할 수 있습니다. latent vector $z$가 channel 차원에 따라 동일한 크기로 분할되고 각 분할된 $z$는 shared class embedding인 CBN과 연결되어 residual block에 conditioning vector로 전달됩니다. 이 $z$가 여러 층에 전달되기에 이를 hierarchical latent space라 하고 skip connection처럼 layer를 뛰어넘어 concat되는 $z$를 skip-z라 합니다. skip-z 사용으로 약 4% 성능 향상과 함께 학습 속도 또한 18% 향상시켰다고 합니다.
 
-D는 Projection Discriminator 방식을 사용합니다. Residual Block과 Scalar function을 사용해 class 정보를 사용하는 것이 특징입니다.
+$D$는 Projection Discriminator 방식을 사용합니다. Residual Block과 Scalar function을 사용해 class 정보를 사용하는 것이 특징입니다.
 
-G와 D에 어떤 방식으로 Condition 정보를 주었는지 하나하나 살펴보겠습니다.
+$G$와 $D$에 어떤 방식으로 Condition 정보를 주었는지 사용한 기술에 대해 알아보겠습니다.
 
 
 #### Shared embedding / CBN(G)
-class-conditional BatchNorm(Dumoulin et al., 2017; de Vreis et al., 2017)
-
 <div>
   <img src="/assets/images/posts/biggan/paper/CBN.png" width="500" height="200">
 </div>
 > Modulating early visual processing by language의 Figure. 2<br>
 왼쪽이 일반적인 batch normalization이고 오른쪽이 conditional batch normalization의 개요를 나타냅니다.
 
-G에는 Conditional Batch Normalization(CBN) 방식을 사용합니다.<br>
-<a href="https://arxiv.org/abs/1707.00683" target="_blank">Modulating early visual processing by language</a>에서 소개되었으며, 기존의 Batch Normalization(BN)으로 클래스 정보가 batch normalization의 learnable parameter인 $\gamma$, $\beta$에 영향을 미칠 수 있도록 해 conditional 정보를 BN에 주는 방법입니다. 주고자 하는 condition에 해당하는 $e_q$를 MLP layer에 통과시켜 channel 수 마다 2개의 값 $\Delta \beta$와 $\Delta \gamma$를 계산합니다.
+$G$에는 Shared embedding으로 Conditional Batch Normalization(CBN) 방식을 사용합니다.
+
+CBN은 <a href="https://arxiv.org/abs/1707.00683" target="_blank">Modulating early visual processing by language</a>에서 소개되었으며, 기존의 Batch Normalization(BN)의 learnable parameter인 $\gamma$, $\beta$에 class 정보가 영향을 미칠 수 있도록 해 conditional 정보를 BN에 주는 방법입니다. 주고자 하는 condition에 해당하는 $e_q$를 MLP layer에 통과시켜 channel 수 마다 2개의 값 $\Delta \beta$와 $\Delta \gamma$를 계산합니다.
 
 $$
 \Delta \beta = MLP(e_q) \quad \quad \Delta \gamma = MLP(e_q)
 $$
 
-이후 Batch Normalization의 $\beta$, $\gamma$에 계산된 값을 더해 Conditional Batch Normalization으로 사용합니다.
+<br>
+이후 Batch Normalization의 $\beta$, $\gamma$에 계산된 값을 더한 $\hat{\beta_c}$와 $\hat{\gamma_c}$를 Conditional Batch Normalization으로 사용합니다.
 
 $$
 \hat{\beta_c} = \beta_c + \Delta \beta_c \quad \quad \hat{\gamma_c} = \gamma_c + \Delta \gamma_c
 $$
 
+<br>
 
 <div>
-  <img src="/assets/images/posts/biggan/paper/fig15_b.png" width="400" height="300">
+  <img src="/assets/images/posts/biggan/paper/fig15_b.png" width="350" height="300">
 </div>
 > Figure 15. (b) BigGAN의 $G$에 사용되는 Residual Block($ResBlock up$)
 
 
-<a href="https://arxiv.org/abs/1707.00683" target="_blank">Modulating early visual processing by language</a>의 경우 VQA(Visual Question Answering) 논문으로 자연어 처리를 위해 위의 Figure 2에서 question이 LSTM과 MLP를 거쳐 $\Delta \beta$와 $\Delta \gamma$를 계산해 CBN에 사용했지만 BigGAN에서는 LSTM 없이 feature map을 Linear의 입력으로 넣어 $\Delta \beta$와 $\Delta \gamma$를 계산해 CBN을 사용합니다.
+<a href="https://arxiv.org/abs/1707.00683" target="_blank">Modulating early visual processing by language</a>의 경우 VQA(Visual Question Answering) 논문으로 자연어 처리를 위해 위의 Figure 2에서 question이 LSTM과 MLP를 거쳐 $\Delta \beta$와 $\Delta \gamma$를 계산해 CBN에 사용했지만 BigGAN에서는 LSTM 없이 Linear를 사용해 $\Delta \beta$와 $\Delta \gamma$를 계산해 CBN을 사용합니다.
 
-각 block의 conditioning은 각 block의 BatchNorm layer에 대한 sample 당 gain과 bias를 생성하도록 선형적으로 projection됩니다. bias projection은 zero-centered되며 gain projection은 1을 중심으로 합니다. residual block 수는 영상 해상도에 따라 달라지므로 z의 전체 차원 128x128일 경우 120, 256x256일 경우 140, 512x512일 경우 160입니다.
 
 
 #### Projection(D)
@@ -120,21 +119,23 @@ $$
 > CGANS with Projection Discriminator의 Figure 1.<br>
 conditional GANs의 Discriminator 모델을 보여줍니다. 가장 우측의 모델이 BigGAN에서도 사용한 Projection Discriminator의 모양입니다.
 
-D에는 Projection Discriminator를 사용합니다.<br>
-<a href="https://arxiv.org/abs/1802.05637" target="_blank">cGANs with Projection Discriminator</a>에서 제안한 모델로 GAN의 Discriminator에서 conditional 정보를 다루는 방법들이 발전해온 그림과 함께 Projection Discriminator를 제안합니다.
+$D$에는 Projection Discriminator를 사용합니다.
 
+<a href="https://arxiv.org/abs/1802.05637" target="_blank">cGANs with Projection Discriminator</a>에서 제안한 모델로 GAN의 Discriminator에서 conditional 정보를 다루는 방법들이 발전해온 구조를 묘사한 위의 Figure의 (d)에 해당하며 수식으로 아래와 같이 나타낼 수 있습니다.
 
 $$
 f(x, y; \theta) := f_1(x, y:\theta) + f_2(x;\theta) = y^T V \phi(x; \theta_{\Phi}) + \psi(\phi(x; \theta_{\Phi}); \theta_{\Psi})
 $$
 
+<br>
+$\phi$는 BigGAN에서 Residual network를 사용하며 $\psi$은 $\phi$와 연결되는 scalar function으로 입력된 이미지가 진짜인지 가짜인지 판별하는 함수로 이미지 판별 결과 값 하나를 출력하기 때문에 scalar function입니다.
 
-$\phi$는 BigGAN에서 Residual network를 사용하며 $\psi$은 $\phi$와 연결되는 scalar function으로 BigGAN에서는 Linear를 사용합니다. $V$는 $y$의 embedding matrix로 $y^T V$가 Figure.1 (d)에서 $y$가 입력되는 부분을 의미합니다.
+수식으로는 복잡해 보이지만 $\psi(\phi(x; \theta_{\Phi}); \theta_{\Psi})
+$는 Residual network $\phi$ 에 이미지 $x$를 입력하고 결과 값을 activation(scalar function) $\psi$ 에 연결해 이미지가 진짜인지 가짜인지 판별한 값으로 지금까지 사용한 판별모델과 같은 구조입니다.
 
-$\phi(x; \theta_{\Phi})$는 Residual network $\phi$에 $x$가 입력되었을 때의 feature map으로 이 feature map이 두 갈래로 나뉘게 됩니다. 하나는 Linear인 $\psi$로 입력되고 다른 한 갈래는 condition에 해당하는 $y$의 embedding과 합쳐져 $\psi$ 결과 값과 합쳐져 결과로 출력됩니다.
+$V$는 $y$의 embedding matrix로 $y^T V$가 Figure의 (d)에서 $y$가 입력되는 부분을 의미합니다. Residual network $\phi$에 $x$가 입력되었을 때의 feature map이 두 갈래로 나뉘어 하나는 activation(scalar function)인 $\psi$로 입력되고 다른 한 갈래는 condition에 해당하는 $y$의 embedding과 계산되어 이후 두 갈래로 나눠져 계산된 값들이 합쳐져 결과로 출력됩니다.
 
-learned parameters는 $\theta = \{ V, \theta_{\Phi}, \theta_{\Psi} \}$로 adversarial loss에 의해 학습된다고 합니다.
-
+<br>
 대략적인 흐름을 이해하는 데 도움이 될 것 같아 <a href="https://github.com/pfnet-research/sngan_projection/tree/master" target="_blank">github</a>에 있는 코드를 아래에 가져왔습니다.
 
 ```python
@@ -170,15 +171,15 @@ class SNResNetProjectionDiscriminator(chainer.Chain):
             output += F.sum(w_y * h, axis=1, keepdims=True)
         return output
 ```
-
-논문에 씌여있는 github 코드를 가져온건데 $y^T V \phi(x)$ 부분에서 embedding된 $y$가 $\phi(x)$와 합쳐지지 않고 그냥 $\psi$ 값과 합쳐지는 것 같습니다. ~~$\phi$는 어디로 갔을까요..?~~
 <br><br>
 
 ---
 
 
 ### EMA(EWA)
-$G$의 weight에 moving average를 사용한다고 해 인용을 확인해보니 PGGAN, ProGAN이라 불리는 <a href="https://arxiv.org/abs/1710.10196" target="_blank">Progressive Growing of GANs for Improved Quality, Stability, and Variation</a>에서 사용한 것으로 learning rate를 decay하도록 따로 설정하지는 않지만 $G$의 출력을 시각화하기 위해 exponential weight average를 사용한다고 합니다. exponential weight average는 가장 최신의 weight의 가중치를 더 크게 반영하고자 이전의 가중치들은 iteration이 반복될 때마다 decay 값인 0.999가 곱해져 축적되어 average 값이 가중치로 사용됩니다.
+$G$의 weight에 moving average를 사용하는데, PGGAN, ProGAN이라 불리는 <a href="https://arxiv.org/abs/1710.10196" target="_blank">Progressive Growing of GANs for Improved Quality, Stability, and Variation</a>에서 사용한 것으로 원 논문에서는 learning rate를 decay하도록 따로 설정하지는 않지만 $G$의 출력을 시각화하기 위해 Exponential Weight Average(Exponential Moving Average)를 사용한다고 합니다.
+
+Exponential Weight Average는 지금까지 계산된 weight를 모두 사용해 weight를 업데이트하는 방법으로 가장 최신의 weight의 가중치를 더 크게 반영하고 오래된 weight의 영향을 감소시키기 위해 이전의 weight들은 iteration이 반복될 때마다 decay이 곱해져 축적됩니다. BigGAN에서는 decay 값으로 0.999가 사용되며 축적된 weight의 average 값이 가중치로 사용됩니다.
 <br><br>
 
 ---
@@ -214,8 +215,8 @@ $$
 R_{\beta}(W) = \beta \| W^{\top} W -I \|^2_F
 $$
 
-weight를 orthogonal하게 제한시키는 경우 문제가 발생
-다른 방식을 사용
+weight를 orthogonal하게 제한시키는 경우 모든 singular value를 1로 제한하는 문제가 발생
+다른 방식으로 변형해서 사용
 
 $$
 R_{\beta}(W) = \beta \|W^{\top}W \odot(1-I) \|^2_F
