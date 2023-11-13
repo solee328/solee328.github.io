@@ -51,3 +51,6 @@ SAGAN(Self-Attention Generative Adversarial Networks)<br>
 
 BigGAN<br>
 [<a href="https://solee328.github.io/gan/2023/11/03/biggan_paper.html" target="_blank">paper post</a>]
+
+FUNIT<br>
+[]
