@@ -15,12 +15,19 @@ Self-Attention Generative Adversarial Network(SAGAN)은 convolution을 self-atte
 
 ---
 ## 소개
-GANs는 ImageNet과 같은 multi-class를 모델링 시 문제를 가지고 있었습니다. 당시 class conditional image generation task에서 SOTA인 <a href="https://arxiv.org/abs/1802.05637" target="_blank">CGANS with Projection Discriminator</a>는 간헐천, 계곡과 같이 객체의 구조적 제약이 거의 없는 이미지(텍스처(질감)으로 구별 가능한 바다, 하늘과 같은 풍경) 생성은 탁월하지만, 하프, 크로스워드 등 일부 클래스(개와 같은 클래스의 이미지는 개의 털 텍스처(질감)은 성공적으로 생성되지만 일부 발이 생성되지 않는 경우가 발생)에서 기하학적/구조적 패턴을 파악하지 못합니다 실제로 위 논문의 Figure 7에서 퓽경의 FID는 낮지만 객체에 대한 FID는 높은 것을 확인할 수 있습니다.
+GANs는 ImageNet과 같은 multi-class를 모델링 시 문제를 가지고 있었습니다. 구조가 복잡한 클래스의 경우 생성 모델이 구조를 파악하지 못해 FID가 낮게 나오는 문제였습니다.
+
+<br>
+
+<img src="/assets/images/posts/sagan/paper/cgan_fig7.png" width="610" height="600">
+> CGANS with Projectin Discriminator의 Figure 7.
+
+당시 class conditional image generation task에서 SOTA인 <a href="https://arxiv.org/abs/1802.05637" target="_blank">CGANS with Projection Discriminator</a>는 간헐천, 계곡과 같이 객체의 구조적 제약이 거의 없는 이미지(텍스처(질감)으로 구별 가능한 바다, 하늘과 같은 풍경) 생성은 탁월하지만, 하프, 크로스워드 등 일부 클래스(개와 같은 클래스의 이미지는 개의 털 텍스처(질감)은 성공적으로 생성되지만 일부 발이 생성되지 않는 경우가 발생)에서 기하학적/구조적 패턴을 파악하지 못합니다. 실제로 위 논문의 Figure 7에서 풍경의 FID는 낮지만 객체에 대한 FID는 높은 것을 확인할 수 있습니다.
 
 <details>
 <summary>FID(Fréchet Inception Distance)</summary>
 <span style="color:gray">
-  <a href="https://arxiv.org/abs/1706.08500" target="_blank">Fréchet Inception Distance(FID)</a>는 생성 모델에서 생성된 이미지의 품질을 평가하는 데 사용되는 metric으로 Inception Score(IS)를 개선하기 위해 제안되었습니다. 두 분포의 거리를 계산하는 metric으로 값이 낮을 수록 분포가 가까워 생성 이미지가 실제 이미지와 유사함을 의미해 좋습니다.<br><br>
+  <a href="https://arxiv.org/abs/1706.08500" target="_blank">Fréchet Inception Distance(FID)</a>는 생성 모델에서 생성된 이미지의 품질을 평가하는 데 사용되는 metric으로 Inception Score(IS)를 개선하기 위해 제안되었습니다. 두 분포의 거리를 계산하는 metric으로 값이 낮을 수록 분포가 가까워 생성 이미지가 실제 이미지와 유사함을 의미해 FID 점수가 낮을 수록 좋습니다.<br><br>
 
   FID를 계산하기 위해서 우선 pretrain된 Inception V3를 사용해 실제 이미지와 생성된 이미지의 (2048, ) 크기의 feature map을 계산합니다. 계산된 이 feature map들의 분포 차이를 계산하기 위해 정규분포(Gaussian distribution)를 사용합니다. 정규분포는 평균과 분산이 주어져 있을 때 엔트로피를 최대화하는 분포이므로 다차원 정규분포를 따른다고 가정해 두 feature map의 평균(mean)과 공분산(covariance) 차이를 이용해 두 분포의 차이를 계산합니다. 이때 차이는  Wasserstein-2 distance라고도 불리는 Fréchet distance로 계산합니다. 아래 수식이 Fréchet distance를 활용한 FID의 수식입니다.<br><br>
 
@@ -78,18 +85,18 @@ $$
 
 <br>
 
-수식으로는 잘 와닿지 않으니 제가 이해한 이미지 feature map이 입력으로 들어왔을 때의 그림으로 나타내보았습니다.
+수식으로는 잘 와닿지 않으니 제가 이해한 대로 이미지 feature map이 입력으로 들어왔을 때를 그림으로 나타내 보았습니다.
 <br>
 
 <div>
   <img src="/assets/images/posts/sagan/paper/attention.png" width="600" height="400">
 </div>
 
-feature map이 입력으로 들어오면 해당 feature map으로 Query, Key, Value 각각을 1x1 convolution으로 계산합니다. 그림에서는 query로 $q_0$을 선택하고 모든 key 값과 계산을 통해 $q_0$과의 attention 정도를 나타내는 attention map을 구합니다(실제로는 행렬곱을 통해 모든 query과 key를 한번에 계산합니다). 계산된 attention map을 시각화하면 Figure 1과 같이 $m_1$과 연관된 정도에 따라 다른 밝기 수준을 가지고 있어 어떤 픽셀과 관련이 있는지 시각화가 가능합니다. 이후 Value와 행렬곱 계산을 통해 Self-attention feature map을 계산합니다.
+feature map이 입력으로 들어오면 해당 feature map으로 Query, Key, Value 각각을 1x1 convolution으로 계산합니다. 그림에서는 query로 $q_0$을 선택하고 모든 key 값과 계산을 통해 $q_0$과의 attention 정도를 나타내는 attention map을 구합니다(실제로는 행렬곱을 통해 모든 query과 key를 한번에 계산합니다). 계산된 attention map을 시각화하면 Figure 1과 같이 query인 값과 key 값들의 연관된 정도에 따라 다른 밝기 수준을 가지고 있어 어떤 픽셀과 관련이 있는지 시각화가 가능합니다. 이후 Value와 행렬곱 계산을 통해 Self-attention feature map을 계산합니다.
 
 <br>
 
-Self-attention의 계산과정에 대해 알게 되었으니, 이제는 SAGAN의 논문에서의 Self Attention 계산과 과정에 대해 살펴보겠습니다.
+이제 SAGAN 논문에서 Attention 설명이 된 Figure를 살펴보고 차이에 대해 알아보겠습니다.
 
 <div>
   <img src="/assets/images/posts/sagan/paper/fig2.png" width="600" height="250">
@@ -122,6 +129,7 @@ SAGAN에서 다양한 이미지에 생성 모델의 attention weight를 시각�
 <br>
 
 계산한 attention map과 value인 $h(x)$를 곱한 후 1x1 convolution을 한번 더 취해 self-atten feature maps $o$를 계산합니다.  <a hef="https://arxiv.org/abs/1706.03762" target="_blank">Attention Is All You Need</a>에서 Attention의 계산법은 $Attention(Q, K, V) = softmax(\frac{QK^T}{\sqrt{d_k}})V$ 였다면 SAGAN에서는 $v(x)$인 1x1 convolution이 하나 추가되어 계산하는 것이 차이입니다.
+
 $$
 \mathbf{o_j} = \mathbf{v} \left ( \sum^N_{i=1}\beta_{j, i}\mathbf{h}(\mathbf{x_i}) \right ), \mathbf{h}(\mathbf{x_i}) = \mathbf{W_h x_i}, \mathbf{v}(\mathbf{x_i}) = \mathbf{W_v x_i}.
 $$
@@ -129,7 +137,7 @@ $$
 
 <br>
 
-최종 결과는 계산한 self-attention feature map인 $o$와 입력 값 $x$를 더해 출력합니다. 이때 학습 가능한 스칼라 값으로 0으로 초기화된 $\gamma$를 $o$에 곱해 self-attention feature map의 크기를 계산하는데, 논문에서는 학습 가능한 $\gamma$를 사용함으로써 네트워크가 처음에는 local 주변의 신호에 의존하다 점차 학습이 진행되며 non-local 신호에 더 많은 가중치를 부여하는 방법을 학습할 수 있다고 합니다. $\gamma$를 0으로 초기화한 것에 대해서는 직관으로 쉬운 일을 먼저 학습하고 복잡성을 점진적으로 증가시켜 학습하기를 원했기 때문이 이유라고 합니다.
+최종 결과는 계산한 self-attention feature map인 $o$와 입력 값 $x$를 더해 출력합니다. 이때 학습 가능한 스칼라 값으로 0으로 초기화된 $\gamma$를 $o$에 곱해 self-attention feature map의 크기를 계산하는데, 논문에서는 학습 가능한 $\gamma$를 사용함으로써 네트워크가 처음에는 local 주변의 신호에 의존하다 점차 학습이 진행되며 non-local 신호에 더 많은 가중치를 부여하는 방법을 학습할 수 있다고 합니다. 논문에서 $\gamma$를 0으로 초기화한 것에 대해서는 직관으로 쉬운 일을 먼저 학습하고 복잡성을 점진적으로 증가시켜 학습하기를 원했기 때문이라고 설명합니다..
 
 $$
 \mathbf{y_i} = \gamma \mathbf{o_i} + \mathbf{x_i}
@@ -212,7 +220,7 @@ GANs 학습을 안정화하기 위해 Spectral normalization과 Two Time Scale U
 ### Spectral Normalization
 Spectral Normalization은 <a href="https://arxiv.org/abs/1802.05957" target="_blank">Spectral Normalization for Generative Adversarial Networks</a>에서 GANs 학습 안정화를 위해 판별 모델에 적용되었습니다. 각 layer의 spectral norm을을 특정 상수로 제한하는 것으로 판별 모델의 Lipschitz 상수를 제한하는 방법으로 모든 가중치 레이어의 spectral norm은 1로 설정하는 것이 지속적으로 잘 수행되기 때문에 다른 normalization 방법과 비교해 추가적인 hyperparameter 튜닝을 필요로 하지 않는다 합니다. 또한 계산 비용이 적은 것이 장점입니다.
 
-SAGAN은 생성 모델에도 Spectral normalization을 적용하는 것으로 생성 모델의 파라미터 크기의 상승을 방지하고 비정상적인 gradient를 피할 수 있어 Spectral normalization을 생성 모델과 판별 모델 모두에 적용합니다. 이후 생성 모델과 판별 모델 모두의 Spectral normalization이 안정적인 학습을 보여줄 뿐만 아니라 생성 모델 업데이트 당 판별 모델 업데이트 수를 더 적게 만드는 것이 가능해 학습에 대한 계산 비용을 크게 감소시킨다는 것을 발견했습니다. SAGAN은 판별모델의 learning rate는 0.0004로, 생성 모델의 learning rate는 0.0001을 사용해 판별 모델과 생성 모델 업데이트 비율을 1:1로 학습합니다. 
+SAGAN은 생성 모델에도 Spectral normalization을 적용하는 것으로 생성 모델의 파라미터 크기의 상승을 방지하고 비정상적인 gradient를 피할 수 있어 Spectral normalization을 생성 모델과 판별 모델 모두에 적용합니다. 이후 생성 모델과 판별 모델 모두의 Spectral normalization이 안정적인 학습을 보여줄 뿐만 아니라 생성 모델 업데이트 당 판별 모델 업데이트 수를 더 적게 만드는 것이 가능해 학습에 대한 계산 비용을 크게 감소시킨다는 것을 발견했습니다. SAGAN은 판별모델의 learning rate는 0.0004로, 생성 모델의 learning rate는 0.0001을 사용해 판별 모델과 생성 모델 업데이트 비율을 1:1로 학습합니다.
 
 
 ### TTUR
