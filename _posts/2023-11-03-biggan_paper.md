@@ -10,7 +10,7 @@ use_math: true
 
 이번 논문은 <a href="https://arxiv.org/abs/1809.11096" target="_blank">Large Scale GAN Training for High Fidelity Natural Image Synthesis</a>로 BigGAN이라 불리는 논문입니다.
 
-BigGAN이란 이름에서도 Big을 쓰는만큼 나타내는 것처럼 BigGAN은 기존 GAN의 파라미터의 2~4배의 파라미터를 가지고 있으며 ImageNet의 128x128 해상도에서 Inception Score(IS) Fréchet Inception Distance(FID)를 각각 166.5와 7.4로 이전 글인 SAGAN의 IS인 52.52와 FID 18.65를 넘어서는 class-conditional 이미지 합성 state of the art 모델입니다. BigGAN에 대해서 지금부터 살펴보겠습니다:lemon::lemon:
+BigGAN이란 이름에서도 Big을 쓰는만큼 나타내는 것처럼 BigGAN은 기존 GAN의 파라미터의 2~4배의 파라미터를 가지고 있으며 batchsize를 8배 이상 키운 것이 특징입니다. 이를 통해 ImageNet의 128x128 해상도에서 Inception Score(IS) Fréchet Inception Distance(FID)를 각각 166.5와 7.4로 이전 글인 SAGAN의 IS인 52.52와 FID 18.65를 넘어서는 class-conditional 이미지 합성 state of the art 모델입니다. BigGAN에 대해서 지금부터 살펴보겠습니다:lemon::lemon:
 <br><br>
 
 ---
@@ -19,13 +19,13 @@ conditional GAN은 많은 발전을 해왔지만 SOTA 모델(SAGAN)조차 아직
 
 BigGAN은 GAN에서 생성된 이미지들과 실제 이미지인 ImageNet 간의 fidelity(품질), variety(다양성) 격차를 줄인다는 목표를 가지고 다음의 3가지를 증명합니다.
 
-- 기존에 비해 2~4배 많은 수의 파라미터를 가진 모델을 사용하고 8배 이상의 큰 batch size로 모델을 학습해 GANs가 규모를 키움으로써 큰 이득을 얻는 것을 증명합니다. BigGAN은 일반적인 구조에서 규모를 확장한 것과 이전에 제안한 regularization을 수정해 conditioning을 개선한 예시를 통해 성능을 끌어올린 것을 증명합니다.
-- "truncation trick"을 사용해 결과 이미지의 fidelity와 variety 사이 trade-off 조절을 가능하게 합니다.
-- 특정 대규모 GANs가 불안정한 것을 발견해 분석을 통해 새로운 기술과 기존 기술을 결합한 것이 이런 불안정을 줄일 수 있지만 완벽한 학습의 안정성은 성능을 위해 굉장한 cost를 지불해야만 달성할 수 있다는 것을 증명합니다.
+- 기존에 비해 2~4배 많은 수의 파라미터를 가진 모델을 사용하고 8배 이상의 큰 batch size로 모델을 학습해 GANs가 규모를 키움으로써 큰 이득을 얻는 것을 증명합니다.
+- orthogonal regularization과 함께 "truncation trick"을 사용해 결과 이미지의 fidelity와 variety 사이 trade-off 조절을 가능하게 합니다.
+- 특정 대규모 GANs가 불안정한 것을 발견해 분석을 통해 새로운 기술과 기존 기술을 결합한 것이 이런 불안정을 줄일 수 있지만 학습의 안정성의 경우 성능이 제한될 때에만 달성할 수 있다는 것을 증명합니다.
 
 <br>
 
-이런 과정을 통해 BigGAN은 class-conditional GANs를 개선해 IS, FID 모두에서 점수를 갱신합니다. ImageNet의 128x128 해상도의 경우 SOTA의 IS, FID인 52.52와 18.65를 BigGAN은 IS, FID를 166.5와 7.4로 향상시킵니다. 또한 ImageNet보다 훨씬 더 크고 복잡한 데이터셋인 JFT-300M에서도 BigGAN을 학습해 분석을 진행했습니다.
+위의 증명 과정을 통해 BigGAN은 class-conditional GANs를 개선해 IS, FID 모두에서 점수를 갱신합니다. ImageNet의 128x128 해상도의 경우 SOTA의 IS, FID인 52.52와 18.65를 BigGAN은 IS, FID를 166.5와 7.4로 향상시킵니다. 또한 ImageNet보다 훨씬 더 크고 복잡한 데이터셋인 JFT-300M에서도 BigGAN을 학습해 분석을 진행했습니다.
 
 ImageNet의  128x128, 256x256, 512x512에서 학습된 모델의 가중치 값을 <a href="https://tfhub.dev/s?q=biggan" target="_blank">TF HUB</a>에서 제공합니다.
 <br><br>
@@ -34,15 +34,12 @@ ImageNet의  128x128, 256x256, 512x512에서 학습된 모델의 가중치 값�
 ---
 
 ## Setting
-우선 BigGAN이 사용한 구조와 설정에 대해서 살펴보겠습니다.
-
-BigGAN이 사용한 구조와 설정을 정리하다면 아래와 같습니다.
+BigGAN이 사용한 구조와 설정들은 아래와 같으며 하나씩 살펴보겠습니다.
 - hinge loss를 adversarial loss로 사용한 SAGAN 구조를 사용합니다.
 - class 정보 conditioning을 위해 Shared embedding을 사용합니다.
-- Exponential Weight Averate를 G에 적용합니다.
+- Exponential Weight Average를 $G$에 적용합니다.
 - Orthogonal Initialization / Regularization을 사용합니다.
 
-사용한 기술들을 하나씩 살펴보겠습니다.
 <br><br>
 
 ---
