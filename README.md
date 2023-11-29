@@ -55,4 +55,7 @@ BigGAN<br>
 FUNIT<br>
 []
 
+GAN Dissection<br>
+[]
+
 StarGANv2<br>
