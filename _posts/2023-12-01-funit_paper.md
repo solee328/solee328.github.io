@@ -137,7 +137,10 @@ $$
 \min_D \max_G \mathcal{L} _{GAN}(D, G) + \lambda_R \mathcal{L} _R(G) + \lambda _{F}\mathcal{L} _{FM}(G)
 $$
 
+Content Reconstruction loss와 Feature matching loss은 모두 Image-to-Image translation[29, 19, 50, 37]에서도 사용되었던 loss로 FUNIT은 기존의 기술을 사용해 새로운 few-shot unsupervised image-to-image translation 설정으로 사용을 확장합니다.
+
 ### adversarial
+GAN loss는 conditional loss로 $D$의 위첨자 $c_x, c_y$는 클래스를 나타냅니다. loss는 해당 클래스의 binary prediction score를 사용해 계산됩니다.
 
 $$
 \mathcal{L} _{GAN}(G, D) = E _{\mathrm{x}}[-\log D^{c_x}(x)] + E _{\mathrm{x}, \{\mathrm{y}_1, ..., \mathrm{y}_K\}}[\log(1-D^{c_y}(\bar{\mathrm{x}}))]
@@ -145,7 +148,7 @@ $$
 
 
 ### reconstruction
-
+Content Reconstruction loss는 입력 content 이미지와 입력 class 이미지 모두에 동일한 이미지를 사용하는 경우($K=1$), $G$가 입력과 동일한 출력 이미지를 생성하도록 유도합니다.
 
 $$
 \mathcal{L} _R(G) = E _{\mathrm{x}}[\|\mathrm{x} - G(\mathrm{x}, \{\mathrm{x}\})\|^1_1]
@@ -153,7 +156,7 @@ $$
 
 
 ### feature matching
-
+Feature matching loss는 학습을 regularize합니다. $D$의 마지막 layer(prediction layer)를 제거한 $D_f$라는 feature extractor를 구성해 변환 결과 $\bar{x}$와 클래스 이미지 $\{y_1, ..., y_k\}$의 feature를 계산해 차이를 최소화합니다.
 
 $$
 \mathcal{L} _F(G) = E _{\mathrm{x}, \{\mathrm{y}_1, ...,\mathrm{y}_K\}}[\|D_f(\bar{\mathrm{x}}) - \sum_k \frac{D_f(\mathrm{y}_k)}{K}\|^1_1]
@@ -161,14 +164,85 @@ $$
 
 
 
-## 결과
+## 실험
 
 ### Dataset
+FUNIT은 실험을 위해 4가지 데이터셋을 사용했으며 내용은 아래와 같습니다.
+
+- Animal Faces
+  ImageNet[9]의 149개 육식 동물 클래스의 이미지를 사용해 데이터셋을 준비합니다. 우선 10000장의 육식 동물 얼굴의 bounding box를 수동으로 라벨을 지정한 뒤 이를 사용해 Faster RCNN[13]을 학습했습니다. 저자들은 detection score 점수가 높은 bounding box만을 사용해 117574장의 동물 얼굴 데이터셋을 구축합니다. 119개의 source class, 30개의 target class로 나누어 사용합니다.
+
+- Birds
+  북아메리카 새 555종에 대한 48527장의 이미지로 이루어져 있습니다. 444개의 source class, 111개의 target class로 나누어 사용합니다.
+
+- Flowers
+  102종의 8189장의 이미지로 이루어져 있습니다. 85개의 source class, 17개의 target class로 나누어 사용합니다.
+
+- Foods
+  256 종류의 31395장의 이미지들로 이루어져 있습니다. 224개의 source class, 32개의 target class로 나누어 사용합니다.
+
+
+### Baseline
+StarGAN, UNIT, MUNIT, CycleGAN을 baseline 모델로 설정해 FUNIT과 성능을 비교합니다. 이때, 학습 중 target class의 이미지를 사용할 수 있는지 여부에 따라 fair(사용 불가능), unfair(사용 가능)으로 나눠 정의합니다.
+
+- Fair
+Fair는 FUNIT의 설정에 해당합니다. 하지만 이전의 Unsupervised Image-to-Image translation 모델 중 같은 방법으로 설계된 모델이 없기 때문에 multi-class unsupervised image-to-image translation의 SOTA에 해당하는 StarGAN[8]을 확장해 baseline으로 사용합니다.
+
+Fair StarGAN은 source class 이미지만을 사용해 학습되며, testing에서 target class의 $K$개의 이미지가 주어집니다. $K$개의 이미지에 대해 VGG[42] Conv5 features의 평균을 계산해 각각의 source class 이미지에 대한 평균 VGG Conv5 feature와의 cosine distance를 계산합니다. 이후 cosine distance에 softmax를 적용해 class association vector를 계산합니다.
+
+학습에 사용되지 않았던 target 클래스의 이미지를 생성하기 위해 one-hot class association vector를 StarGAN 모델의 입력으로 사용해 StarGAN의 class association score가 target class를 few-shot generation에 사용할 수 있는 각각의 source clas가 어떻게 관련되어 있는지 encoding할 수 있다는 가정으로 설계되었습니다. 이 StarGAN을 StarGAN-Fair-K로 표시합니다.
+
+
+- Unfair
+Unfair는 target class 이미지들이 학습에 포함됩니다. target class 당 사용 가능한 이미지 수($K$)를 1에서 20까지 다양하게 변경하며 모델들을 학습합니다. CycleGAN[55], UNIT[29], MUNIT[19]의 경우 2개의 도메인 간의 변환 모델이기 때문에 source class 이미지를 첫번재 도메인, target class 이미지를 두번째 도메인으로 설정해 학습합니다. $K$개 이미지로 학습한 모델을 ModelName-Unfair-K로 표시합니다.
+
 
 
 ### Metric
+모델의 성능 비교를 위해 4가지 metric을 사용하며 내용은 아래와 같습니다.
+
+- Translation accuracy
+Translation accuracy는 결과 이미지가 target class에 속하는지 여부를 측정합니다. 이를 위해 2개의 Inception V3[45]의 판별 모델을 사용합니다. 하나의 판별 모델은 source class와 target class 모두를 사용해 학습되고 'all'로 표시됩니다. 다른 하나의 판별 모델은 target class를 사용해 학습되며 'test'로 표시됩니다. 두 판별 모델을 사용해 Top1, Top5 정확도를 보고합니다.
+
+
+우리는 변환 정확도를 측정하기 위해 2개의 Inception-V3[45] classifier를 사용합니다. all로 표시되는 첫번째 분류모델은 모든 source와 target 객체 클래스를 분류하는 작업에 대해 ImageNet으로 pretrain된 Inception-V3 모델을  finetuning해 얻습니다(예. Animal Face 데이터셋의 경우 149개  클래스 모두, North American Birds 데이터 셋의 경우 555개의 클래스 모두를 사용한다). 두번째 분류모델은(test로 표시됨) target 클래스에 대해 분류하는 작업에 대해 ImageNet으로 pretrain된 Inception-V3 모델을 finetuning해 얻습니다(예. Animal Face 데이터셋의 경우 30개의 target class, North American Bird 데이터셋의 경우 11개의 target 클래스를 사용합니다) 우리는 변환 결과에 분류모델을 적용해 결과를 target 클래스의 이미지로 인식할 수 있는지 확인합니다. 만약 해당한다고 판별된다면, 올바른 변환으로 표시합니다. 우리는 Top1과 Top5 정확도를 모두 사용해 경쟁 모델과의 성능을 비교합니다. 따라서 우리는 변환 정확도 측정을 위한 4가지 평가 지표를 가지고 있습니다: Top1-all, Top5-all, Top1-test, Top5-test. 높은 정확도의 unsupervised image-to-image translation 모델이 좋습니다. 우리는 semantic label의 image translation task[21, 50, 7]와 유사한 평가 프로토콜이 image-to-image translation 모델들에 사용되었음을 주목합니다.
+
+
+- Content preservation
+우리는 domain-invariant perceptual distance(DIPD)[19]를 사용해 content preservation(콘텐츠 보존) 성능을 정량화합니다. DIPD는 perceptual distance[22, 54]의 변형입니다. DIPD를 계산하기 위해, 우리는 우선 입력 content 이미지와 변환 결과 이미지에서 VGG[42] conv5 feature를 추출합니다. 우리는 그 다음 instance normalization[47]을 적용해 feature map의 평균과 분산을 제거합니다. 이 방식으로, 우리는 feature의 class-specific information(클래스 별 정보)를 필터링하고[18, 27], class-invariant similarity(유사성)에 초점을 맞출 수 있습니다. DIPD는 instance normalized feature 사이의 L2 distance로 계산됩니다.
+
+Content preservation(콘텐츠 보존)은 domain-invariant(도메인 불변) perceptual distance(DIPD)[19]라고 불리는 perceptual distance[22, 54]의 변형을 기반으로 합니다. distance는 domain 변화[19]에 대항해 더 invariant한 두 개의 normalized된 VGG[42] Conv5 feature 사이의 L2 distance로 제공합니다.
+
+
+- Photorealism
+
+우리는 이미지 생성 성능을 정량화하기 위해 널리 사용되는 inception score(IS)를 사용합니다. $p(t|\mathrm{y})$를 변환 결과 이미지 $\mathrm{y}$에 대한 클래스 라벨 $t$의 분포라고 가정합니다. Inception score 는 다음에 의해 계산됩니다.
+
+$$
+\mathrm{IS} _C=\exp(\mathrm{E} _{\mathrm{y}\sim p(\mathrm{y})}[\mathrm{KL}(p(t|\mathrm{y})|p(t))])
+$$
+
+$p(t) = \int_y(p(t|\mathrm{y})d\mathrm{y}$입니다. Salimans et al.[40]에서는 Inception score가 신경망 생성 이미지의 시각적 품질과 양의 상관관계가 있다고 주장합니다.
+
+inception scores(IS)[40]으로 측정됩니다. 변환 정확 측정을 위해 학습된 2개의 inception 판별 모델을 사용해 inception score를 보고하며, 각각 all과 test로 표시됩니다.
+
+
+- Distribution matching
+Frechet Inception Distance FID[17]는 두 이미지 셋 간의 유사성을 측정하도록 설계되었습니다. 우리는 ImageNet pretrain된 Inception-V3[45] 모델의 마지막 average pooling layer의 activation을 FID를 계산하기 위한 이미지의 feature vector로 사용합니다. 우리는 보지 못한 $|\mathbb{T}|$ class가 있으므로, source 이미지를 각 보지 못한 $|\mathbb{T}|$ 클래스로 변환하고 $|\mathbb{T}|$ 변환 결과 셋을 생성합니다. 각 $|\mathbb{T}|$ 변환 결과 셋에 대해, 우리는 ground truth 이미지들과의 FID를 계산합니다. 이를 통해 $|\mathbb{T}|$ FID score를 얻을 수 있습니다. $|\mathbb{T}|$ FID score의 평균은 mean FID(mFID)라고 하는 최종 distribution matching performance metric으로 사용됩니다.
+
+Distribution matching은 FID(Fréchet Inception Distance)[17]를 기반으로 합니다. 우리는 각 $|\mathbb{T}|$ target class에 대한 FID를 계산하고 평균 FID(mFID)를 보고합니다.
+
+### 결과
+
+```
+Table 1 삽입
+```
+> Table 1.
 
 
 
 
-##
+
+---
+
+FUNIT 논문에 대해 살펴봤습니다. 끝까지 봐주셔서 감사합니다:)
