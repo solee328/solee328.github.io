@@ -14,7 +14,7 @@ Unsupervised image-to-image translation 모델들의 단점으로 특정 클래�
 
 지금부터 FUNIT에 대해 살펴보겠습니다 :eyes:
 
-정리한 Appendix : A
+정리한 Appendix : A, B, C, D
 추가 정리 : Related Work
 
 ---
@@ -237,7 +237,78 @@ Distribution matching은 FID(Fréchet Inception Distance)[17]를 기반으로 �
 ```
 Table 1 삽입
 ```
-> Table 1.
+> Table 1. fair, unfair baseline들과 성능 비교.  $\uparrow$ 는 큰 수가, $\downarrow$는 작은 수가 좋다는 것을 의미합니다.
+
+Table 1에서 볼 수 있듯이, FUNIT 프레임워크는 Animal Face와 North American Birds 데이터셋 모두에 대해 모든 성능 metric에서 few-shot unsupervised image-to-image translation에 대한 baseline들을 능가합니다. 표를 통해 FUNIT 모델의 성능이 $K$와 양의 상관 관계가 있음을 보여줍니다. $K$가 클수록 모든 metric의 개선하며, 가장 큰 성능 향상은 $K=1$에서 $K=5$까지 발생합니다.
+
+Unfair 모델들은 2개의 도메인 변환만 가능하기 때문에 클래스 수에 따른 여러 개의 모델을 학습하지만, FUNIT은 단 1개의 모델만으로 가능하며 마찬가지로 단 1개의 모델을 사용하는 StarGAN-Fair-K가 있지만 성능의 차가 큼을 볼 수 있습니다. MUNIT이 Unfair 모델이지만 그나마 유사한 성능을 보여주네요.
+
+
+```
+Figure 2 삽입
+```
+> Figure 2. few-shot unsupervised image-to-image translation 결과 시각화. 결과는 FUNIT-5 모델을 사용해 계산되었습니다. 위에서부터 순서대로 animal face, bird, flower, food 데이터셋에 대한 결과가 있습니다. 각 데이터셋에 대해 하나의 모델을 학습합니다. 각 예시에 대해, 우리는 무작위로 샘플링된 클래스 이미지 5개 중 2개인 $\mathrm{y}_1, \mathrm{y}_2$, 입력 content 이미지 $\mathrm{x}$, 변환 결과 $\bar{\mathrm{x}}$를 시각화합니다. 결과는 FUNIT 이 학습 중 보지 못했던 target class의 이미지를 난이도가 높은 few-shot 설정에서 그럴듯한 변환 결과를 생성한다는 것을 보여줍니다. 우리는 출력 이미지의 객체가 입력과 유사한 포즈를 취한다는 것에 주목합니다.
+
+Figure 2에서 FUNIT-5에 의해 계산된 few-shot 변환 결과를 볼 수 있습니다. 입력 content 이미지 $\mathrm{x}$과 해당 출력 이미지 $\bar{\mathrm{x}}$에 있는 객체의 포즈는 대체로 동일하게 유지됩니다. 출력 이미지는 photorealistic하며 target 클래스의 이미지와 유사합니다.
+
+
+```
+Figure 3 삽입
+```
+> Figure 3. few-shot image-to-image translation 성능에 대한 시각적 비교. 왼쪽에서 오른쪽 방향으로, 열은 입력 이미지 $\mathrm{x}$, 2개의 target class 이미지 $\mathrm{y}_1, \mathrm{y}_2$, Unfair StarGAN baseline의 변환 결과, fair StarGAN baseline의 변환 결과, FUNIT의 결과입니다.
+
+Figure 3에서 fair가 가능한 모델인 StarGAN과 FUNIT의 시각적 비교를 볼 수 있습니다. 같은 입력에서 StarGAN은 많은 양의 artifact를 가진 이미지를 생성하거나 target class가 아닌 입력된 content 이미지와 유사한 이미지를 출력합니다. 반면, FUNIT은 이미지 변환 결과를 성공적으로 생성합니다.
+
+
+### number of source class
+```
+Figure 4
+```
+> Figure 4. few-shot image translation 성능 vs Animal Faces 데이터 셋 학습 중 사용한 객체 클래스 수. 성능은 학습 중 사용한 객체 source class의 수와 양의 상관관계가 있습니다.
+
+```
+Figure 7
+```
+> Figure 7. Few-shot image translation performance vs North American Birds 데이터셋 학습 중 객체 클래스 사용 숫자
+
+Figure 4에서, 우리는 animal dataset을 사용해 one-shot 설정(FUNIT-1)에서 학습 셋의 source class 수를 변화시키는 것에 대한 성능을 분석합니다. 우리는 69개에서 119개 클래스까지 10개 간격으로 변화시켜 곡선을 표현합니다. 표시된 것과 같이, 성능은 변환 정확도, 이미지 품질 및 분포 일지 측면에서 객체 클래스 수와 양의 상관 관계가 있습니다. domain-invariant perceptual distance는 평평하게 유지됩니다. 이는 학습 중 더 많은 객체 클래스(다양성 증가)를 보는  FUNIT 모델이 테스트 중에 더 나은 성능을 보임을 보여줍니다. Appendix C에 제공된 bird dataset에서도 유사한 경향이 관찰됩니다.
+
+우리는 few-shot 변환 성능이 animal face 변환 작업을 위한 학습 셋의 source class 수와 양의 상관관계가 있음을 보여줍니다. Figure 7에서 우리는 bird 변환 작업에서도 동일한 경향임을 보여줍니다. 구체적으로, 우리는 North American Birds 데이터 셋을 사용해 학습 셋에서 사용 가능한 source 클래스 수에 따른 제안된 모델의 성능을 보고합니다. 구체적으로, 우리는 North American Birds 데이터셋을 사용해 학습 셋에서 사용 가능한 source 클래스 수 대비 제안된 모델의 성능을 보고합니다. 우리는 source class 수를 189, 222, 289, 333, 389에서 444로 변경해 성능 점수를 표시합니다. 우리는 점수의 곡선이 메인 논문에 표시된 Animal Face 데이터셋의 곡선과 동일한 경향을 가진다는 것을 발견했습니다. 모델을 학습 중에 더 많은 수 의 source 클래스를 볼 때 test 중에 더 나은 성능을 발휘합니다.
+
+
+### ablation study
+```
+Table 5 삽입
+```
+> Table 5. object term에 대한 Ablation study. $\uparrow$ 는 숫자가 클 수록 좋고, $\downarrow$는 숫자가 작을 수록 좋다는 것을 의미합니다. FM은 feature matching loss term이 제거된 제안된 프레임워크의 설정을 나타내고 GP는 gradient panalty loss가 제거된 제안된 프레임워크 설정을 나타냅니다. 기본 설정은 대부분의 기준에서 더 나은 성능을 제공합니다. 이 실험에서 우리는 FUNIT-1 모델을 사용합니다.
+
+Table 5에서 loss term들이 Animal Face 데이터를 학습한 모델의 성능에 미치는 영향을 분석한 ablation study 결과를 나타냅니다. feature matching loss를 제거할때 성능이 조금 저하되며, zero-centered gradient penalty를 제거할 때는
+
+gradient penalty가 본문에서는 설명이 없고 Appendix의 Table 5에서만 나와있어서 WGAN-GP의 gradient penalty인가 했는데, <a href="https://github.com/NVlabs/FUNIT/issues/18" target="_blank">공식 repo issue</a>에서 관련 글을 찾을 수 있었습니다. $D$ 학습 중 $D$의 loss를 사용해 gradient를 구하는 것까지는 WGAN-GP와 동일합니다. WGAN-GP에서는 (gradient - 1) 값을 제곱해 gradient penalty로 사용했다면 여기서는 pow로 exponential
+
+```python
+def calc_grad2(self, d_out, x_in):
+    batch_size = x_in.size(0)
+    grad_dout = autograd.grad(outputs=d_out.mean(),
+                              inputs=x_in,
+                              create_graph=True,
+                              retain_graph=True,
+                              only_inputs=True)[0]
+    grad_dout2 = grad_dout.pow(2)
+    assert (grad_dout2.size() == x_in.size())
+    reg = grad_dout2.sum()/batch_size
+    return reg
+```
+
+
+```
+Table 4 삽입
+```
+> Table 4. content image rconstruction loss weight, $\lambda_R$에 대한 파라미터 민감도 문석. $\uparrow$ 는 숫자가 클 수록 좋고, $\downarrow$는 숫자가 작을 수록 좋다는 것을 의미합니다. 0.1의 값은 content preservation(콘텐츠 보존)과 translation accuracy(변환 정확도)의 좋은 균형(trade-off)를 제공하며, 이는 논문 전체에서 기본값으로 사용됩니다. 본 실험에서 FUNIT-1 모델을 사용합니다.
+
+Table 4에서 content image reconstruction loss의 weight가 Animal Face 데이터셋을 학습한 모델의 성능에 미치는 영향을 분석한 결과를 볼 수 있습니다. 저자들은 $\lambda_R$값이 클수록 translation accuracy(변환 정확도)가 낮아지지만, domain invariant perceptual distance가 작다는 것을 발견했으며,  $\lambda_R=0.1$이 좋은 절충안을 제공한다는 것을 보여주어 논문 전체 실험에서 default로 사용합니다.
+
+흥미롭게도, $\lambda_R=0.01$로 매우 작으면 content preservation 및 translation accuracy 모두에서 성능이 저하됩니다. 이는 content reconstruction loss가 학습을 regularize 하는 데 도움이 된다는 것을 나타낸다고 합니다.
 
 
 
