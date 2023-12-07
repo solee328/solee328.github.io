@@ -14,7 +14,7 @@ Unsupervised image-to-image translation 모델들의 단점으로 특정 클래�
 
 지금부터 FUNIT에 대해 살펴보겠습니다 :eyes:
 
-정리한 Appendix : A, B, C, D
+정리한 Appendix : A, B, C, D, E, F
 추가 정리 : Related Work
 
 ---
@@ -310,8 +310,46 @@ Table 4에서 content image reconstruction loss의 weight가 Animal Face 데이�
 
 흥미롭게도, $\lambda_R=0.01$로 매우 작으면 content preservation 및 translation accuracy 모두에서 성능이 저하됩니다. 이는 content reconstruction loss가 학습을 regularize 하는 데 도움이 된다는 것을 나타낸다고 합니다.
 
+### vs AdaIN style transfer
+```
+Figure 9 삽입
+```
+> Figure 9. few-shot image translation을 위한 FUNIT-1 대 AdaIN style transfer[18]
+
+ few-shot animal face 변환 작업을 위한 AdaIN transfer network[18]를 학습하고 Appendix E에서 성능을 비교합니다. 우리는 style transfer network가 입력 동물의 texture(질감)을 변경할 수 있지만, 모양을 변경하지 않다는 것을 발견했습니다. 결과적으로, 변환 결과는 입력과 여전히 유사합니다.
+
+ Figure 9에서, 우리는 few-shot animal face translation task를 위해 제안된 방법을 AdaIN style transfer[18]과 비교합니다. AdaIN style transfer 방법은 입력 동물의 질감을 변경할 수 있지만 외형은 변경하지 않습니다. 결과적으로 변환 결과는 외형 측면에서 입력과 여전히 유사합니다.
 
 
+### Failuer case
+```
+Figure 10 삽입
+```
+> Figure 10. 실패 사례들. 제안된 FUNIT 모델의 전형적인 실패 사례에는 hybrid objects generation(예. column 1, 2, 3, 4), 입력 content 이미지 무시(예. column 5, 6), 입력 클래스 이미지 무시(예. column 7)이 포함됩니다.
+
+Figure 10은 제안된 알고리즘의 몇 가지 실패 사례를 보여줍니다. 사례는 hybrid class generation, 입력 content 이미지 무시, 입력 클래스 이미지 무시 등을 포함하고 있습니다.
+
+
+### few-shot classification
+```
+Table 3 삽입
+```
+> Table 3. 분할에 걸쳐 평균을 나타낸 few-shot classification 정확도
+
+animal과 bird 데이터셋을 사용해  few-shot classification에 대한 FUNIT을 평가합니다. 특히, 우리는 학습된 FUNIT 모델을 사용해 각 few-shot 클래스에 대한 N(1, 50 100까지 다양) 이미지를 생성하고 생성된 이미지를 사용해 판별 모델을 학습합니다. 우리는 FUNIT으로 학습된 판별 모델이 feature hallucination(특징 환각) 을 기반으로 샘플 갯수 N에 대한 제어 가능한 변수를 가지고 있는 Hariharan et al.[15]에서 제안한 few-shot classification 접근 방식보다 지속적으로 더 나은 성능을 달성한다는 것을 발견했습니다.
+
+Appendix H 정리
+
+
+## 정리
+
+Appendix G, J 정리
+
+우리는 최초의 few-shot unsupervised image-to-image translation 프레임워크를 소개했습니다. 우리는 few shot 생성 기능이 학습 중에 보이는 객체 클래스의 수와 양의 상관관계가 있으며  test time 동안 제공되는 target class의 장(shot) 수와도 양의 상관관계가 있음을 보여주었습니다.
+
+FUNIT은 test time에 사용할 수 있는 모델에게 보여주지 않은 클래스의 몇몇 이미지를 이용해 source class의 이미지를 본 적 없는 객체 클래스의 유사한 이미지로 변환하는 방법을 배울 수 있다는 경험적 증거를 제공했습니다. FUNIT은 새로운 기능을 달성하기는 하지만 다음 몇가지 조건에 따라 작동합니다. 1) content encoder $E_x$가 class-invariant latent code(클래스 불변 잠재 코드)  $z_x$를 학습할 수 있는지 여부, 2)class encode $E_y$가 class-specific latent code(클래스 별 잠재 코드) $z_y$를 학습할 수 있는지 여부, 그리고 가장 중요한 것은 3) class encoder $E_y$가 보이지 않는 객체 클래스의 이미지로 일반화할 수 있는지 여부 입니다.
+
+우리는 새로운 클래스가 source 클래스와 기각적으로 관련되어 있을 때 이런 조건을 충족하기 쉽다은 것을 관찰했습니다. 그러나 새로운 객체 클래스의 외관이 source class의 와괸과 극적으로 다를 때 FUNIT은 Figure 5와 같이 변환을 실패합니다. 이 경우 FUNIT은 입력 content 이미지의 색상이 변경된 버전으로 생성하는 경향이 있습니다. 이는 바람직하지 않지만 외형 분포가 극적으로 변경되었기 때문에 이해할 수 있습니다. 이 한계를 해결하는 것이 우리의 향후 작업입니다.
 
 
 ---
