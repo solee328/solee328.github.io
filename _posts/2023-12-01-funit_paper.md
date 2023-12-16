@@ -13,14 +13,12 @@ use_math: true
 Unsupervised image-to-image translation 모델들의 단점으로 특정 클래스에 대한 입력을 수행하기 위해서는 해당 클래스에 대한 수많은 데이터셋을 학습하는 것을 꼽았습니다. FUNIT은 few-shot을 적용해 새로운 클래스의 이미지 단 몇장으로도 가능한 이미지 변환을 제안합니다. 또한 이 과정에서 few-shot classification 모델의 성능과 기존의 unsupervised image-to-image translation 설정에서도 기존의 state-of-the-art 모델들을 능가하며 성능을 입증합니다.
 
 지금부터 FUNIT에 대해 살펴보겠습니다 :eyes:
-
-정리한 Appendix : A, B, C, D, E, F
-추가 정리 : Related Work
+<br><br>
 
 ---
 
 ## 소개
-[30, 46, 29, 25, 55, 52]와 같은 연구들은 Unsupervised Image-to-Image Translation 설정에서 이미지 클래스를 변환하는 것에 성공했지만, 새로운 클래스에 대한 소수의 이미지들에서 일반화(generalization)은 불가능합니다. 이 모델들이 이미지 변환을 수행하기 위해서는 모든 클래스의 대규모 학습 셋이 필요하며 few-shot은 지원하지 않습니다.
+<a href="https://arxiv.org/abs/1606.07536" target="_blank">CoGANs</a>, <a href="https://arxiv.org/abs/1703.00848" target="_blank">UNIT</a>, <a href="https://arxiv.org/abs/1703.05192" target="_blank">DiscoGAN</a>, <a href="https://arxiv.org/abs/1703.10593" target="_blank">CycleGAN</a>과 같은 연구들은 Unsupervised Image-to-Image Translation 설정에서 이미지 클래스를 변환하는 것에 성공했지만, 새로운 클래스에 대한 소수의 이미지들에서 일반화(generalization)은 불가능합니다. 이 모델들이 이미지 변환을 수행하기 위해서는 모든 클래스의 대규모 학습 셋이 필요합니다.
 
 그에 반해, 인간은 일반화(generalization)이 뛰어납니다. 이전에 보지 못했던 이국적인 동물의 사진이 주어져있을 때, 우리는 그 동물이 다른 자세로 있는 상상이 가능합니다. 예를 들어, 서 있는 호랑이를 처음 본 사람이더라도 일생 동안 본 다른 동물들에 대한 정보를 통해 호랑이가 누워있는 모습을 상상하는 것에 어려움이 없습니다.
 
@@ -30,16 +28,16 @@ FUNIT은 이런 격차를 줄이기 위한 시도로, test time에 학습(train 
 ---
 
 ## 모델
-FUNIT은 Generative Adversarial Network(GAN)[14]를 기반으로 하며, conditional image generator $G$와 multi-task adversarial discriminator $D$로 구성됩니다.
+FUNIT은 <a href="https://papers.nips.cc/paper_files/paper/2014/hash/5ca3e9b122f61f8f06494c97b1afccf3-Abstract.html" target="_blank">Generative Adversarial Network(GAN)</a>을 기반으로 하며, conditional image generator $G$와 multi-task adversarial discriminator $D$로 구성됩니다.
 
-하나의 이미지를 입력으로 받는 기존의 unsupervised image translation framework[55, 29]의 conditional image generator들과는 달리 FUNIT의 $G$는 content 이미지 $\mathrm{x}$와 $K$개의 이미지 집합 $\{y_1, ..., y_K\}을 동시에 입력으로 가지며 출력 이미지 $\bar{\mathrm{x}}$를 생성합니다.
+하나의 이미지를 입력으로 받는 기존의 unsupervised image translation framework인 <a href="https://arxiv.org/abs/1703.00848" target="_blank">UNIT</a>, <a href="https://arxiv.org/abs/1703.10593" target="_blank">CycleGAN</a>의 conditional image generator들과는 달리 FUNIT의 $G$는 클래스는 $c_x$에 속하는 content 이미지 $\mathrm{x}$와 클래스 $c_y$에 속하는 $K$개의 이미지 집합 $\{y_1, ..., y_K\}$을 동시에 입력으로 가지며 출력 이미지 $\bar{\mathrm{x}}$를 생성합니다.
 
 $$
 \bar{\mathrm{x}} = G(\mathrm{x}, \{ y_1, ..., y_K \})
 $$
 
-content 이미지의 클래스는 $c_x$이고 $K$개의 이미지 집합 $\{y_1, ..., y_K\}의 클래스를 $c_y$라 할 때, $c_x$는 $c_y$ 다른 클래스를 의미합니다.
 
+<br>
 
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/89815e02-3724-4a8e-b528-3e739900b117" width="800" height="200">
@@ -47,11 +45,13 @@ content 이미지의 클래스는 $c_x$이고 $K$개의 이미지 집합 $\{y_1,
 > Figure 1: <b>Training.</b>. 학습 셋은 여러 객체 클래스(source class)로 이루어져 있습니다. FUNIT 모델이 source 클래스 사이 이미지를 변환하도록 학습시킵니다.<br>
 <b>Deployment.</b> 학습된 모델이 학습 중에 target class의 이미지를 본 적이 없음에도 불구하고 source class의 이미지를 target class와 유사한 이미지로 변환합니다. FUNIT 생성 모델은 1) content 이미지와 2) target class 이미지 셋, 2가지 입력을 사용합니다. target class 이미지와 유사한 입력 이미지의 변환을 생성하는 것을 목표로 합니다.
 
-Figure 1에서 보여주듯이, $G$는 입력 content 이미지 $\mathrm{x}$를 출력 이미지 $\bar{\mathrm{x}}$에 매핑해 $\bar{\mathrm{x}}$가 클래스 $c_y$를 유지한 채 $\mathrm{x}$와 구조적 유사성을 공유하도록 생성합니다.
+Figure 1의 Training에서 볼 수 있듯, $G$는 content 이미지 $\mathrm{x}$와 target class($c_y$)의 $K$개의 이미지를 입력으로 받습니다. 입력 받은 Content 이미지 $\mathrm{x}$가 클래스 $c_y$를 가지며 $\mathrm{x}$의 구조를 가질 수 있도록 결과를 생성합니다.
 
-\mathbb{S}가 학습 데이터 셋(source class), $\mathbb{T}$가 target class 셋을 나타낸다 가정해봅시다. 학습 단계(training time)에서, $G$는 $c_x, c_y \in \mathbb{S}$이고 $c_s \not= c_y$인 2개의 랜덤 추출된 source class 사이를 변환하는 방법을 학습합니다.
+$\mathbb{S}$가 학습 데이터 셋(source class), $\mathbb{T}$가 target class 셋을 나타낼 때, 학습 단계(training time)에서 $G$는 $c_x, c_y \in \mathbb{S}$이고 $c_s \not= c_y$인 2개의 랜덤 추출된 source class 사이를 변환하는 방법을 학습합니다.
 
-Test 단계(testing time)에서, $G$는 학습하지 않은 target class $c \in \mathbb{T}$로부터 몇 개의 이미지를 가져가 source class 중 임의의 클래스에서 샘플링된 이미지를 target class $c$와 유사한 이미지로 매핑합니다.
+Test 단계(testing time)에서, $G$는 학습하지 않은 target class $c \in \mathbb{T}$로부터 $K$ 개의 이미지를 가져가 source class 중 임의의 클래스에서 샘플링된 이미지를 target class와 유사한 이미지로 매핑합니다.
+
+모델의 목표를 확인했으니, 모델을 구성하는 $G$와 $D$의 구조를 살펴보겠습니다.
 
 
 ### Generator
@@ -61,59 +61,91 @@ Test 단계(testing time)에서, $G$는 학습하지 않은 target class $c \in 
 </div>
 > Figure 6. 생성 모델 구조 시각화. 변환 결과  $\bar{\mathrm{x}}$를 생성하기 위해, 생성 모델은 클래스 이미지들 $y_1, ..., y_k$에서 추출된 class latent code $\mathrm{z}_y$와 입력 content 이미지에서 추출된 content latent code $\mathrm{z}_x$를 결합합니다. 비선형성(nonlinearity)와 정규화(normalization)연산은 시각화에 포함되지 않습니다.
 
-few-shot 이미지 변환 모델인 FUNIT의 생성 모델은 Figure 6의 시각화에서 표현된 것처럼 Content Encoder $E_x$, Class Encoder $E_y$, Decoder $F_x$ 3개의 subnetwork로 이루어져 있습니다. 각 block에 표시된 숫자는 해당 layer의 filter수를 내타냅니다. 네트워크에 포함된 nonlineaity(activation)과 normalization 연산은 시각화되지 않았습니다.
+few-shot 이미지 변환 모델인 FUNIT의 생성 모델은 Figure 6의 시각화에서 표현된 것처럼 Content Encoder $E_x$, Class Encoder $E_y$, Decoder $F_x$ 3개의 subnetwork로 이루어져 있습니다. 각 block에 표시된 숫자는 해당 layer의 filter수를 내타냅니다. 네트워크에 포함된 activation과 normalization 연산은 시각화에 포함되지 않았습니다.
+
+$G$의 입력으로 받은 content 이미지 $\mathrm{x}$는 Content Encoder $E_x$로,  target class($c_y$)의 $K$개의 이미지는 Class Encoder $E_y$에 입력합니다. $E_x$는 객체의 자세와 같은 class invariant latent representation인 Content Code를 추출하고 $E_y$는 객체의 외형과 같은 class specific latent representation인 Class Code을 추출하는 것을 목표로 합니다.
+
+2개의 Encoder가 추출한 code들을 Decoder $F_x$에 입력으로 넣으며,$F_x$는 결과 $\bar{\mathrm{x}}$를 생성합니다. 이때 AdaIN layer에 content code, class code 모두가 사용되며, class code가 객체 외형과 같은 global look을 결정하고 content code가 눈, 코, 입 위치와 같은 local struction을 결정합니다.
 
 Content Encoder $E_x$, Class Encoder $E_y$, Decoder $F_x$를 사용해 식을 아래와 같이 표현할 수 있습니다.
 
 $$
-\begin{align*}
-\bar{\mathrm{x}} &= G(\mathrm{x}, \{ y_1, ..., y_K \}) \\
-&= F_x(\mathrm{z}_x, \mathrm{z}_y) = F_x(E_x(\mathrm{x}), E_y(\{ y_1, ..., y_K\}))
-\end{align*}
+\begin{align}
+\bar{\mathrm{x}} &= G(\mathrm{x}, \{ y_1, ..., y_K \})
+\\ &= F_x(\mathrm{z}_x, \mathrm{z}_y)
+\\ &= F_x(E_x(\mathrm{x}), E_y(\{ y_1, ..., y_K\}))
+\end{align}
 $$
-
-이와 같은 생성 모델 설계를 통해, FUNIT의 $G$는 Content Encoder를 사용해 class invariant latent representation(예. object의 자세)를 추출하고 Class Encoder를 사용해 class specific latent representation(예. object의 외형)을 추출하는 것을 목표로 합니다. AdaIN layer를 통해 Decoder에 class latent code를 공급해 클래스 이미지가 global look(예. object의 외형)을 제외하고 content image가 local struction(예. 눈, 코, 입의 위치)를 결정합니다.
 
 
 #### Content Encoder
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/0e842da9-7369-4a94-972d-8180a327e342" width="600" height="250">
 </div>
-Content Encoder는 여러 개의 2D convolutional layer와 residual blocks[16, 22]로 구성됩니다. Content Encoder는 입력 content 이미지 $x$를 spartial feature map인 content latent code $z_x$에 매핑하는 것이 목적입니다.
+> Figure 6의 Content Encoder 부분
 
+Content Encoder는 여러 개의 2D convolutional layer와 residual block 으로 구성됩니다. Content Encoder는 입력 content 이미지 $x$를 content latent code $z_x$에 매핑하는 것이 목적입니다. feature map인 content code는 3번의 stride=2인 down sampling convolution을 거치며 width, height가 입력의 1/8을 가집니다. 각 layer에서 instance normlization과 ReLU activation이 사용됩니다.
 
-Content Encoder는 입력된 content 이미지 $\mathrm{x}$를 feature map인 content latent code로 만듭니다. 이 feature map은 3개의 stride 2 down sampling convolution으로 입력 해상도 * 1/8의 width*height를 가지며, $\mathrm{x}$의 클래스와는 관계없는 $\mathrm{x}$의 content 정보(class-invariant content information) encode 하도록 설계되었습니다. feature map은 위치와 같은 정보를 encode하고 class 별 외형은 encode하지 않아야 합니다(예시로, animal face translation task에서 feature map은 귀의 위치는 encode해야 하지만 귀의 모양이나 색깔은 encode하지 않아야 합니다).
+content code는 $\mathrm{x}$의 클래스와는 관계없는 $\mathrm{x}$의 content 정보(class-invariant content information) encode 하도록 설계되었습니다.
 
-Content Encoder의 경우, 각 layer에서 instance normlization과 ReLU nonlinearity가 사용됩니다.
+content code는 위치에 대한 정보는 encode 해야하지만, 클래스 별 외형은 encode하지 않아야 합니다. 예시로 위 그림의 강아지의 귀, 눈, 코의 위치는 content code에 정보가 있어야 하지만 귀의 모양이나 색깔은 정보가 포함되지 않도록 해야합니다.
 
 
 #### Class Encoder
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/ac135258-af34-4a8d-8e9d-22eb641eda48" width="600" height="450">
 </div>
-Class Encoder는 $K$개의 클래스 이미지 집합을 클래스 별 정보(class-specific)를 담은 class latent code를 만듭니다. Class Encoder는 VGG와 같은 네트워크를 사용해 각 입력 이미지를 intermediate latent code로 만든 후, 이 latent code를 element-wise mean으로 계산해 최종 class latent code를 생성합니다.
+> Figure 6의 Class Encoder 부분
 
-Class Encoder의 경우, 각 layer에서 ReLU nonlinearity가 사용됩니다.
+
+Class Encoder는 VGG와 같은 네트워크를 사용해 $K$개 이미지를 개별적인 intermediate latent code로 만든 후, 이 latent code를 element-wise mean 값을 결과 값으로 출력해 최종 class latent code $z_y$를 만듭니다. 각 layer에서 ReLU activation이 사용됩니다.
+
+class code는 $K$개의 클래스 이미지 집합을 클래스 별 정보(class-specific)를 encode하도록 설계되었습니다. 예시로 위 그림의 class code는 털의 질감, 몸의 색깔, 눈의 모양과 같이 사자의 외형에 대한 정보를 가지고 있어야 합니다.
+
+
 
 #### Decoder
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/32ce2c07-9b61-4eb1-ab24-8d5b0fca05d2" width="600" height="500">
 </div>
-Decoder는 Adaptive Instance Normalization(AdaIN) residual blocks[19]와 upscale convolutional layer로 구성됩니다. AdaIN residual block은 normalization layer로 AdaIN[18]을 사용하는 residual block입니다. AdaIN은 우선 각 입력의 channel의 activation을 zero mean, unit variance을 갖도록 normliazation합니다. 이후 scalar와 bias로 학습된 affine transformation을 사용해 activation의 scale을 조정합니다. affine transformation은 spatially-inveriant이므로 global appearance information을 얻는데만 사용할 수 있습니다. affine transformation parameter들은 2개의 fully connected network를 통해 $z_y$가 adaptively하게 계산됩니다.
+> Figure 6의 Decoder 부분
 
-Decoder를 우선 class-specific한 class latent code를 AdaIN Residual block의 affine transform parameter로 사용하기 위해 $i=1, 2$인 평균 분산 벡터($\mu_i, \sigma^2_i$)로 decode합니다.
 
-각각의 residual block에서 affine transformation은 feature map의 모든 spatial location(공간 위치)에 적용됩니다. 이를 통해 content latent code를 decode하고 출력 이미지 생성하는 것을 제어합니다.
+Decoder는 content code와 class code를 입력으로 받아 $G$의 결과인 $\bar{\mathrm{x}}$를 생성합니다. AdaIN residual block과 nearest neighbor upscale convolution layer로 구성되며 AdaIN residual block을 제외하고 각 layer에서 instance normalization과 ReLU activation을 사용합니다.
 
-Decoder의 경우 AdaIN residual block을 제외하고 각 layer에서 instance normalization과 ReLU nonlinearity를 사용합니다. nearest neighbor upsampling을 사용해 spatial dimension(공간 차원)의 feature map을 2배씩 upscaling합니다.
+AdaIN(Adaptive Instance Normalization) residual blocks는 <a href="https://arxiv.org/abs/1804.04732" target="_blank">MUNIT</a>에서 사용한 것과 유사하며 <a href="https://solee328.github.io/gan/2023/06/09/munit_code.html#h-adain-origin" target="_blank">MUNIT(2) - 논문 구현</a>에서 자세한 설명을 볼 수 있습니다!
 
+MUNIT의 AdaIN에서는 style code를 MLP에 입력으로 넣어 style mean, std를 계산해 AdaIN residual block에서 affine transform parameter로 계산에 사용했습니다. 이와 비슷하게 FUNIT에서는 class code를 MLP로 계산해 AdaIN residual block의 affine transform parameter로 사용하기 위해 $i=1, 2$인 평균 분산 벡터($\mu_i, \sigma^2_i$)로 decode합니다.
+
+그 다음 content code를 AdaIN residual block으로 계산하는데, AdaIN은 normalization layer로 AdaIN을 사용하는 residual block입니다. normalization 과정이 affine transform($f(x)=Ax+b$) 형식을 가집니다.
+
+<br>
+
+$$
+AdaIN(x, y) = \sigma(y) (\frac{x-\mu(x)}{\sigma(x)}) + \mu(y)
+$$
+
+
+수식에서 보이는 것처럼, 우선 content code($x$)의 channel을 zero mean, unit variance를 갖도록 normalize합니다. 이후 class code($y$)로 계산한 $\mu_i$(bias), $\sigma^2_i$(scale)를 사용해 global appearance information을 얻을 수 있도록 사용합니다. 이 과정으로 content의 class 정보를 없애고 class code의 class 정보를 표현하도록 합니다.
+
+AdaIN 이후에는 upscale convolution으로 feature map을 결과 이미지 $\bar{\mathrm{x}}$을 계산합니다.
+
+<br>
 
 ### Discriminator
-FUNIT의 판별 모델 $D$는 PatchGAN discriminator[21]을 사용합니다. Leaky ReLU nonlinearity를 활용하고 normalization을 사용하지 않습니다. 판별 모델은 10개의  Convolutional layer와 activation first residual blocks[32]로 구성됩니다. 구조는 다음과 같이 표현됩니다.
+FUNIT의 판별 모델 $D$는 Pix2Pix, CycleGAN, StarGAN, MUNIT 등 다양한 GAN 모델의 $D$ 구조로 사용되는 PatchGAN discriminator을 사용합니다. Leaky ReLU activation를 활용하고 normalization은 사용하지 않습니다.
 
-$$
-\textmd{Conv-64} \rightarrow \textmd{ResBlk-128} \rightarrow \textmd{ResBlk-128} \rightarrow \textmd{AvePool 2x2} \rightarrow \textmd{ResBlk-256} \rightarrow \textmd{ResBlk-256} \rightarrow \textmd{AvePool 2x2} \rightarrow \textmd{ResBlk-512} \rightarrow \textmd{ResBlk-512} \rightarrow \textmd{AvePool 2x2} \rightarrow \textmd{ResBlk-1024} \rightarrow \textmd{ResBlk-1024} \rightarrow \textmd{AvePool 2x2} \rightarrow \textmd{ResBlk-1024} \rightarrow \textmd{ResBlk-1024} \rightarrow \textmd{Conv-}\|\mathbb{S}\|
-$$
+
+```
+preactivation resnet-blocks 이미지 삽입
+```
+residual block으로 preactivation ResNet-blocks이라고도 불리는 activation first residual blocks을 사용하는 것이 특징입니다. Residual block에서 convolution과 같은 weight 연산 이후 사용되던 activation을 weight 연산 전에 사용해 성능을 올렸다고 합니다.
+
+판별 모델은 Convolutional layer와 10개의 activation first residual blocks로 구성되며 아래와 같은 구조를 갖습니다.
+
+```
+구조 캡처 사진
+```
 
 
 #### Multi-task Adversarial Discriminator
@@ -128,6 +160,9 @@ source class $c_x$의 실제 이미지에 대해 $D$를 업데이트할 때, $c_
 ```
 기존 판별 모델의 classification task 비교
 ```
+<br><br>
+
+---
 
 
 ## Loss
@@ -162,6 +197,10 @@ $$
 \mathcal{L} _F(G) = E _{\mathrm{x}, \{\mathrm{y}_1, ...,\mathrm{y}_K\}}[\|D_f(\bar{\mathrm{x}}) - \sum_k \frac{D_f(\mathrm{y}_k)}{K}\|^1_1]
 $$
 
+dd
+<br><br>
+
+---
 
 
 ## 실험
@@ -339,7 +378,9 @@ Figure 10은 제안된 알고리즘의 몇 가지 실패 사례를 보여줍니�
 animal과 bird 데이터셋을 사용해  few-shot classification에 대한 FUNIT을 평가합니다. 특히, 우리는 학습된 FUNIT 모델을 사용해 각 few-shot 클래스에 대한 N(1, 50 100까지 다양) 이미지를 생성하고 생성된 이미지를 사용해 판별 모델을 학습합니다. 우리는 FUNIT으로 학습된 판별 모델이 feature hallucination(특징 환각) 을 기반으로 샘플 갯수 N에 대한 제어 가능한 변수를 가지고 있는 Hariharan et al.[15]에서 제안한 few-shot classification 접근 방식보다 지속적으로 더 나은 성능을 달성한다는 것을 발견했습니다.
 
 Appendix H 정리
+<br><br>
 
+---
 
 ## 정리
 
@@ -350,7 +391,7 @@ Appendix G, J 정리
 FUNIT은 test time에 사용할 수 있는 모델에게 보여주지 않은 클래스의 몇몇 이미지를 이용해 source class의 이미지를 본 적 없는 객체 클래스의 유사한 이미지로 변환하는 방법을 배울 수 있다는 경험적 증거를 제공했습니다. FUNIT은 새로운 기능을 달성하기는 하지만 다음 몇가지 조건에 따라 작동합니다. 1) content encoder $E_x$가 class-invariant latent code(클래스 불변 잠재 코드)  $z_x$를 학습할 수 있는지 여부, 2)class encode $E_y$가 class-specific latent code(클래스 별 잠재 코드) $z_y$를 학습할 수 있는지 여부, 그리고 가장 중요한 것은 3) class encoder $E_y$가 보이지 않는 객체 클래스의 이미지로 일반화할 수 있는지 여부 입니다.
 
 우리는 새로운 클래스가 source 클래스와 기각적으로 관련되어 있을 때 이런 조건을 충족하기 쉽다은 것을 관찰했습니다. 그러나 새로운 객체 클래스의 외관이 source class의 와괸과 극적으로 다를 때 FUNIT은 Figure 5와 같이 변환을 실패합니다. 이 경우 FUNIT은 입력 content 이미지의 색상이 변경된 버전으로 생성하는 경향이 있습니다. 이는 바람직하지 않지만 외형 분포가 극적으로 변경되었기 때문에 이해할 수 있습니다. 이 한계를 해결하는 것이 우리의 향후 작업입니다.
-
+<br><br>
 
 ---
 
