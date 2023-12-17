@@ -136,46 +136,43 @@ AdaIN 이후에는 upscale convolution으로 feature map을 결과 이미지 $\b
 FUNIT의 판별 모델 $D$는 Pix2Pix, CycleGAN, StarGAN, MUNIT 등 다양한 GAN 모델의 $D$ 구조로 사용되는 PatchGAN discriminator을 사용합니다. Leaky ReLU activation를 활용하고 normalization은 사용하지 않습니다.
 
 
-```
-preactivation resnet-blocks 이미지 삽입
-```
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/4e37d701-afdd-4793-8b3e-5f3bd590fd57" width="700" height="320">
+</div>
+> <a href="https://arxiv.org/pdf/1603.05027.pdf" target="_blank">Identity Mappings in Deep Residual Networks</a>의 Figure 1.
+
 residual block으로 preactivation ResNet-blocks이라고도 불리는 activation first residual blocks을 사용하는 것이 특징입니다. Residual block에서 convolution과 같은 weight 연산 이후 사용되던 activation을 weight 연산 전에 사용해 성능을 올렸다고 합니다.
 
-판별 모델은 Convolutional layer와 10개의 activation first residual blocks로 구성되며 아래와 같은 구조를 갖습니다.
+판별 모델은 시작과 끝은 Convolutional layer를 사용하며 중간에 10개의 activation first residual blocks로 이루어져 아래와 같은 구조를 갖습니다.
 
-```
-구조 캡처 사진
-```
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/1b3cf091-ec40-48b0-bc7a-275d4c31ea49" width="520" height="170">
+</div>
 
+<br>
 
-#### Multi-task Adversarial Discriminator
-FUNIT의 판별 모델 $D$는 입력 이미지들에 대해 각각의 이미지가 source class의 실제 이미지인지 $G$에서 온 변환된 결과물인지를 결정하는 binary classification task를 해결하며 학습됩니다. 이때 source class에는 $|\mathbb{S}|$개의 클래스가 있다고 가정하면, $D$는 $|\mathbb{S}|$개의 출력을 생성합니다.
+마지막은 $|\mathbb{S}|$로 feature map의 channel을 조절하는데, $|\mathbb{S}|$는 source 클래스의 수입니다.
 
-source class $c_x$의 실제 이미지에 대해 $D$를 업데이트할 때, $c_x$번째 출력이 False로 $G$에서 생성한 이미지로 판단했다 $D$에게 불이익(penalize)를 줍니다. 반대로 source class $c_x$에 대한 변환된 출력인 가짜 이미지에 대해 $c_x$번째 출력이 True 일때도, $D$에게 불이익을 줍니다.
+FUNIT은 $D$는 하나의 이미지를 $|\mathbb{S}|$개의 클래스에 대해 해당 클래스에 속하는 이미지인지 아닌지 판단합니다. StarGAN처럼 이미지가 진짜인지 가짜인지 판별하는 layer, 이미지의 클래스를 판별하는 layer를 따로 두는 것이 아니라 하나의 layer로 처리하는  $|\mathbb{S}|$-class classification 문제를 다룹니다.
 
-이때 다른 클래스의 이미지에 대해 False를 예측하지 못한 경우에는 $D$에게 불이익을 주지 않습니다. $G$를 업데이트할 때 $D$의 $c_x$번째 출력이 False인 경우에만 $G$에게 불이익을 줍니다.
+source class $c_x$에 해당하는 이미지를 판별할 때, 다른 클래스에 대한 판단 결과는 사용하지 않습니다. 예시로, source class $c_x$의 실제 이미지에 대해 $D$를 업데이트할 때, $c_x$번째 출력이 False로 $G$에서 생성한 이미지로 판단했다면 $D$에게 불이익(penalize)를 줍니다. 반대로 source class $c_x$에 대한 변환된 출력인 가짜 이미지에 대해 $c_x$번째 출력이 True 일때도, $D$에게 불이익을 줍니다.
 
-저자들은 경험적으로 판별 모델이 더 어려운 task인 $|\mathbb{S}|$-class classification 문제를 해결하며 기존 판별 모델보다 더 잘 작동한다는 것을 발견했습니다.
-
-```
-기존 판별 모델의 classification task 비교
-```
+즉, 다른 클래스의 이미지에 대해 False를 예측하지 못한 경우에는 $D$에게 불이익을 주지 않습니다. $G$를 업데이트할 때 $D$의 $c_x$번째 출력이 False인 경우에만 $G$에게 불이익을 줍니다.
 <br><br>
 
 ---
 
 
 ## Loss
-FUNIT의 loss는 GAN loss $\mathcal{L}_{GAN}$, content image reconstruction loss $\mathcal{L}_R$, feature matching loss  $\mathcal{L}_F$로 이루어져 있습니다.
+FUNIT의 loss는 GAN loss $\mathcal{L}_{GAN}$, content image reconstruction loss $\mathcal{L}_R$, feature matching loss  $\mathcal{L}_F$로 이루어져 있습니다. 논문에서는 $\lambda_R=0.1$, $\lambda_F=1$로 설정해 실험했다고 합니다.
 
 $$
 \min_D \max_G \mathcal{L} _{GAN}(D, G) + \lambda_R \mathcal{L} _R(G) + \lambda _{F}\mathcal{L} _{FM}(G)
 $$
 
-Content Reconstruction loss와 Feature matching loss은 모두 Image-to-Image translation[29, 19, 50, 37]에서도 사용되었던 loss로 FUNIT은 기존의 기술을 사용해 새로운 few-shot unsupervised image-to-image translation 설정으로 사용을 확장합니다.
 
 ### adversarial
-GAN loss는 conditional loss로 $D$의 위첨자 $c_x, c_y$는 클래스를 나타냅니다. loss는 해당 클래스의 binary prediction score를 사용해 계산됩니다.
+GAN loss는 conditional loss로 $D$의 위첨자 $c_x, c_y$는 클래스를 나타냅니다. loss는 해당 클래스의 binary prediction score를 사용해 계산됩니다. GAN loss로는 SAGAN, BigGAN에서도 사용했던 hinge version을 사용합니다. hinge loss에 대한 설명은 <a href="https://solee328.github.io/gan/2023/09/27/sagan_paper.html#h-loss" target="_blank">SAGAN - 논문리뷰</a>를 확인해주세요.
 
 $$
 \mathcal{L} _{GAN}(G, D) = E _{\mathrm{x}}[-\log D^{c_x}(x)] + E _{\mathrm{x}, \{\mathrm{y}_1, ..., \mathrm{y}_K\}}[\log(1-D^{c_y}(\bar{\mathrm{x}}))]
@@ -184,6 +181,8 @@ $$
 
 ### reconstruction
 Content Reconstruction loss는 입력 content 이미지와 입력 class 이미지 모두에 동일한 이미지를 사용하는 경우($K=1$), $G$가 입력과 동일한 출력 이미지를 생성하도록 유도합니다.
+
+대부분의 reconstruction loss는 cycle-consistency loss처럼 $G$에 입력 이미지 $x$와 condition $a$를 준 후, 다시 기존$x$의 condition인 condition $b$를 주어 생성한 이미지와 $x$를 비교했었는데($G(G(x, a), b)$ = x), 같은 condition을 주었을 때 입력과 출력이 동일한 이미지를 생성하는 것이 새롭다고 느껴졌습니다.
 
 $$
 \mathcal{L} _R(G) = E _{\mathrm{x}}[\|\mathrm{x} - G(\mathrm{x}, \{\mathrm{x}\})\|^1_1]
@@ -322,6 +321,9 @@ Figure 4에서, 우리는 animal dataset을 사용해 one-shot 설정(FUNIT-1)�
 > Table 5. object term에 대한 Ablation study. $\uparrow$ 는 숫자가 클 수록 좋고, $\downarrow$는 숫자가 작을 수록 좋다는 것을 의미합니다. FM은 feature matching loss term이 제거된 제안된 프레임워크의 설정을 나타내고 GP는 gradient panalty loss가 제거된 제안된 프레임워크 설정을 나타냅니다. 기본 설정은 대부분의 기준에서 더 나은 성능을 제공합니다. 이 실험에서 우리는 FUNIT-1 모델을 사용합니다.
 
 Table 5에서 loss term들이 Animal Face 데이터를 학습한 모델의 성능에 미치는 영향을 분석한 ablation study 결과를 나타냅니다. feature matching loss를 제거할때 성능이 조금 저하되며, zero-centered gradient penalty를 제거할 때는
+
+
+Mescheder et al[32]가 제안한 real gradient penalty regularization를 사용했습니다.
 
 gradient penalty가 본문에서는 설명이 없고 Appendix의 Table 5에서만 나와있어서 WGAN-GP의 gradient penalty인가 했는데, <a href="https://github.com/NVlabs/FUNIT/issues/18" target="_blank">공식 repo issue</a>에서 관련 글을 찾을 수 있었습니다. $D$ 학습 중 $D$의 loss를 사용해 gradient를 구하는 것까지는 WGAN-GP와 동일합니다. WGAN-GP에서는 (gradient - 1) 값을 제곱해 gradient penalty로 사용했다면 여기서는 pow로 exponential
 
