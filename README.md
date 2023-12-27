@@ -54,3 +54,5 @@ BigGAN<br>
 
 FUNIT<br>
 []
+
+CLIP<br>
