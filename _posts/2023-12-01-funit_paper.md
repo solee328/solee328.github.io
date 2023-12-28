@@ -247,27 +247,25 @@ StarGAN, UNIT, MUNIT, CycleGAN을 baseline 모델로 설정해 FUNIT과 성능�
   변환 결과 이미지를 두 판별 모델을 사용해 target class의 이미지로 인식할 수 있는지 확인합니다. Top1과 Top5 정확도를 모두 사용해 Top1-all, Top5-all, Top1-test, Top5-test 평가 지표를 사용해 baseline 모델과의 성능을 비교합니다.
 
 - **Content preservation**<br>
-  우리는 domain-invariant perceptual distance(DIPD)[19]를 사용해 content preservation(콘텐츠 보존) 성능을 정량화합니다. DIPD는 perceptual distance[22, 54]의 변형입니다. DIPD를 계산하기 위해, 우리는 우선 입력 content 이미지와 변환 결과 이미지에서 VGG[42] conv5 feature를 추출합니다. 우리는 그 다음 instance normalization[47]을 적용해 feature map의 평균과 분산을 제거합니다. 이 방식으로, 우리는 feature의 class-specific information(클래스 별 정보)를 필터링하고[18, 27], class-invariant similarity(유사성)에 초점을 맞출 수 있습니다. DIPD는 instance normalized feature 사이의 L2 distance로 계산됩니다.
+  <a href="https://arxiv.org/abs/1603.08155" target="_blank">Perceptual distance</a>를 변형한 domain-invarian perceptual distance(DIPD)를 사용해 content preservation, 콘텐츠 보존 성능을 정량화합니다.
 
-  Content preservation(콘텐츠 보존)은 domain-invariant(도메인 불변) perceptual distance(DIPD)[19]라고 불리는 perceptual distance[22, 54]의 변형을 기반으로 합니다. distance는 domain 변화[19]에 대항해 더 invariant한 두 개의 normalized된 VGG[42] Conv5 feature 사이의 L2 distance로 제공합니다.
+  DIPD를 계산하기 위해 content 이미지와 변환 결과 이미지에서 VGG conv5 feature를 추출한 후, <a href="https://arxiv.org/abs/1701.02096" target="_blank">instance normalization</a>를 적용해 feature map의 평균과 분산을 제거합니다. 이 방식으로 feature의 클래스 별 정보를 제거하고 클래스와 무관한 similarity에 초점을 맞출 수 있습니다. DIPD는 instance normalized feature 사이 L2 distance로 계산됩니다.
 
 
 - **Photorealism**<br>
-  우리는 이미지 생성 성능을 정량화하기 위해 널리 사용되는 inception score(IS)를 사용합니다. $p(t|\mathrm{y})$를 변환 결과 이미지 $\mathrm{y}$에 대한 클래스 라벨 $t$의 분포라고 가정합니다. Inception score 는 다음에 의해 계산됩니다.
+  실제와 같은 이미지를 생성했는지 성능을 정량화하기 위해 널리 사용되는 Inception Score(IS)를 사용합니다. $p(t|\mathrm{y})$를 변환 결과 이미지 $\mathrm{y}$에 대한 클래스 라벨 $t$의 분포라고 가정했을 때 Inception Score는 다음에 의해 계산됩니다.
 
   $$
   \mathrm{IS} _C=\exp(\mathrm{E} _{\mathrm{y}\sim p(\mathrm{y})}[\mathrm{KL}(p(t|\mathrm{y})|p(t))])
   $$
 
-  $p(t) = \int_y(p(t|\mathrm{y})d\mathrm{y}$입니다. Salimans et al.[40]에서는 Inception score가 신경망 생성 이미지의 시각적 품질과 양의 상관관계가 있다고 주장합니다.
-
-  inception scores(IS)[40]으로 측정됩니다. 변환 정확 측정을 위해 학습된 2개의 inception 판별 모델을 사용해 inception score를 보고하며, 각각 all과 test로 표시됩니다.
-
+  all, test 두가지 지표가 있기 때문에 2개의 학습된 inception 판별 모델을 사용해 IS를 계산합니다.
 
 - **Distribution matching**<br>
-  Frechet Inception Distance FID[17]는 두 이미지 셋 간의 유사성을 측정하도록 설계되었습니다. 우리는 ImageNet pretrain된 Inception-V3[45] 모델의 마지막 average pooling layer의 activation을 FID를 계산하기 위한 이미지의 feature vector로 사용합니다. 우리는 보지 못한 $|\mathbb{T}|$ class가 있으므로, source 이미지를 각 보지 못한 $|\mathbb{T}|$ 클래스로 변환하고 $|\mathbb{T}|$ 변환 결과 셋을 생성합니다. 각 $|\mathbb{T}|$ 변환 결과 셋에 대해, 우리는 ground truth 이미지들과의 FID를 계산합니다. 이를 통해 $|\mathbb{T}|$ FID score를 얻을 수 있습니다. $|\mathbb{T}|$ FID score의 평균은 mean FID(mFID)라고 하는 최종 distribution matching performance metric으로 사용됩니다.
+  두 이미지 간의 유사성을 측정하도록 설계된 <a href="https://arxiv.org/abs/1706.08500" target="_blank">Fréchet Inception Distance</a>를 사용해 distribution matching를 계산합니다.
 
-  Distribution matching은 FID(Fréchet Inception Distance)[17]를 기반으로 합니다. 우리는 각 $|\mathbb{T}|$ target class에 대한 FID를 계산하고 평균 FID(mFID)를 보고합니다.
+  ImageNet pretrain된 Inception-V3 모델의 마지막 average pooling layer의 activation을 FID를 계산하기 위한 featrue vector로 사용합니다. 학습 때 사용하지 않은 $|\mathbb{T}|$ class와 source 이미지를 $|\mathbb{T}|$ 클래스로 변환한 결과 셋 간의 FID를 계산해 $|\mathbb{T}|$ FID score를 얻을 수 있습니다. $|\mathbb{T}|$ FID score의 평균은 mean FID(mFID)라고 하는 최종 distribution matching performance metric으로 사용됩니다.
+
 
 ### 결과
 
@@ -276,10 +274,11 @@ StarGAN, UNIT, MUNIT, CycleGAN을 baseline 모델로 설정해 FUNIT과 성능�
 </div>
 > Table 1. fair, unfair baseline들과 성능 비교.  $\uparrow$ 는 큰 수가, $\downarrow$는 작은 수가 좋다는 것을 의미합니다.
 
-Table 1에서 볼 수 있듯이, FUNIT 프레임워크는 Animal Face와 North American Birds 데이터셋 모두에 대해 모든 성능 metric에서 few-shot unsupervised image-to-image translation에 대한 baseline들을 능가합니다. 표를 통해 FUNIT 모델의 성능이 $K$와 양의 상관 관계가 있음을 보여줍니다. $K$가 클수록 모든 metric의 개선하며, 가장 큰 성능 향상은 $K=1$에서 $K=5$까지 발생합니다.
+Table 1에서 볼 수 있듯이, FUNIT 프레임워크는 Animal Face와 North American Birds 데이터셋 모두에 대해 모든 성능 metric에서 few-shot unsupervised image-to-image translation에 대한 baseline들을 능가합니다. 표를 통해 FUNIT 모델의 성능이 $K$와 양의 상관 관계가 있음을 보여줍니다. $K$가 클수록 모든 metric의 개선하며, 가장 큰 성능 향상은 $K=1$에서 $K=5$일 때 발생합니다.
 
 Unfair 모델들은 2개의 도메인 변환만 가능하기 때문에 클래스 수에 따른 여러 개의 모델을 학습하지만, FUNIT은 단 1개의 모델만으로 가능하며 마찬가지로 단 1개의 모델을 사용하는 StarGAN-Fair-K가 있지만 성능의 차가 큼을 볼 수 있습니다. MUNIT이 Unfair 모델이지만 그나마 유사한 성능을 보여주네요.
 
+<br><br>
 
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/fd4659c8-679c-49fa-a246-3329d07288e9" width="700" height="750">
@@ -288,6 +287,7 @@ Unfair 모델들은 2개의 도메인 변환만 가능하기 때문에 클래스
 
 Figure 2에서 FUNIT-5에 의해 계산된 few-shot 변환 결과를 볼 수 있습니다. 입력 content 이미지 $\mathrm{x}$과 해당 출력 이미지 $\bar{\mathrm{x}}$에 있는 객체의 포즈는 대체로 동일하게 유지됩니다. 출력 이미지는 photorealistic하며 target 클래스의 이미지와 유사합니다.
 
+<br><br>
 
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/74775fd3-d7b5-4bc9-a5b0-23e95ac22ba6" width="600" height="600">
@@ -308,9 +308,9 @@ Figure 3에서 fair가 가능한 모델인 StarGAN과 FUNIT의 시각적 비교�
 </div>
 > Figure 7. Few-shot image translation performance vs North American Birds 데이터셋 학습 중 객체 클래스 사용 숫자
 
-Figure 4에서, 우리는 animal dataset을 사용해 one-shot 설정(FUNIT-1)에서 학습 셋의 source class 수를 변화시키는 것에 대한 성능을 분석합니다. 우리는 69개에서 119개 클래스까지 10개 간격으로 변화시켜 곡선을 표현합니다. 표시된 것과 같이, 성능은 변환 정확도, 이미지 품질 및 분포 일지 측면에서 객체 클래스 수와 양의 상관 관계가 있습니다. domain-invariant perceptual distance는 평평하게 유지됩니다. 이는 학습 중 더 많은 객체 클래스(다양성 증가)를 보는  FUNIT 모델이 테스트 중에 더 나은 성능을 보임을 보여줍니다. Appendix C에 제공된 bird dataset에서도 유사한 경향이 관찰됩니다.
+Figure 4에서는 animal dataset을 사용해 one-shot 설정(FUNIT-1)에서 학습 셋의 source class 수를 변화시키는 것에 대한 성능을 분석하며 69개에서 119개 클래스까지 10개 간격으로 변화시켜 곡선을 표현합니다. 표시된 것과 같이, 성능은 변환 정확도, 이미지 품질 및 분포 일지 측면에서 객체 클래스 수와 양의 상관 관계가 있습니다. domain-invariant perceptual distance는 평평하게 유지됩니다. 이는 학습 중 더 많은 객체 클래스(다양성 증가)를 보는 FUNIT 모델이 테스트 중에 더 나은 성능을 보임을 보여줍니다.
 
-우리는 few-shot 변환 성능이 animal face 변환 작업을 위한 학습 셋의 source class 수와 양의 상관관계가 있음을 보여줍니다. Figure 7에서 우리는 bird 변환 작업에서도 동일한 경향임을 보여줍니다. 구체적으로, 우리는 North American Birds 데이터 셋을 사용해 학습 셋에서 사용 가능한 source 클래스 수에 따른 제안된 모델의 성능을 보고합니다. 구체적으로, 우리는 North American Birds 데이터셋을 사용해 학습 셋에서 사용 가능한 source 클래스 수 대비 제안된 모델의 성능을 보고합니다. 우리는 source class 수를 189, 222, 289, 333, 389에서 444로 변경해 성능 점수를 표시합니다. 우리는 점수의 곡선이 메인 논문에 표시된 Animal Face 데이터셋의 곡선과 동일한 경향을 가진다는 것을 발견했습니다. 모델을 학습 중에 더 많은 수 의 source 클래스를 볼 때 test 중에 더 나은 성능을 발휘합니다.
+Figure 7의 bird 변환 작업에서도 동일한 경향임을 보여줍니다. North American Birds 데이터셋을 사용해 학습 셋에서 사용 가능한 source 클래스 수 대비 제안된 모델의 성능을 보고하며 source class 수를 189, 222, 289, 333, 389에서 444로 변경해 성능 점수를 표시합니다. animal 데이터셋과 마찬가지로 모델이 학습 중에 더 많은 수 의 source 클래스를 볼 때 test 중에 더 나은 성능을 발휘합니다.
 
 
 ### ablation study
