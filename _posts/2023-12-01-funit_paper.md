@@ -315,16 +315,25 @@ Figure 7의 bird 변환 작업에서도 동일한 경향임을 보여줍니다. 
 
 ### ablation study
 <div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/118c4e14-3052-49da-bf62-f044006ea74c" width="700" height="100">
+</div>
+> Table 4. content image rconstruction loss weight, $\lambda_R$에 대한 파라미터 민감도 문석. $\uparrow$ 는 숫자가 클 수록 좋고, $\downarrow$는 숫자가 작을 수록 좋다는 것을 의미합니다. 0.1의 값은 content preservation(콘텐츠 보존)과 translation accuracy(변환 정확도)의 좋은 균형(trade-off)를 제공하며, 이는 논문 전체에서 기본값으로 사용됩니다. 본 실험에서 FUNIT-1 모델을 사용합니다.
+
+Table 4에서 content image reconstruction loss의 weight가 Animal Face 데이터셋을 학습한 모델의 성능에 미치는 영향을 분석한 결과를 볼 수 있습니다. 저자들은 $\lambda_R$값이 클수록 translation accuracy(변환 정확도)가 낮아지지만, domain invariant perceptual distance가 작다는 것을 발견했으며,  $\lambda_R=0.1$이 좋은 절충안을 제공한다는 것을 보여주어 논문 전체 실험에서 default로 사용합니다.
+
+흥미롭게도, $\lambda_R=0.01$로 매우 작으면 content preservation 및 translation accuracy 모두에서 성능이 저하됩니다. 이는 content reconstruction loss가 학습을 regularize 하는 데 도움이 된다는 것을 나타낸다고 합니다.
+
+<br>
+
+
+<div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/0173bccf-390d-4d81-8896-aca94de3198f" width="700" height="90">
 </div>
 > Table 5. object term에 대한 Ablation study. $\uparrow$ 는 숫자가 클 수록 좋고, $\downarrow$는 숫자가 작을 수록 좋다는 것을 의미합니다. FM은 feature matching loss term이 제거된 제안된 프레임워크의 설정을 나타내고 GP는 gradient panalty loss가 제거된 제안된 프레임워크 설정을 나타냅니다. 기본 설정은 대부분의 기준에서 더 나은 성능을 제공합니다. 이 실험에서 우리는 FUNIT-1 모델을 사용합니다.
 
-Table 5에서 loss term들이 Animal Face 데이터를 학습한 모델의 성능에 미치는 영향을 분석한 ablation study 결과를 나타냅니다. feature matching loss를 제거할때 성능이 조금 저하되며, zero-centered gradient penalty를 제거할 때는
+Table 5에서 loss term들이 Animal Face 데이터를 학습한 모델의 성능에 미치는 영향을 분석한 ablation study 결과를 볼 수 있습니다. feature matching loss를 제거할때 성능이 조금 저하되며, zero-centered gradient penalty를 제거할 때는 크게 성능이 저하되는 것을 볼 수 있습니다.
 
-
-Mescheder et al[32]가 제안한 real gradient penalty regularization를 사용했습니다.
-
-gradient penalty가 본문에서는 설명이 없고 Appendix의 Table 5에서만 나와있어서 WGAN-GP의 gradient penalty인가 했는데, <a href="https://github.com/NVlabs/FUNIT/issues/18" target="_blank">공식 repo issue</a>에서 관련 글을 찾을 수 있었습니다. $D$ 학습 중 $D$의 loss를 사용해 gradient를 구하는 것까지는 WGAN-GP와 동일합니다. WGAN-GP에서는 (gradient - 1) 값을 제곱해 gradient penalty로 사용했다면 여기서는 pow로 exponential
+gradient penalty는 <a href="https://arxiv.org/abs/1801.04406" target="_blank">real gradient penalty regularization</a>를 사용하며 공식 코드에서는 `calc_grad2`에서 코드를 확인할 수 있었습니다. $D$ 학습 중 $D$의 loss를 사용해 gradient를 구하는 것까지는 WGAN-GP의 gradient penalty와 동일합니다. WGAN-GP에서는 (gradient - 1) 값을 제곱해 gradient penalty로 사용했다면 zero-centered gradient penalty에서는 pow(2)로 grad 값 자체를 제곱해 사용합니다.
 
 ```python
 def calc_grad2(self, d_out, x_in):
@@ -341,24 +350,13 @@ def calc_grad2(self, d_out, x_in):
 ```
 
 
-<div>
-  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/118c4e14-3052-49da-bf62-f044006ea74c" width="700" height="100">
-</div>
-> Table 4. content image rconstruction loss weight, $\lambda_R$에 대한 파라미터 민감도 문석. $\uparrow$ 는 숫자가 클 수록 좋고, $\downarrow$는 숫자가 작을 수록 좋다는 것을 의미합니다. 0.1의 값은 content preservation(콘텐츠 보존)과 translation accuracy(변환 정확도)의 좋은 균형(trade-off)를 제공하며, 이는 논문 전체에서 기본값으로 사용됩니다. 본 실험에서 FUNIT-1 모델을 사용합니다.
-
-Table 4에서 content image reconstruction loss의 weight가 Animal Face 데이터셋을 학습한 모델의 성능에 미치는 영향을 분석한 결과를 볼 수 있습니다. 저자들은 $\lambda_R$값이 클수록 translation accuracy(변환 정확도)가 낮아지지만, domain invariant perceptual distance가 작다는 것을 발견했으며,  $\lambda_R=0.1$이 좋은 절충안을 제공한다는 것을 보여주어 논문 전체 실험에서 default로 사용합니다.
-
-흥미롭게도, $\lambda_R=0.01$로 매우 작으면 content preservation 및 translation accuracy 모두에서 성능이 저하됩니다. 이는 content reconstruction loss가 학습을 regularize 하는 데 도움이 된다는 것을 나타낸다고 합니다.
-
 ### vs AdaIN style transfer
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/95cb0c43-8d28-4241-8580-939cd6c41628" width="600" height="400">
 </div>
 > Figure 9. few-shot image translation을 위한 FUNIT-1 대 AdaIN style transfer[18]
 
- few-shot animal face 변환 작업을 위한 AdaIN transfer network[18]를 학습하고 Appendix E에서 성능을 비교합니다. 우리는 style transfer network가 입력 동물의 texture(질감)을 변경할 수 있지만, 모양을 변경하지 않다는 것을 발견했습니다. 결과적으로, 변환 결과는 입력과 여전히 유사합니다.
-
- Figure 9에서, 우리는 few-shot animal face translation task를 위해 제안된 방법을 AdaIN style transfer[18]과 비교합니다. AdaIN style transfer 방법은 입력 동물의 질감을 변경할 수 있지만 외형은 변경하지 않습니다. 결과적으로 변환 결과는 외형 측면에서 입력과 여전히 유사합니다.
+ few-shot animal face 변환 작업을 위한 <a href="https://arxiv.org/abs/1703.06868" target="_blank">AdaIN transfer network</a>를 학습하고 성능을 비교합니다. AdaIN은 입력 동물의 texture(질감)을 변경할 수 있지만, 모양을 변경하지 않아 결과적으로, 변환 결과의 외형은 입력과 여전히 유사합니다. 그에 반해 FUNIT은 외형과 질감 모두를 변환하고 있는 것을 볼 수 있습니다.
 
 
 ### Failuer case
@@ -371,6 +369,11 @@ Figure 10은 제안된 알고리즘의 몇 가지 실패 사례를 보여줍니�
 
 
 ### few-shot classification
+
+우리는 FUNIT 생성 모델에서 생성한 이미지를 사용해 Animal Faces와 North American Birds 데이터셋을 사용한 one-shot 설정에서 새로운 클래스를 판별모델로 학습하는 실험을 수행합니다. Hariharan et al. [15]의 설정에 따라, 우리는 각각 train, validation, test 셋이 있는 5개의 다른 one-shot 셋을 구성합니다. 학습 셋은 $|\mathbb{T}|$ 개의 이미지로 구성되어 있으며, 각 $|\mathbb{T}|$ 개의 test 클래스 마다 하나의 이미지를 가지고 있습니다. validation 셋은 각 테스트 클래스마다 20~100개로 구성됩니다. 테스트 셋은 나머지 테스트 클래스 이미지로 구성됩니다.
+
+우리는 FUNIT 생성모델을 사용해 classification  학습 셋의 이미지를 class 이미지 입력으로 사용하고 source class에서 무작위로 샘플링된 이미지를 content 이미지 입력으로 사용해 합성 학습 셋(synthetic training set)을 생성합니다. 우리는 원본 학습 셋과 합성 학습 셋을 모두 사용해 판별 모델을 학습합니다. 우리의 방법을 새로운 클래스에 해당하는 final layer feature를 생성하는 방법을 학습하는 Hariharan et al. [15]의 Shrink and Hallucinate (S&H) method와 비교합니다. 우리는 source class 이미지만을 사용해 사전학습된 10-layer ResNet 네트워크를 feature extractor로 사용해 target class에 대해 linear classifier를 학습합니다. 우리는 생성된 이미지의 loss를 실제 이미지의 loss보다 더 낮도록 weight를 부여하는 것이 중요합니다. 우리는 validation 셋을 사용해 weight 값과 weight decay에 대한 철저한 grid search를 수행하고 test 셋에 대한 성능을 보고합니다. 또한 공정한 비교를 위해서, 우리는 S&H method에 대해서도 동일한 철저한 검색을 수행합니다.
+
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/d04a8ddb-d580-486e-877e-78663db67599" width="500" height="200">
 </div>
@@ -378,15 +381,29 @@ Figure 10은 제안된 알고리즘의 몇 가지 실패 사례를 보여줍니�
 
 animal과 bird 데이터셋을 사용해  few-shot classification에 대한 FUNIT을 평가합니다. 특히, 우리는 학습된 FUNIT 모델을 사용해 각 few-shot 클래스에 대한 N(1, 50 100까지 다양) 이미지를 생성하고 생성된 이미지를 사용해 판별 모델을 학습합니다. 우리는 FUNIT으로 학습된 판별 모델이 feature hallucination(특징 환각) 을 기반으로 샘플 갯수 N에 대한 제어 가능한 변수를 가지고 있는 Hariharan et al.[15]에서 제안한 few-shot classification 접근 방식보다 지속적으로 더 나은 성능을 달성한다는 것을 발견했습니다.
 
-Appendix H 정리
+본 논문의 Table 3에서, 우리는 2가지 어려운 세분화된 classification task에 대해 생성된 샘플 수(즉, FUNIT 이미지, S&H의 features)에 따라 우리의 방법과 S&H method [15]의 성능을 보고합니다. 두 방법 모두 새로운 클래스 당 하나의 실제 이미지만 사용하는 기존 classifier보다 성능이 뛰어납니다. 생성된 이미지를 사용한 우리의 방식이 생성된 feature를 사용하는 S&H method보다 2% 뛰어납니다.
+
+기본 10-layer ResNet 네트워크는 90개의 epoch 동안 학습되며, 초기 learning rate는 0.1로 30 epoch마다 10배씩 감소합니다. 새로운 클래스에 대한 linear classifier의 weight decay는 0.000001과 0.1 사이의 log 간격(logarithmically)으로 15 개의 값 중에서 선택됩니다. 생성된 이미지와 feature에 대한 loss 승수(multiplier)는 0.001과 1 사이의 로그 간격 값 7개 중에서 선택됩니다. weight decay와 loss multipiler는 split #1를 학습하는 동안 얻은 최상의 validation set accuracy를 기반으로 선택됩니다. 이후 weight decay와 loss multiplier의 값을 고정해 나머지 2~5 split에 사용합니다. fixed feature를 사용해 L2 regularized를 학습하는 task는 convex optimization 문제이며, 우리는 L-BFGS 알고리즘으로 line search를 사용하므로 특정 learning rate를 지정할 필요가 없다.
+
+```
+table 6
+```
+> Table 6. 생성된 이미지와 1개의 실제 이미지를 사용할 때 Animal Faces 데이터셋의 5 split에 대한 One-shot 정확도. split 당 5개의 독립적인 실행에 대한 평균 정확도가 보고됩니다(생성 이미지는 매번 다른 셋에서 샘플링됨).
+
+```
+table 7
+```
+> Table 7. 생성된 이미지와 1개의 실제 이미지를 사용할 때 North American Birds 데이터셋의 5 split에 대한 One-shot 정확도. split 당 5개의 독립적인 실행에 대한 평균 정확도가 보고됩니다(생성 이미지는 매번 다른 셋에서 샘플링됨).
+
+Table 6, 7에서, Animal Faces와 North American Birds 데이터셋의 5 one-shot split 모두에 대한 one-shot learning의 test 정확도와 관련 차이를 보고합니다. 모든 실험에서, 우리는 이미지 생성 모델을 학습하는데 사용된 클래스 셋에 대해 학습된 네트워크의 feature extractor를 사용해 새로운 classifier layer만 학습합니다.
+
+우리의 방법은 또한 기존의 few-shot classification 접근법과 함께 사용할 수 있습니다. Table  8에서, 우리는 주어진 few 학습 샘플에서 얻은 가장 가까운 prototype(cluster center)의 라벨을 테스트 샘플에 할당하는 Prototypical Networks method [43]를 사용해 얻은 1-shot classification 결과를 보여줍니다. 분명하게, 우리의 방식으로 생성한 샘플을 test time에 클래스당 제공된 샘플 1개와 함께 사용해 class prototype representation을 계산하는 것은 두 데이터 셋 모두에서 5.5% 이상의 정확도를 향상시키는데 도움이 됩니다.
+
 <br><br>
 
 ---
 
 ## 정리
-
-Appendix G, J 정리
-
 우리는 최초의 few-shot unsupervised image-to-image translation 프레임워크를 소개했습니다. 우리는 few shot 생성 기능이 학습 중에 보이는 객체 클래스의 수와 양의 상관관계가 있으며  test time 동안 제공되는 target class의 장(shot) 수와도 양의 상관관계가 있음을 보여주었습니다.
 
 FUNIT은 test time에 사용할 수 있는 모델에게 보여주지 않은 클래스의 몇몇 이미지를 이용해 source class의 이미지를 본 적 없는 객체 클래스의 유사한 이미지로 변환하는 방법을 배울 수 있다는 경험적 증거를 제공했습니다. FUNIT은 새로운 기능을 달성하기는 하지만 다음 몇가지 조건에 따라 작동합니다. 1) content encoder $E_x$가 class-invariant latent code(클래스 불변 잠재 코드)  $z_x$를 학습할 수 있는지 여부, 2)class encode $E_y$가 class-specific latent code(클래스 별 잠재 코드) $z_y$를 학습할 수 있는지 여부, 그리고 가장 중요한 것은 3) class encoder $E_y$가 보이지 않는 객체 클래스의 이미지로 일반화할 수 있는지 여부 입니다.
@@ -397,3 +414,5 @@ FUNIT은 test time에 사용할 수 있는 모델에게 보여주지 않은 클�
 ---
 
 FUNIT 논문에 대해 살펴봤습니다. 끝까지 봐주셔서 감사합니다:)
+
+Few shot과 관련된 GAN으로는 처음 읽게 된 논문이였습니다. 다음에는 zero shot에도 도전해보겠습니다! 다음 논문 리뷰 글에서 뵙겠습니다:wink:
