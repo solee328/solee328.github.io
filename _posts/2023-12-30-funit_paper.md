@@ -202,7 +202,7 @@ $$
 ---
 
 
-## 실험
+## 실험 설정
 
 ### Dataset
 FUNIT은 실험을 위해 4가지 데이터셋을 사용했으며 내용은 아래와 같습니다.
@@ -267,7 +267,7 @@ StarGAN, UNIT, MUNIT, CycleGAN을 baseline 모델로 설정해 FUNIT과 성능�
   ImageNet pretrain된 Inception-V3 모델의 마지막 average pooling layer의 activation을 FID를 계산하기 위한 featrue vector로 사용합니다. 학습 때 사용하지 않은 $|\mathbb{T}|$ class와 source 이미지를 $|\mathbb{T}|$ 클래스로 변환한 결과 셋 간의 FID를 계산해 $|\mathbb{T}|$ FID score를 얻을 수 있습니다. $|\mathbb{T}|$ FID score의 평균은 mean FID(mFID)라고 하는 최종 distribution matching performance metric으로 사용됩니다.
 
 
-### 결과
+## 결과
 
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/0b354d0b-6396-49b3-b882-0bdc83ee4574" width="800" height="580">
@@ -369,50 +369,67 @@ Figure 10은 제안된 알고리즘의 몇 가지 실패 사례를 보여줍니�
 
 
 ### few-shot classification
+논문에서는 학습한 FUNIT의 classification을 few-shot classification로서의 성능을 실험합니다.
 
-우리는 FUNIT 생성 모델에서 생성한 이미지를 사용해 Animal Faces와 North American Birds 데이터셋을 사용한 one-shot 설정에서 새로운 클래스를 판별모델로 학습하는 실험을 수행합니다. Hariharan et al. [15]의 설정에 따라, 우리는 각각 train, validation, test 셋이 있는 5개의 다른 one-shot 셋을 구성합니다. 학습 셋은 $|\mathbb{T}|$ 개의 이미지로 구성되어 있으며, 각 $|\mathbb{T}|$ 개의 test 클래스 마다 하나의 이미지를 가지고 있습니다. validation 셋은 각 테스트 클래스마다 20~100개로 구성됩니다. 테스트 셋은 나머지 테스트 클래스 이미지로 구성됩니다.
+Animal Faces와 North American Birds 데이터셋을 사용해 few-shot 클래스에 대한 $N$(1, 50, 100) 이미지를 생성하고 생성된 이미지를 사용해 판별 모델을 학습합니다. 학습에 대한 설정은 비교 모델인 <a href="https://arxiv.org/abs/1606.02819" target="_blank">Shrink and Hallucinate (S&H)</a>의 설정을 따라 train, validation, test set으로 나눠 사용합니다. train set은 $|\mathbb{T}|$개의 class로 구성되며 class마다 생성된 $N$개의 이미지를 가지고 있습니다.
 
-우리는 FUNIT 생성모델을 사용해 classification  학습 셋의 이미지를 class 이미지 입력으로 사용하고 source class에서 무작위로 샘플링된 이미지를 content 이미지 입력으로 사용해 합성 학습 셋(synthetic training set)을 생성합니다. 우리는 원본 학습 셋과 합성 학습 셋을 모두 사용해 판별 모델을 학습합니다. 우리의 방법을 새로운 클래스에 해당하는 final layer feature를 생성하는 방법을 학습하는 Hariharan et al. [15]의 Shrink and Hallucinate (S&H) method와 비교합니다. 우리는 source class 이미지만을 사용해 사전학습된 10-layer ResNet 네트워크를 feature extractor로 사용해 target class에 대해 linear classifier를 학습합니다. 우리는 생성된 이미지의 loss를 실제 이미지의 loss보다 더 낮도록 weight를 부여하는 것이 중요합니다. 우리는 validation 셋을 사용해 weight 값과 weight decay에 대한 철저한 grid search를 수행하고 test 셋에 대한 성능을 보고합니다. 또한 공정한 비교를 위해서, 우리는 S&H method에 대해서도 동일한 철저한 검색을 수행합니다.
+새로운 클래스에 해당하는 final layer feature를 생성하는 방법을 학습하는 <a href="https://arxiv.org/abs/1606.02819" target="_blank">Shrink and Hallucinate (S&H)</a> 방법을 비교 모델로 사용합니다. S&H 방법은 source class 이미지만을 사용해 사전학습된 10-layer ResNet 네트워크를 feature extractor로 사용해 target class에 대해 linear classifier를 학습합니다.
+
+공정한 비교를 위해서 FUNIT과 S&H 모두에 대해서 validation 셋을 사용해 weight 값과 weight decay에 대한 철저한 grid search를 수행하고 test 셋에 대한 성능을 확인했다고 합니다. 실험에 사용한 hyperparameter와 search 알고리즘은 Appendix H를 참고해주세요.
+
+<br>
 
 <div>
-  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/d04a8ddb-d580-486e-877e-78663db67599" width="500" height="200">
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/d04a8ddb-d580-486e-877e-78663db67599" width=470 height="180">
 </div>
 > Table 3. 분할에 걸쳐 평균을 나타낸 few-shot classification 정확도
 
-animal과 bird 데이터셋을 사용해  few-shot classification에 대한 FUNIT을 평가합니다. 특히, 우리는 학습된 FUNIT 모델을 사용해 각 few-shot 클래스에 대한 N(1, 50 100까지 다양) 이미지를 생성하고 생성된 이미지를 사용해 판별 모델을 학습합니다. 우리는 FUNIT으로 학습된 판별 모델이 feature hallucination(특징 환각) 을 기반으로 샘플 갯수 N에 대한 제어 가능한 변수를 가지고 있는 Hariharan et al.[15]에서 제안한 few-shot classification 접근 방식보다 지속적으로 더 나은 성능을 달성한다는 것을 발견했습니다.
+위 실험을 기반으로 FUNIT으로 학습된 판별 모델이 feature hallucination(특징 환각)을 기반으로 샘플 갯수 N에 대한 제어 가능한 변수를 가지고 있는 S&H few-shot classification 접근 방식보다 지속적으로 더 나은 성능을 달성한다는 것을 확인할 수 있습니다.
 
-본 논문의 Table 3에서, 우리는 2가지 어려운 세분화된 classification task에 대해 생성된 샘플 수(즉, FUNIT 이미지, S&H의 features)에 따라 우리의 방법과 S&H method [15]의 성능을 보고합니다. 두 방법 모두 새로운 클래스 당 하나의 실제 이미지만 사용하는 기존 classifier보다 성능이 뛰어납니다. 생성된 이미지를 사용한 우리의 방식이 생성된 feature를 사용하는 S&H method보다 2% 뛰어납니다.
+Table 3에서, classification task에 대해 생성된 샘플 수(즉, FUNIT 이미지, S&H의 features)에 따라 FUNIT과 <a href="https://arxiv.org/abs/1606.02819" target="_blank">S&H</a> 방법의 성능을 보고합니다. 두 방법 모두 새로운 클래스 당 하나의 실제 이미지만 사용하는 기존 classifier보다 성능이 뛰어나지만, 생성된 이미지를 사용한 FUNIT이 생성된 feature를 사용하는 S&H method보다 2% 뛰어납니다.
 
-기본 10-layer ResNet 네트워크는 90개의 epoch 동안 학습되며, 초기 learning rate는 0.1로 30 epoch마다 10배씩 감소합니다. 새로운 클래스에 대한 linear classifier의 weight decay는 0.000001과 0.1 사이의 log 간격(logarithmically)으로 15 개의 값 중에서 선택됩니다. 생성된 이미지와 feature에 대한 loss 승수(multiplier)는 0.001과 1 사이의 로그 간격 값 7개 중에서 선택됩니다. weight decay와 loss multipiler는 split #1를 학습하는 동안 얻은 최상의 validation set accuracy를 기반으로 선택됩니다. 이후 weight decay와 loss multiplier의 값을 고정해 나머지 2~5 split에 사용합니다. fixed feature를 사용해 L2 regularized를 학습하는 task는 convex optimization 문제이며, 우리는 L-BFGS 알고리즘으로 line search를 사용하므로 특정 learning rate를 지정할 필요가 없다.
+<br>
 
-```
-table 6
-```
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/ed4d9ba9-b544-4792-bdaf-78ff39f248e5" width=600 height="180">
+</div>
 > Table 6. 생성된 이미지와 1개의 실제 이미지를 사용할 때 Animal Faces 데이터셋의 5 split에 대한 One-shot 정확도. split 당 5개의 독립적인 실행에 대한 평균 정확도가 보고됩니다(생성 이미지는 매번 다른 셋에서 샘플링됨).
 
-```
-table 7
-```
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/a2d1a5ea-d947-4a2e-b9b4-9cbb338aa590" width=600 height="180">
+</div>
 > Table 7. 생성된 이미지와 1개의 실제 이미지를 사용할 때 North American Birds 데이터셋의 5 split에 대한 One-shot 정확도. split 당 5개의 독립적인 실행에 대한 평균 정확도가 보고됩니다(생성 이미지는 매번 다른 셋에서 샘플링됨).
 
-Table 6, 7에서, Animal Faces와 North American Birds 데이터셋의 5 one-shot split 모두에 대한 one-shot learning의 test 정확도와 관련 차이를 보고합니다. 모든 실험에서, 우리는 이미지 생성 모델을 학습하는데 사용된 클래스 셋에 대해 학습된 네트워크의 feature extractor를 사용해 새로운 classifier layer만 학습합니다.
+Table 6, 7에서, Animal Faces와 North American Birds 데이터셋의 5 one-shot split 모두에 대한 one-shot learning의 test 정확도와 관련 차이를 보고합니다. 모든 실험에서, 이미지 생성 모델을 학습하는데 사용된 클래스 셋에 대해 학습된 네트워크의 feature extractor를 사용해 새로운 classifier layer만 학습합니다.
 
-우리의 방법은 또한 기존의 few-shot classification 접근법과 함께 사용할 수 있습니다. Table  8에서, 우리는 주어진 few 학습 샘플에서 얻은 가장 가까운 prototype(cluster center)의 라벨을 테스트 샘플에 할당하는 Prototypical Networks method [43]를 사용해 얻은 1-shot classification 결과를 보여줍니다. 분명하게, 우리의 방식으로 생성한 샘플을 test time에 클래스당 제공된 샘플 1개와 함께 사용해 class prototype representation을 계산하는 것은 두 데이터 셋 모두에서 5.5% 이상의 정확도를 향상시키는데 도움이 됩니다.
+<br>
 
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/a5ff90d4-f893-440e-88e6-1f8a8afa2e78" width=400 height="130">
+</div>
+> Table 8. prototypical networks method로 생성된 이미지를 사용할 때 Animal Face와 North American birds 데이터셋에 대한 5 splits의 평균 1-shot 정확도
+
+또한 FUNIT은 기존의 few-shot classification 접근법과 함께 사용할 수 있습니다. Table  8에서, 우리는 주어진 few 학습 샘플에서 얻은 가장 가까운 prototype(cluster center)의 라벨을 테스트 샘플에 할당하는 <a href="https://arxiv.org/abs/1703.05175" target="_blank">Prototypical Networks method</a>를 사용해 얻은 1-shot classification 결과를 보여줍니다. FUNIT으로 생성한 샘플을 test time에 클래스당 제공된 샘플 1개와 함께 사용해 class prototype representation을 계산하는 것은 두 데이터 셋 모두에서 5.5% 이상의 정확도를 향상시키는데 도움이 됩니다.
 <br><br>
 
 ---
 
 ## 정리
-우리는 최초의 few-shot unsupervised image-to-image translation 프레임워크를 소개했습니다. 우리는 few shot 생성 기능이 학습 중에 보이는 객체 클래스의 수와 양의 상관관계가 있으며  test time 동안 제공되는 target class의 장(shot) 수와도 양의 상관관계가 있음을 보여주었습니다.
+FUNIT은 최초의 few-shot unsupervised image-to-image translation 프레임워크입니다. 우리는 few shot 생성 기능이 학습 중에 보이는 객체 클래스의 수와 양의 상관관계가 있으며  test time 동안 제공되는 target class의 장(shot) 수와도 양의 상관관계가 있음을 보여주었습니다.
 
-FUNIT은 test time에 사용할 수 있는 모델에게 보여주지 않은 클래스의 몇몇 이미지를 이용해 source class의 이미지를 본 적 없는 객체 클래스의 유사한 이미지로 변환하는 방법을 배울 수 있다는 경험적 증거를 제공했습니다. FUNIT은 새로운 기능을 달성하기는 하지만 다음 몇가지 조건에 따라 작동합니다. 1) content encoder $E_x$가 class-invariant latent code(클래스 불변 잠재 코드)  $z_x$를 학습할 수 있는지 여부, 2)class encode $E_y$가 class-specific latent code(클래스 별 잠재 코드) $z_y$를 학습할 수 있는지 여부, 그리고 가장 중요한 것은 3) class encoder $E_y$가 보이지 않는 객체 클래스의 이미지로 일반화할 수 있는지 여부 입니다.
+FUNIT은 test time에 사용할 수 있는 모델에게 보여주지 않은 클래스의 몇몇 이미지를 이용해 source class의 이미지를 본 적 없는 객체 클래스의 유사한 이미지로 변환하는 방법을 배울 수 있다는 경험적 증거를 제공했습니다. FUNIT은 새로운 기능을 달성하기는 하지만 다음 몇가지 조건에 따라 작동합니다.
+- content encoder $E_x$가 class-invariant latent code $z_x$를 학습할 수 있는지 여부
+- class encode $E_y$가 class-specific latent code $z_y$를 학습할 수 있는지 여부
+- class encoder $E_y$가 보이지 않는 객체 클래스의 이미지로 일반화할 수 있는지 여부
 
-우리는 새로운 클래스가 source 클래스와 기각적으로 관련되어 있을 때 이런 조건을 충족하기 쉽다은 것을 관찰했습니다. 그러나 새로운 객체 클래스의 외관이 source class의 와괸과 극적으로 다를 때 FUNIT은 Figure 5와 같이 변환을 실패합니다. 이 경우 FUNIT은 입력 content 이미지의 색상이 변경된 버전으로 생성하는 경향이 있습니다. 이는 바람직하지 않지만 외형 분포가 극적으로 변경되었기 때문에 이해할 수 있습니다. 이 한계를 해결하는 것이 우리의 향후 작업입니다.
+새로운 클래스가 source 클래스와 기각적으로 관련되어 있을 때 이런 조건을 충족하기 쉬우나, 새로운 객체 클래스의 외관이 source class의 와괸과 극적으로 다를 때 FUNIT은 Figure 5와 같이 변환을 실패합니다. 이 경우 FUNIT은 입력 content 이미지의 색상이 변경된 버전으로 생성하는 경향이 있습니다. 이는 바람직하지 않지만 외형 분포가 극적으로 변경되었기 때문에 이해할 수 있습니다. 이 한계를 해결하는 것이 Future Work입니다.
 <br><br>
 
 ---
 
+<br>
 FUNIT 논문에 대해 살펴봤습니다. 끝까지 봐주셔서 감사합니다:)
 
-Few shot과 관련된 GAN으로는 처음 읽게 된 논문이였습니다. 다음에는 zero shot에도 도전해보겠습니다! 다음 논문 리뷰 글에서 뵙겠습니다:wink:
+Few shot과 관련된 GAN으로는 처음 읽게 된 논문이였습니다. target class의 이미지 수 $N$이 클 수록 좋다진다고는 하지만 $N=1$일 때도 작동하는 것이 인상이 깊었습니다. 학습까지 진행해보고 싶은데 NVIDIA DGX1의 8개의 V100 GPU로 돌렸다는 걸 보고 학습 실험은 무리라는 걸 깨달아서 슬퍼졌습니다:confused:
+
+하지만 아직 남은 논문들은 많고 많으니까요! 열심히 최신 논문들까지 논문 리뷰를 진행해보겠습니다:muscle:
