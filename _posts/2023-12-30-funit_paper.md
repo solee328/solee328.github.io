@@ -70,11 +70,11 @@ $G$의 입력으로 받은 content 이미지 $\mathrm{x}$는 Content Encoder $E_
 Content Encoder $E_x$, Class Encoder $E_y$, Decoder $F_x$를 사용해 식을 아래와 같이 표현할 수 있습니다.
 
 $$
-\begin{align}
+\begin{align*}
 \bar{\mathrm{x}} &= G(\mathrm{x}, \{ y_1, ..., y_K \})
 \\ &= F_x(\mathrm{z}_x, \mathrm{z}_y)
 \\ &= F_x(E_x(\mathrm{x}), E_y(\{ y_1, ..., y_K\}))
-\end{align}
+\end{align*}
 $$
 
 
@@ -118,13 +118,11 @@ AdaIN(Adaptive Instance Normalization) residual blocks는 <a href="https://arxiv
 MUNIT의 AdaIN에서는 style code를 MLP에 입력으로 넣어 style mean, std를 계산해 AdaIN residual block에서 affine transform parameter로 계산에 사용했습니다. 이와 비슷하게 FUNIT에서는 class code를 MLP로 계산해 AdaIN residual block의 affine transform parameter로 사용하기 위해 $i=1, 2$인 평균 분산 벡터($\mu_i, \sigma^2_i$)로 decode합니다.
 
 그 다음 content code를 AdaIN residual block으로 계산하는데, AdaIN은 normalization layer로 AdaIN을 사용하는 residual block입니다. normalization 과정이 affine transform($f(x)=Ax+b$) 형식을 가집니다.
-
-<br>
+<br><br>
 
 $$
 AdaIN(x, y) = \sigma(y) (\frac{x-\mu(x)}{\sigma(x)}) + \mu(y)
 $$
-
 
 수식에서 보이는 것처럼, 우선 content code($x$)의 channel을 zero mean, unit variance를 갖도록 normalize합니다. 이후 class code($y$)로 계산한 $\mu_i$(bias), $\sigma^2_i$(scale)를 사용해 global appearance information을 얻을 수 있도록 사용합니다. 이 과정으로 content의 class 정보를 없애고 class code의 class 정보를 표현하도록 합니다.
 
@@ -146,14 +144,14 @@ residual block으로 preactivation ResNet-blocks이라고도 불리는 activatio
 판별 모델은 시작과 끝은 Convolutional layer를 사용하며 중간에 10개의 activation first residual blocks로 이루어져 아래와 같은 구조를 갖습니다.
 
 <div>
-  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/1b3cf091-ec40-48b0-bc7a-275d4c31ea49" width="520" height="170">
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/1b3cf091-ec40-48b0-bc7a-275d4c31ea49" width="400" height="130">
 </div>
 
 <br>
 
-마지막은 $|\mathbb{S}|$로 feature map의 channel을 조절하는데, $|\mathbb{S}|$는 source 클래스의 수입니다.
+마지막은 $\vert\mathbb{S}\vert$로 feature map의 channel을 조절하는데, $\vert\mathbb{S}\vert$는 source 클래스의 수입니다.
 
-FUNIT은 $D$는 하나의 이미지를 $|\mathbb{S}|$개의 클래스에 대해 해당 클래스에 속하는 이미지인지 아닌지 판단합니다. StarGAN처럼 이미지가 진짜인지 가짜인지 판별하는 layer, 이미지의 클래스를 판별하는 layer를 따로 두는 것이 아니라 하나의 layer로 처리하는  $|\mathbb{S}|$-class classification 문제를 다룹니다.
+FUNIT은 $D$는 하나의 이미지를 $\vert\mathbb{S}\vert$개의 클래스에 대해 해당 클래스에 속하는 이미지인지 아닌지 판단합니다. StarGAN처럼 이미지가 진짜인지 가짜인지 판별하는 layer, 이미지의 클래스를 판별하는 layer를 따로 두는 것이 아니라 하나의 layer로 처리하는  $\vert\mathbb{S}\vert$-class classification 문제를 다룹니다.
 
 source class $c_x$에 해당하는 이미지를 판별할 때, 다른 클래스에 대한 판단 결과는 사용하지 않습니다. 예시로, source class $c_x$의 실제 이미지에 대해 $D$를 업데이트할 때, $c_x$번째 출력이 False로 $G$에서 생성한 이미지로 판단했다면 $D$에게 불이익(penalize)를 줍니다. 반대로 source class $c_x$에 대한 변환된 출력인 가짜 이미지에 대해 $c_x$번째 출력이 True 일때도, $D$에게 불이익을 줍니다.
 
@@ -253,7 +251,7 @@ StarGAN, UNIT, MUNIT, CycleGAN을 baseline 모델로 설정해 FUNIT과 성능�
 
 
 - **Photorealism**<br>
-  실제와 같은 이미지를 생성했는지 성능을 정량화하기 위해 널리 사용되는 Inception Score(IS)를 사용합니다. $p(t|\mathrm{y})$를 변환 결과 이미지 $\mathrm{y}$에 대한 클래스 라벨 $t$의 분포라고 가정했을 때 Inception Score는 다음에 의해 계산됩니다.
+  실제와 같은 이미지를 생성했는지 성능을 정량화하기 위해 널리 사용되는 Inception Score(IS)를 사용합니다. $p(t\vert\mathrm{y})$를 변환 결과 이미지 $\mathrm{y}$에 대한 클래스 라벨 $t$의 분포라고 가정했을 때 Inception Score는 다음에 의해 계산됩니다.
 
   $$
   \mathrm{IS} _C=\exp(\mathrm{E} _{\mathrm{y}\sim p(\mathrm{y})}[\mathrm{KL}(p(t|\mathrm{y})|p(t))])
@@ -264,7 +262,7 @@ StarGAN, UNIT, MUNIT, CycleGAN을 baseline 모델로 설정해 FUNIT과 성능�
 - **Distribution matching**<br>
   두 이미지 간의 유사성을 측정하도록 설계된 <a href="https://arxiv.org/abs/1706.08500" target="_blank">Fréchet Inception Distance</a>를 사용해 distribution matching를 계산합니다.
 
-  ImageNet pretrain된 Inception-V3 모델의 마지막 average pooling layer의 activation을 FID를 계산하기 위한 featrue vector로 사용합니다. 학습 때 사용하지 않은 $|\mathbb{T}|$ class와 source 이미지를 $|\mathbb{T}|$ 클래스로 변환한 결과 셋 간의 FID를 계산해 $|\mathbb{T}|$ FID score를 얻을 수 있습니다. $|\mathbb{T}|$ FID score의 평균은 mean FID(mFID)라고 하는 최종 distribution matching performance metric으로 사용됩니다.
+  ImageNet pretrain된 Inception-V3 모델의 마지막 average pooling layer의 activation을 FID를 계산하기 위한 featrue vector로 사용합니다. 학습 때 사용하지 않은 $\vert\mathbb{T}\vert$ class와 source 이미지를 $\vert\mathbb{T}\vert$ 클래스로 변환한 결과 셋 간의 FID를 계산해 $\vert\mathbb{T}\vert$ FID score를 얻을 수 있습니다. $\vert\mathbb{T}\vert$ FID score의 평균은 mean FID(mFID)라고 하는 최종 distribution matching performance metric으로 사용됩니다.
 
 
 ## 결과
@@ -371,7 +369,7 @@ Figure 10은 제안된 알고리즘의 몇 가지 실패 사례를 보여줍니�
 ### few-shot classification
 논문에서는 학습한 FUNIT의 classification을 few-shot classification로서의 성능을 실험합니다.
 
-Animal Faces와 North American Birds 데이터셋을 사용해 few-shot 클래스에 대한 $N$(1, 50, 100) 이미지를 생성하고 생성된 이미지를 사용해 판별 모델을 학습합니다. 학습에 대한 설정은 비교 모델인 <a href="https://arxiv.org/abs/1606.02819" target="_blank">Shrink and Hallucinate (S&H)</a>의 설정을 따라 train, validation, test set으로 나눠 사용합니다. train set은 $|\mathbb{T}|$개의 class로 구성되며 class마다 생성된 $N$개의 이미지를 가지고 있습니다.
+Animal Faces와 North American Birds 데이터셋을 사용해 few-shot 클래스에 대한 $N$(1, 50, 100) 이미지를 생성하고 생성된 이미지를 사용해 판별 모델을 학습합니다. 학습에 대한 설정은 비교 모델인 <a href="https://arxiv.org/abs/1606.02819" target="_blank">Shrink and Hallucinate (S&H)</a>의 설정을 따라 train, validation, test set으로 나눠 사용합니다. train set은 $\vert\mathbb{T}\vert$개의 class로 구성되며 class마다 생성된 $N$개의 이미지를 가지고 있습니다.
 
 새로운 클래스에 해당하는 final layer feature를 생성하는 방법을 학습하는 <a href="https://arxiv.org/abs/1606.02819" target="_blank">Shrink and Hallucinate (S&H)</a> 방법을 비교 모델로 사용합니다. S&H 방법은 source class 이미지만을 사용해 사전학습된 10-layer ResNet 네트워크를 feature extractor로 사용해 target class에 대해 linear classifier를 학습합니다.
 
