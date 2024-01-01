@@ -10,7 +10,7 @@ use_math: true
 
 이번 논문은 FUNIT이라 불리는 <a href="https://arxiv.org/abs/1905.01723" target="_blank">Few-shot Unsupervised Image-to-Image Translation</a>입니다 :lemon:
 
-Unsupervised image-to-image translation 모델들의 단점으로 특정 클래스에 대한 입력을 수행하기 위해서는 해당 클래스에 대한 수많은 데이터셋을 학습하는 것을 꼽았습니다. FUNIT은 few-shot을 적용해 새로운 클래스의 이미지 단 몇장으로도 가능한 이미지 변환을 제안합니다. 또한 이 과정에서 few-shot classification 모델의 성능과 기존의 unsupervised image-to-image translation 설정에서도 기존의 state-of-the-art 모델들을 능가하며 성능을 입증합니다.
+Unsupervised image-to-image translation 모델들의 단점인 특정 클래스에 대한 입력을 수행하기 위해서는 해당 클래스에 대한 수많은 데이터셋을 학습하는 것을 해결하고자, FUNIT은 few-shot을 적용해 새로운 클래스의 이미지 단 몇장으로도 가능한 이미지 변환을 제안합니다. 또한 Few-shot unsupervised image-to-image translation task뿐만 아니라 few-shot classification task와 기존의 unsupervised image-to-image translation task 설정에서도 기존의 state-of-the-art 모델들을 능가하며 성능을 입증합니다.
 
 지금부터 FUNIT에 대해 살펴보겠습니다 :eyes:
 <br><br>
