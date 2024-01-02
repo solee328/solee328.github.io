@@ -20,9 +20,9 @@ Unsupervised image-to-image translation 모델들의 단점인 특정 클래스�
 ## 소개
 <a href="https://arxiv.org/abs/1606.07536" target="_blank">CoGANs</a>, <a href="https://arxiv.org/abs/1703.00848" target="_blank">UNIT</a>, <a href="https://arxiv.org/abs/1703.05192" target="_blank">DiscoGAN</a>, <a href="https://arxiv.org/abs/1703.10593" target="_blank">CycleGAN</a>과 같은 연구들은 Unsupervised Image-to-Image Translation 설정에서 이미지 클래스를 변환하는 것에 성공했지만, 새로운 클래스에 대한 소수의 이미지들에서 일반화(generalization)은 불가능합니다. 이 모델들이 이미지 변환을 수행하기 위해서는 모든 클래스의 대규모 학습 셋이 필요합니다.
 
-그에 반해, 인간은 일반화(generalization)이 뛰어납니다. 이전에 보지 못했던 이국적인 동물의 사진이 주어져있을 때, 우리는 그 동물이 다른 자세로 있는 상상이 가능합니다. 예를 들어, 서 있는 호랑이를 처음 본 사람이더라도 일생 동안 본 다른 동물들에 대한 정보를 통해 호랑이가 누워있는 모습을 상상하는 것에 어려움이 없습니다.
+Unsupervised Image-to-Image Translation task의 모델들과는 달리 인간은 일반화(generalization) 능력은 뛰어납니다. 이전에 보지 못했던 이국적인 동물의 사진이 주어져있을 때, 우리는 그 동물이 다른 자세로 있는 상상이 가능합니다. 예를 들어, 서 있는 호랑이를 처음 본 사람이더라도 일생 동안 본 다른 동물들에 대한 정보를 통해 호랑이가 누워있는 모습을 상상하는 것에 어려움이 없습니다.
 
-FUNIT은 이런 격차를 줄이기 위한 시도로, test time에 학습(train time) 중 보지 못한 몇 장의 target class의 이미지들을 source class(학습 데이터셋에 포함된 특정 클래스)의 이미지와 유사한 이미지로 매핑하는 것을 목표로 하는 Few-shot UNsupervised Image-to-Image Translation(FUNIT) 프레임워크를 제안합니다.
+FUNIT은 이런 격차를 줄이기 위한 시도로, test time에 학습 중에 모델이 보지 못한 클래스의 이미지인 target class의 이미지들을 학습 데이터셋에 포함된 클래스 이미지들인 source class의 이미지와 유사한 이미지로 매핑하는 것을 목표로 하는 Few-shot UNsupervised Image-to-Image Translation(FUNIT) 프레임워크를 제안합니다.
 <br><br>
 
 ---
@@ -42,10 +42,10 @@ $$
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/89815e02-3724-4a8e-b528-3e739900b117" width="800" height="200">
 </div>
-> Figure 1: <b>Training.</b>. 학습 셋은 여러 객체 클래스(source class)로 이루어져 있습니다. FUNIT 모델이 source 클래스 사이 이미지를 변환하도록 학습시킵니다.<br>
+> Figure 1: <b>Training.</b> 학습 셋은 여러 객체 클래스(source class)로 이루어져 있습니다. FUNIT 모델이 source 클래스 사이 이미지를 변환하도록 학습시킵니다.<br>
 <b>Deployment.</b> 학습된 모델이 학습 중에 target class의 이미지를 본 적이 없음에도 불구하고 source class의 이미지를 target class와 유사한 이미지로 변환합니다. FUNIT 생성 모델은 1) content 이미지와 2) target class 이미지 셋, 2가지 입력을 사용합니다. target class 이미지와 유사한 입력 이미지의 변환을 생성하는 것을 목표로 합니다.
 
-Figure 1의 Training에서 볼 수 있듯, $G$는 content 이미지 $\mathrm{x}$와 target class($c_y$)의 $K$개의 이미지를 입력으로 받습니다. 입력 받은 Content 이미지 $\mathrm{x}$가 클래스 $c_y$를 가지며 $\mathrm{x}$의 구조를 가질 수 있도록 결과를 생성합니다.
+Figure 1의 Training에서 볼 수 있듯, $G$는 content 이미지 $\mathrm{x}$와 target class($c_y$)의 $K$개의 이미지를 입력으로 받습니다. 입력 받은 Content 이미지 $\mathrm{x}$가 클래스 $c_y$의 style을 가지며 $\mathrm{x}$의 구조를 가질 수 있도록 결과를 생성합니다.
 
 $\mathbb{S}$가 학습 데이터 셋(source class), $\mathbb{T}$가 target class 셋을 나타낼 때, 학습 단계(training time)에서 $G$는 $c_x, c_y \in \mathbb{S}$이고 $c_s \not= c_y$인 2개의 랜덤 추출된 source class 사이를 변환하는 방법을 학습합니다.
 
@@ -59,15 +59,15 @@ Test 단계(testing time)에서, $G$는 학습하지 않은 target class $c \in 
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/5ec156d3-b711-4935-a912-453332779b24" width="800" height="500">
 </div>
-> Figure 6. 생성 모델 구조 시각화. 변환 결과  $\bar{\mathrm{x}}$를 생성하기 위해, 생성 모델은 클래스 이미지들 $y_1, ..., y_k$에서 추출된 class latent code $\mathrm{z}_y$와 입력 content 이미지에서 추출된 content latent code $\mathrm{z}_x$를 결합합니다. 비선형성(nonlinearity)와 정규화(normalization)연산은 시각화에 포함되지 않습니다.
+> Figure 6. 생성 모델 구조 시각화. 변환 결과  $\bar{\mathrm{x}}$를 생성하기 위해, 생성 모델은 클래스 이미지들 $y_1, ..., y_k$(target class)에서 추출된 class latent code $\mathrm{z}_y$와 입력 content 이미지에서 추출된 content latent code $\mathrm{z}_x$를 결합합니다. 비선형성(nonlinearity)와 정규화(normalization)연산은 시각화에 포함되지 않습니다.
 
-few-shot 이미지 변환 모델인 FUNIT의 생성 모델은 Figure 6의 시각화에서 표현된 것처럼 Content Encoder $E_x$, Class Encoder $E_y$, Decoder $F_x$ 3개의 subnetwork로 이루어져 있습니다. 각 block에 표시된 숫자는 해당 layer의 filter수를 내타냅니다. 네트워크에 포함된 activation과 normalization 연산은 시각화에 포함되지 않았습니다.
+few-shot 이미지 변환 모델인 FUNIT의 생성 모델은 Figure 6의 시각화에서 표현된 것처럼 Content Encoder $E_x$, Class Encoder $E_y$, Decoder $F_x$ 3개의 subnetwork로 이루어져 있습니다. 각 block에 표시된 숫자는 해당 layer의 filter수를 내타냅니다. Figure 6의 설명에 씌여있는 것처럼 네트워크에 포함된 activation과 normalization은 Figure 6에 표현되지 않았습니다.
 
 $G$의 입력으로 받은 content 이미지 $\mathrm{x}$는 Content Encoder $E_x$로,  target class($c_y$)의 $K$개의 이미지는 Class Encoder $E_y$에 입력합니다. $E_x$는 객체의 자세와 같은 class invariant latent representation인 Content Code를 추출하고 $E_y$는 객체의 외형과 같은 class specific latent representation인 Class Code을 추출하는 것을 목표로 합니다.
 
 2개의 Encoder가 추출한 code들을 Decoder $F_x$에 입력으로 넣으며,$F_x$는 결과 $\bar{\mathrm{x}}$를 생성합니다. 이때 AdaIN layer에 content code, class code 모두가 사용되며, class code가 객체 외형과 같은 global look을 결정하고 content code가 눈, 코, 입 위치와 같은 local struction을 결정합니다.
 
-Content Encoder $E_x$, Class Encoder $E_y$, Decoder $F_x$를 사용해 식을 아래와 같이 표현할 수 있습니다.
+Content Encoder $E_x$, Class Encoder $E_y$, Decoder $F_x$를 사용해 결과 이미지 $\bar{\mathrm{x}}$를 아래와 같이 표현할 수 있습니다.
 
 $$
 \begin{align*}
@@ -86,9 +86,7 @@ $$
 
 Content Encoder는 여러 개의 2D convolutional layer와 residual block 으로 구성됩니다. Content Encoder는 입력 content 이미지 $x$를 content latent code $z_x$에 매핑하는 것이 목적입니다. feature map인 content code는 3번의 stride=2인 down sampling convolution을 거치며 width, height가 입력의 1/8을 가집니다. 각 layer에서 instance normlization과 ReLU activation이 사용됩니다.
 
-content code는 $\mathrm{x}$의 클래스와는 관계없는 $\mathrm{x}$의 content 정보(class-invariant content information) encode 하도록 설계되었습니다.
-
-content code는 위치에 대한 정보는 encode 해야하지만, 클래스 별 외형은 encode하지 않아야 합니다. 예시로 위 그림의 강아지의 귀, 눈, 코의 위치는 content code에 정보가 있어야 하지만 귀의 모양이나 색깔은 정보가 포함되지 않도록 해야합니다.
+content code는 $\mathrm{x}$의 클래스와는 관계없는 $\mathrm{x}$의 content 정보(class-invariant content information)를 encode 하도록 설계되었습니다. content code는 위치에 대한 정보는 encode 해야하지만, 클래스 별 외형은 encode하지 않아야 합니다. 예시로 위 그림의 강아지의 귀, 눈, 코의 위치는 content code에 정보가 있어야 하지만 귀의 모양이나 색깔은 정보가 포함되지 않도록 해야합니다.
 
 
 #### Class Encoder
@@ -98,7 +96,7 @@ content code는 위치에 대한 정보는 encode 해야하지만, 클래스 별
 > Figure 6의 Class Encoder 부분
 
 
-Class Encoder는 VGG와 같은 네트워크를 사용해 $K$개 이미지를 개별적인 intermediate latent code로 만든 후, 이 latent code를 element-wise mean 값을 결과 값으로 출력해 최종 class latent code $z_y$를 만듭니다. 각 layer에서 ReLU activation이 사용됩니다.
+Class Encoder는 VGG와 같은 네트워크를 사용해 $K$개 이미지를 개별적인 intermediate latent code로 만든 후, latent code들의 element-wise mean인 평균 값을 결과 값으로 출력해 최종 class latent code $z_y$를 만듭니다. 각 layer에서 ReLU activation이 사용됩니다.
 
 class code는 $K$개의 클래스 이미지 집합을 클래스 별 정보(class-specific)를 encode하도록 설계되었습니다. 예시로 위 그림의 class code는 털의 질감, 몸의 색깔, 눈의 모양과 같이 사자의 외형에 대한 정보를 가지고 있어야 합니다.
 
@@ -111,20 +109,20 @@ class code는 $K$개의 클래스 이미지 집합을 클래스 별 정보(class
 > Figure 6의 Decoder 부분
 
 
-Decoder는 content code와 class code를 입력으로 받아 $G$의 결과인 $\bar{\mathrm{x}}$를 생성합니다. AdaIN residual block과 nearest neighbor upscale convolution layer로 구성되며 AdaIN residual block을 제외하고 각 layer에서 instance normalization과 ReLU activation을 사용합니다.
+Decoder는 content code와 class code를 입력으로 받아 $G$의 결과인 $\bar{\mathrm{x}}$를 생성합니다. AdaIN residual block과 nearest neighbor upscale convolution layer로 구성되며 AdaIN residual block을 제외한 각 layer에서 instance normalization과 ReLU activation을 사용합니다.
 
 AdaIN(Adaptive Instance Normalization) residual blocks는 <a href="https://arxiv.org/abs/1804.04732" target="_blank">MUNIT</a>에서 사용한 것과 유사하며 <a href="https://solee328.github.io/gan/2023/06/09/munit_code.html#h-adain-origin" target="_blank">MUNIT(2) - 논문 구현</a>에서 자세한 설명을 볼 수 있습니다!
 
-MUNIT의 AdaIN에서는 style code를 MLP에 입력으로 넣어 style mean, std를 계산해 AdaIN residual block에서 affine transform parameter로 계산에 사용했습니다. 이와 비슷하게 FUNIT에서는 class code를 MLP로 계산해 AdaIN residual block의 affine transform parameter로 사용하기 위해 $i=1, 2$인 평균 분산 벡터($\mu_i, \sigma^2_i$)로 decode합니다.
+MUNIT의 AdaIN에서는 style code를 MLP에 입력으로 넣어 style mean, std를 계산해 AdaIN residual block의 affine transform parameter로 계산에 사용했습니다. 이와 비슷하게 FUNIT에서는 class code를 MLP로 계산해 AdaIN residual block의 affine transform parameter로 사용하며 $i=1, 2$인 평균 분산 벡터($\mu_i, \sigma^2_i$)로 decode합니다.
 
-그 다음 content code를 AdaIN residual block으로 계산하는데, AdaIN은 normalization layer로 AdaIN을 사용하는 residual block입니다. normalization 과정이 affine transform($f(x)=Ax+b$) 형식을 가집니다.
+그 다음 content code를 AdaIN residual block으로 계산하는데, AdaIN은 normalization layer로 Affine transform을 사용하는 residual block으로 affine transform parameter로 계산한 $\mu, \sigma$를 대입하면 아래의 수식이 됩니다.
 <br><br>
 
 $$
 AdaIN(x, y) = \sigma(y) (\frac{x-\mu(x)}{\sigma(x)}) + \mu(y)
 $$
 
-수식에서 보이는 것처럼, 우선 content code($x$)의 channel을 zero mean, unit variance를 갖도록 normalize합니다. 이후 class code($y$)로 계산한 $\mu_i$(bias), $\sigma^2_i$(scale)를 사용해 global appearance information을 얻을 수 있도록 사용합니다. 이 과정으로 content의 class 정보를 없애고 class code의 class 정보를 표현하도록 합니다.
+우선 content code($x$)의 channel을 zero mean, unit variance를 갖도록 normalize합니다. 이후 class code($y$)로 계산한 $\mu_i$(bias), $\sigma^2_i$(scale)를 사용해 global appearance information을 얻을 수 있도록 사용합니다. 이 과정으로 content의 class 정보를 없애고 class code의 class 정보를 표현하도록 합니다.
 
 AdaIN 이후에는 upscale convolution으로 feature map을 결과 이미지 $\bar{\mathrm{x}}$을 계산합니다.
 
