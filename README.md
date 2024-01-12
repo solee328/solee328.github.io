@@ -58,4 +58,7 @@ FUNIT<br>
 Nerf<br>
 []
 
+Diffusion<br>
+[]
+
 CLIP<br>
