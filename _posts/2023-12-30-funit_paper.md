@@ -178,7 +178,7 @@ $$
 ### reconstruction
 Content Reconstruction loss는 입력 content 이미지와 입력 class 이미지 모두에 동일한 이미지를 사용하는 경우($K=1$), $G$가 입력과 동일한 출력 이미지를 생성하도록 유도합니다.
 
-대부분의 reconstruction loss는 cycle-consistency loss처럼 $G$에 입력 이미지 $x$와 condition $a$를 준 후, 다시 기존$x$의 condition인 condition $b$를 주어 생성한 이미지와 $x$를 비교했었는데($G(G(x, a), b)$ = x), 같은 condition을 주었을 때 입력과 출력이 동일한 이미지를 생성하는 것이 새롭다고 느껴졌습니다.
+대부분의 reconstruction loss는 cycle-consistency loss처럼 $G$에 입력 이미지 $x$와 condition $a$를 준 후, 다시 기존 $x$의 condition인 condition $b$를 주어 생성한 이미지와 $x$를 비교했었는데($G(G(x, a), b)$ = x), contetn, style에 같은 condition을 주었을 때 입력과 동일한 이미지를 생성하도록 해 loss로 사용하는 것이 새롭다고 느껴졌습니다.
 
 $$
 \mathcal{L} _R(G) = E _{\mathrm{x}}[\|\mathrm{x} - G(\mathrm{x}, \{\mathrm{x}\})\|^1_1]
@@ -186,7 +186,7 @@ $$
 
 
 ### feature matching
-$D$의 마지막 layer(prediction layer)를 제거한 $D_f$라는 feature extractor를 구성해 변환 결과 $\bar{x}$와 클래스 이미지 $\{y_1, ..., y_k\}$의 feature를 계산해 차이를 최소화합니다. $D_f$에 입력으로 클래스 이미지와 변환 결과 이미지를 주었을 때 feature map 간의 차이가 없어 변환 결과가 클래스 이미지와 같은 클래스로 인식되도록 합니다.
+$D$의 마지막 layer(prediction layer)를 제거한 $D_f$라는 feature extractor를 구성해 변환 결과 $\bar{x}$와 클래스 이미지 $\{y_1, ..., y_k\}$의 feature를 계산해 차이를 최소화합니다. $D_f$에 입력으로 클래스 이미지와 변환 결과 이미지를 주었을 때 $D_f$ 결과 feature map 간의 차이가 없어 변환 결과가 클래스 이미지와 같은 클래스로 인식되도록 합니다.
 
 $$
 \mathcal{L} _F(G) = E _{\mathrm{x}, \{\mathrm{y}_1, ...,\mathrm{y}_K\}}[\|D_f(\bar{\mathrm{x}}) - \sum_k \frac{D_f(\mathrm{y}_k)}{K}\|^1_1]
@@ -204,7 +204,7 @@ $$
 FUNIT은 실험을 위해 4가지 데이터셋을 사용했으며 내용은 아래와 같습니다.
 
 - **Animal Faces**<br>
-  ImageNet의 149개 육식 동물 클래스의 이미지를 사용합니다. 우선 10000장의 육식 동물 얼굴의 bounding box를 수동으로 라벨을 지정한 뒤 이를 사용해 <a href="https://arxiv.org/abs/1504.08083" target="_blank">Faster RCNN</a>을 학습해 detection score 점수가 높은 bounding box만을 사용해 117574장의 동물 얼굴 데이터셋을 구축합니다. 119개의 source class, 30개의 target class로 나누어 사용합니다.
+  ImageNet의 149개 육식 동물 클래스의 이미지를 사용합니다. 우선 10000장의 육식 동물 얼굴의 bounding box를 수동으로 라벨을 지정한 뒤 이를 사용해 <a href="https://arxiv.org/abs/1504.08083" target="_blank">Faster RCNN</a>을 학습합니다. 이후 detection score 점수가 높은 bounding box만을 사용해 117574장의 동물 얼굴 데이터셋을 구축합니다. 119개의 source class, 30개의 target class로 나누어 사용합니다.
 
 - **Birds**<br>
   <a href="https://ieeexplore.ieee.org/document/7298658" target="_blank">Bird Recognition large scale dataset</a>을 사용하며 북아메리카 새 555종에 대한 48527장의 이미지를 사용합니다. 444개의 source class, 111개의 target class로 나누어 사용합니다.
@@ -304,18 +304,18 @@ Figure 3에서 fair가 가능한 모델인 StarGAN과 FUNIT의 시각적 비교�
 </div>
 > Figure 7. Few-shot image translation performance vs North American Birds 데이터셋 학습 중 객체 클래스 사용 숫자
 
-Figure 4에서는 animal dataset을 사용해 one-shot 설정(FUNIT-1)에서 학습 셋의 source class 수를 변화시키는 것에 대한 성능을 분석하며 69개에서 119개 클래스까지 10개 간격으로 변화시켜 곡선을 표현합니다. 표시된 것과 같이, 성능은 변환 정확도, 이미지 품질 및 분포 일지 측면에서 객체 클래스 수와 양의 상관 관계가 있습니다. domain-invariant perceptual distance는 평평하게 유지됩니다. 이는 학습 중 더 많은 객체 클래스(다양성 증가)를 보는 FUNIT 모델이 테스트 중에 더 나은 성능을 보임을 보여줍니다.
+Figure 4에서는 animal dataset을 사용해 one-shot 설정(FUNIT-1)에서 학습 셋의 source class 수를 변화시키는 것에 대한 성능을 분석하며 69개에서 119개 클래스까지 10개 간격으로 변화시켜 곡선을 표현합니다. 표시된 것과 같이, 성능은 translation accuracy, photorealism, distribution mathcing에 대해 객체 클래스 수와 양의 상관 관계가 있습니다. Domain-invariant perceptual distance는 평평하게 유지되는 것으로 보아 Content preservation 성능을 대체적으로 비슷한 걸 확인할 수 있습니다. Figure 4를 통해 학습 중 더 많은 객체 클래스(다양성 증가)를 보는 FUNIT 모델이 테스트 중에 더 나은 성능을 보임을 보여줍니다.
 
-Figure 7의 bird 변환 작업에서도 동일한 경향임을 보여줍니다. North American Birds 데이터셋을 사용해 학습 셋에서 사용 가능한 source 클래스 수 대비 제안된 모델의 성능을 보고하며 source class 수를 189, 222, 289, 333, 389에서 444로 변경해 성능 점수를 표시합니다. animal 데이터셋과 마찬가지로 모델이 학습 중에 더 많은 수 의 source 클래스를 볼 때 test 중에 더 나은 성능을 발휘합니다.
+Figure 7의 bird 변환 작업에서도 동일한 경향을 나타낸다는 것을 볼 수 있습니다. North American Birds 데이터셋을 사용해 학습 셋에서 사용 가능한 source 클래스 수 대비 제안된 모델의 성능을 볼 수 있으며 source class 수를 189, 222, 289, 333, 389에서 444로 변경해 성능 점수를 표시합니다. animal 데이터셋과 마찬가지로 모델이 학습 중에 더 많은 수 의 source 클래스를 볼 때 test 중에 더 나은 성능을 발휘합니다.
 
 
 ### ablation study
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/118c4e14-3052-49da-bf62-f044006ea74c" width="700" height="100">
 </div>
-> Table 4. content image rconstruction loss weight, $\lambda_R$에 대한 파라미터 민감도 문석. $\uparrow$ 는 숫자가 클 수록 좋고, $\downarrow$는 숫자가 작을 수록 좋다는 것을 의미합니다. 0.1의 값은 content preservation(콘텐츠 보존)과 translation accuracy(변환 정확도)의 좋은 균형(trade-off)를 제공하며, 이는 논문 전체에서 기본값으로 사용됩니다. 본 실험에서 FUNIT-1 모델을 사용합니다.
+> Table 4. content image reconstruction loss weight, $\lambda_R$에 대한 파라미터 민감도 문석. $\uparrow$ 는 숫자가 클 수록 좋고, $\downarrow$는 숫자가 작을 수록 좋다는 것을 의미합니다. 0.1의 값은 content preservation(콘텐츠 보존)과 translation accuracy(변환 정확도)의 좋은 균형(trade-off)를 제공하며, 이는 논문 전체에서 기본값으로 사용됩니다. 본 실험에서 FUNIT-1 모델을 사용합니다.
 
-Table 4에서 content image reconstruction loss의 weight가 Animal Face 데이터셋을 학습한 모델의 성능에 미치는 영향을 분석한 결과를 볼 수 있습니다. 저자들은 $\lambda_R$값이 클수록 translation accuracy(변환 정확도)가 낮아지지만, domain invariant perceptual distance가 작다는 것을 발견했으며,  $\lambda_R=0.1$이 좋은 절충안을 제공한다는 것을 보여주어 논문 전체 실험에서 default로 사용합니다.
+Table 4에서 content image reconstruction loss의 weight가 Animal Face 데이터셋을 학습한 모델의 성능에 미치는 영향을 분석한 결과를 볼 수 있습니다. 저자들은 $\lambda_R$값이 클수록 translation accuracy(변환 정확도)가 낮아지지만, domain invariant perceptual distance가 작다는 것을 발견했으며,  $\lambda_R=0.1$이 좋은 절충안을 제공한다는 것을 보여주어 논문 전체 실험에서 기본 값으로 사용합니다.
 
 흥미롭게도, $\lambda_R=0.01$로 매우 작으면 content preservation 및 translation accuracy 모두에서 성능이 저하됩니다. 이는 content reconstruction loss가 학습을 regularize 하는 데 도움이 된다는 것을 나타낸다고 합니다.
 
@@ -350,9 +350,9 @@ def calc_grad2(self, d_out, x_in):
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/95cb0c43-8d28-4241-8580-939cd6c41628" width="600" height="400">
 </div>
-> Figure 9. few-shot image translation을 위한 FUNIT-1 대 AdaIN style transfer[18]
+> Figure 9. few-shot image translation을 위한 FUNIT-1 vs AdaIN style transfer
 
- few-shot animal face 변환 작업을 위한 <a href="https://arxiv.org/abs/1703.06868" target="_blank">AdaIN transfer network</a>를 학습하고 성능을 비교합니다. AdaIN은 입력 동물의 texture(질감)을 변경할 수 있지만, 모양을 변경하지 않아 결과적으로, 변환 결과의 외형은 입력과 여전히 유사합니다. 그에 반해 FUNIT은 외형과 질감 모두를 변환하고 있는 것을 볼 수 있습니다.
+ few-shot animal face 변환 작업을 위한 <a href="https://arxiv.org/abs/1703.06868" target="_blank">AdaIN transfer network</a>를 학습하고 성능을 비교합니다. AdaIN은 입력 동물의 texture(질감)을 변경할 수 있지만 모양을 변경하지 않아 결과적으로 변환 결과의 외형은 입력과 여전히 유사합니다. 그에 반해 FUNIT은 외형과 질감 모두를 변환하고 있는 것을 볼 수 있습니다.
 
 
 ### Failuer case
@@ -361,7 +361,7 @@ def calc_grad2(self, d_out, x_in):
 </div>
 > Figure 10. 실패 사례들. 제안된 FUNIT 모델의 전형적인 실패 사례에는 hybrid objects generation(예. column 1, 2, 3, 4), 입력 content 이미지 무시(예. column 5, 6), 입력 클래스 이미지 무시(예. column 7)이 포함됩니다.
 
-Figure 10은 제안된 알고리즘의 몇 가지 실패 사례를 보여줍니다. 사례는 hybrid class generation, 입력 content 이미지 무시, 입력 클래스 이미지 무시 등을 포함하고 있습니다.
+Figure 10은 제안된 알고리즘의 몇 가지 실패 사례를 보여줍니다. 사례로 hybrid class generation(column 1, 2, 3, 4), 입력 content 이미지 무시(column 5, 6), 입력 클래스 이미지 무시(column 7)를 볼 수 있습니다.
 
 
 ### few-shot classification
@@ -369,7 +369,7 @@ Figure 10은 제안된 알고리즘의 몇 가지 실패 사례를 보여줍니�
 
 Animal Faces와 North American Birds 데이터셋을 사용해 few-shot 클래스에 대한 $N$(1, 50, 100) 이미지를 생성하고 생성된 이미지를 사용해 판별 모델을 학습합니다. 학습에 대한 설정은 비교 모델인 <a href="https://arxiv.org/abs/1606.02819" target="_blank">Shrink and Hallucinate (S&H)</a>의 설정을 따라 train, validation, test set으로 나눠 사용합니다. train set은 $\vert\mathbb{T}\vert$개의 class로 구성되며 class마다 생성된 $N$개의 이미지를 가지고 있습니다.
 
-새로운 클래스에 해당하는 final layer feature를 생성하는 방법을 학습하는 <a href="https://arxiv.org/abs/1606.02819" target="_blank">Shrink and Hallucinate (S&H)</a> 방법을 비교 모델로 사용합니다. S&H 방법은 source class 이미지만을 사용해 사전학습된 10-layer ResNet 네트워크를 feature extractor로 사용해 target class에 대해 linear classifier를 학습합니다.
+새로운 클래스에 해당하는 final layer feature를 생성하는 방법을 사용하는 <a href="https://arxiv.org/abs/1606.02819" target="_blank">Shrink and Hallucinate (S&H)</a> 방법을 비교 모델로 사용합니다. S&H 방법은 source class 이미지만을 사용해 pretrain된 10-layer ResNet 네트워크를 feature extractor로 사용해 target class에 대해 linear classifier를 학습합니다.
 
 공정한 비교를 위해서 FUNIT과 S&H 모두에 대해서 validation 셋을 사용해 weight 값과 weight decay에 대한 철저한 grid search를 수행하고 test 셋에 대한 성능을 확인했다고 합니다. 실험에 사용한 hyperparameter와 search 알고리즘은 Appendix H를 참고해주세요.
 
@@ -405,20 +405,20 @@ Table 6, 7에서, Animal Faces와 North American Birds 데이터셋의 5 one-sho
 </div>
 > Table 8. prototypical networks method로 생성된 이미지를 사용할 때 Animal Face와 North American birds 데이터셋에 대한 5 splits의 평균 1-shot 정확도
 
-또한 FUNIT은 기존의 few-shot classification 접근법과 함께 사용할 수 있습니다. Table  8에서, 우리는 주어진 few 학습 샘플에서 얻은 가장 가까운 prototype(cluster center)의 라벨을 테스트 샘플에 할당하는 <a href="https://arxiv.org/abs/1703.05175" target="_blank">Prototypical Networks method</a>를 사용해 얻은 1-shot classification 결과를 보여줍니다. FUNIT으로 생성한 샘플을 test time에 클래스당 제공된 샘플 1개와 함께 사용해 class prototype representation을 계산하는 것은 두 데이터 셋 모두에서 5.5% 이상의 정확도를 향상시키는데 도움이 됩니다.
+또한 FUNIT은 기존의 few-shot classification 접근법과 함께 사용할 수 있습니다. Table  8에서 주어진 few 학습 샘플에서 얻은 가장 가까운 prototype(cluster center)의 라벨을 테스트 샘플에 할당하는 <a href="https://arxiv.org/abs/1703.05175" target="_blank">Prototypical Networks method</a>를 사용해 얻은 1-shot classification 결과를 보여줍니다. FUNIT으로 생성한 샘플을 test time에 클래스당 제공된 샘플 1개와 함께 사용해 class prototype representation을 계산하는 것은 두 데이터 셋 모두에서 5.5% 이상의 정확도를 향상시키는데 도움이 됩니다.
 <br><br>
 
 ---
 
 ## 정리
-FUNIT은 최초의 few-shot unsupervised image-to-image translation 프레임워크입니다. 우리는 few shot 생성 기능이 학습 중에 보이는 객체 클래스의 수와 양의 상관관계가 있으며  test time 동안 제공되는 target class의 장(shot) 수와도 양의 상관관계가 있음을 보여주었습니다.
+FUNIT은 최초의 few-shot unsupervised image-to-image translation 프레임워크입니다. 논문에서는 few shot 생성 기능이 학습 중에 보이는 객체 클래스의 수와 양의 상관관계가 있으며 test time 동안 제공되는 target class의 장(shot) 수와도 양의 상관관계가 있음을 보여주었습니다.
 
-FUNIT은 test time에 사용할 수 있는 모델에게 보여주지 않은 클래스의 몇몇 이미지를 이용해 source class의 이미지를 본 적 없는 객체 클래스의 유사한 이미지로 변환하는 방법을 배울 수 있다는 경험적 증거를 제공했습니다. FUNIT은 새로운 기능을 달성하기는 하지만 다음 몇가지 조건에 따라 작동합니다.
+FUNIT은 test time에 모델에게 보여주지 않은 몇몇 이미지를 이용해 source class의 이미지를 target class인 본 적 없는 클래스의 유사한 이미지로 변환하는 방법을 배울 수 있다는 경험적 증거를 제공했습니다. FUNIT은 새로운 기능을 달성하기는 하지만 다음 몇가지 조건에 따라 작동합니다.
 - content encoder $E_x$가 class-invariant latent code $z_x$를 학습할 수 있는지 여부
 - class encode $E_y$가 class-specific latent code $z_y$를 학습할 수 있는지 여부
 - class encoder $E_y$가 보이지 않는 객체 클래스의 이미지로 일반화할 수 있는지 여부
 
-새로운 클래스가 source 클래스와 기각적으로 관련되어 있을 때 이런 조건을 충족하기 쉬우나, 새로운 객체 클래스의 외관이 source class의 와괸과 극적으로 다를 때 FUNIT은 Figure 5와 같이 변환을 실패합니다. 이 경우 FUNIT은 입력 content 이미지의 색상이 변경된 버전으로 생성하는 경향이 있습니다. 이는 바람직하지 않지만 외형 분포가 극적으로 변경되었기 때문에 이해할 수 있습니다. 이 한계를 해결하는 것이 Future Work입니다.
+새로운 클래스가 source 클래스와 시각적으로 관련되어 있을 때 이런 조건을 충족하기 쉬우나, 새로운 객체 클래스의 외관이 source class의 외관과 극적으로 다를 때 FUNIT은 Figure 5와 같이 변환을 실패합니다. 이 한계를 해결하는 것이 FUNIT의 Future Work라고 합니다.
 <br><br>
 
 ---
