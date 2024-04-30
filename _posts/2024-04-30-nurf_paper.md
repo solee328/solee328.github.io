@@ -10,8 +10,7 @@ use_math: true
 
 
 이번 논문은 <a href="https://arxiv.org/abs/2003.08934" target="_blank">NeRF: Representing Scenes as Nueral Radiance Fields for View Synthesis</a> 입니다!<br>
-논문 이름에서도 볼 수 있듯이 NeRF는 Neural Radiance Fields를 줄임말로 2D 이미지를 입력으로 주었을 때 마치 3D를 보는 것처럼 다른 시점에서 본 입력 이미지를 생성하는 View Synthesis task를 다룹니다.
-
+논문 이름에서도 볼 수 있듯이 NeRF는 Neural Radiance Fields를 줄임말로 2D 이미지를 입력으로 주었을 때 마치 3D를 보는 것처럼 다른 시점에서 본 입력 이미지를 생성하는 View Synthesis task를 다룹니다. 모델은 MLP 형식으로 단순한 구조로 3D scene representation을 성공한 것으로도 유명합니다.
 
 처음으로 3D 관련 논문을 보게 되었는데, 생소한 단어가 많았습니다:hushed: 정의하는 부분을 제 나름대로 정리했는데 잘못된 단어 선택이나 해석에 문제를 보신다면 알려주시면 감사하겠습니다!
 지금부터 NeRF에 대해서 하나씩 살펴보겠습니다:eyes:
@@ -26,19 +25,19 @@ use_math: true
 </div>
 > NeRF 공식 <a href="https://www.matthewtancik.com/nerf" target="_blank">프로젝트 페이지</a>의 영상
 
-NeRF에서 제시한 결과 영상들입니다. 여러 Object들을 360$^\circ$ 회전시키며 마치 3D Object를 보는 것 같지 않나요?<br>
+NeRF에서 제시한 결과 영상들입니다. 여러 Object들을 360$^\circ$ 회전시키며 마치 3D Object Asset를 보는 것 같지 않나요?<br>
 
 <br>
 
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/a1249dbe-cdfb-46bc-a3fe-1bc341500646" width="800" height="200">
 </div>
-> Figure 1.
+> Figure 1. 입력 이미지들로부터 연속적인 5D neural radiance field representation scene을 최적화하는 방법.<br>
+volume rendering을 사용해 ray를 따라 scene의 sample을 축적해 모든 시점에서의 scene을 렌더링합니다. 반구에서 무작위로 포착한 드럼 이미지 100개를 시각화하고 최적화된 NeRF에서 렌더링한 새로운 뷰를 보여줍니다.
 
+NeRF는 하나의 2D object에 대해 여러 방향에서 찍힌 이미지들을 학습해 학습하지 않은 방향에 대해서 object 모습을 예측합니다. 3D Object를 생성하는 것이 아니라 object를 어떤 방향에서 바라보는 장면을 생성하는 View Synthesis 기술입니다.
 
-NeRF는 하나의 2D object에 대해 여러 방향에서 찍힌 이미지들을 학습해 학습하지 않은 방향에 대해서 object 모습을 예측합니다.
-NeRF의 목표는 입력으로 한 object를 여러 시각으로 바라본 사진을 학습시킨다면 학습되지 않은 다른 방향에서 바라본 경우를 계산할 수 있게 하는 것. 3D Object를 생성하는 것이 아니라 object를 어떤 방향에서 바라보는 장면을 생성하는 View Synthesis 기술입니다. 연속된 방향 변화에 대해서 생성할 수 있기 때문에 자연스러운 Rendering이 가능하다는 것이 장점.
-
+Figure 1에서 Drum에 대한 입력 이미지는 100장이지만 NeRF를 학습해 최적화한 이후에는 학습하지 않았던 새로운 방향에서 본 이미지를 생성할 수 있습니다.
 
 <br>
 
@@ -46,30 +45,36 @@ NeRF의 목표는 입력으로 한 object를 여러 시각으로 바라본 사�
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/d13e3235-6535-4f6c-9442-718f232953b8" width="800" height="250">
 </div>
 > Figure 2. Neural Radiance Field scene representation 개요와 rendering 절차.<br>
+(a) ray를 따라 5D 좌표(위치 + 시각 방향)를 샘플링해 영상을 합성<br>
+(b) MLP에 좌표를 통과시켜 색상(RGB)와 밀도(density)를 생성<br>
+(c) volume rendering 기술을 이용해 생성한 값을 이미지로 합성<br>
+(d) 합성된 영상과 실제 학습 데이터 사이의 차이를 최소화해 scene representation를 최적화
 
-NeRF의 동작 방식을 나타낸 Figure입니다.
+Figure 2에서 NeRF의 동작 방식을 볼 수 있습니다. Figure 2를 이해하기 위해서 Ray와 5D Input, Ouput에 대해서 간단하게 짚고 넘어가겠습니다.
+
 학습 데이터(2D image)에서 임의의 지점에 ray를 쏩니다. 여기서 ray는 화면 상에 투영되는 이미지를 생성하기 위해 object와 상호 작용되는 빛을 의미합니다. Figure 2의 (a), (b)에서 빨간 선 하나로 표현되어 있는 것이 ray입니다.
 
+```
+입력 pixel을 ray로 만드는 방법? 추가적인 데이터가 필요할 거 같은데
+```
 
 <br>
 
-### ray
-공간 상에서 점 하나와 각도가 정해지면 직선을 정의할 수 있고, 직선 위에 점 집합을 network의 입력이 되고 출력으로 $RGB\sigma$를 계산하는 것이 목표
-네트워크가 한번 돌아가면 ray 하나에 대한 값이 나온다.
-이때 Volume Rendering을 사용해 계산된 Ray의 $RGB\sigma$ 점들을 하나의 픽셀로 변환한다. 하나의 픽셀로 변환한 값과 Ground Truth의 픽셀 값과의 차이를 계산해 Loss로 사용하며 Volume Rendering 계산 과정이 미분 가능하기 때문에 Back propagation을 통해 모델을 학습한다.
-
-### 5D Input
-
 <div>
-  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/b882d6ff-de14-4e37-ae94-e45369f4d3e0" width="500" height="250">
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/b882d6ff-de14-4e37-ae94-e45369f4d3e0" width="400" height="200">
 </div>
 > 지점($x, y, z$)과 시각 방향($\theta, \phi$)의 시각화.<br>
 $\theta$는 물체를 바라보는 시선을 $xy$ 평면에 projection했을 때 $x$ 축과 이루는 각도를 나타내고, $\phi$는 물체를 바라보는 시선과 $z$축과의 각도를 의미합니다.
 
-NeRF는 공간의 각 지점($x, y, z$)에 대해서 시각 방향($\theta, \phi$)을 모델 입력으로 받아
+NeRF는 Ray를 정의하기 위해 지점($x, y, z$, position)과 시각 방향($\theta, \phi$, direction)을 사용합니다.
 
- Deep Learning을 통해 계산해 각 지점의 색상($R, G, B$)과 밀도($\sigma$)로 표현하는 방식을 사용합니다.
+<br>
 
+입력 데이터로부터 Figure 2.(a) 처럼 5D Input을 만들고 모델에 입력합니다. 모델은 하나의 Ray를 정의한 5D Input을 입력으로 받아 해당 Ray를 RGB$\sigma$ 표현한 것을 출력합니다. $RGB$는 색상 값, $\sigma$는 밀도를 의미합니다. $\sigma$의 의미는 ~~~입니다. 따라서 모델 $F_{\Theta}$는 위치 $\mathrm{x}=(x, y, z)$와 시각 방향 $\mathrm{d}=(\theta, \phi)$를 입력받아 색상 $\mathrm{c}=$RGB와 밀도 $\sigma$를 출력하는 $F_{\Theta} : (\mathrm{x}, \mathrm{d}) \rightarrow (\mathrm{c}, \sigma)$로 표현할 수 있습니다.
+
+
+
+RGB$\sigma$는 고전적인 Volume Rendering 기술을 사용해 2D 이미지도 만들 수 있습니다. 여기서 사용되는 Volume Rendering에 대해서 조금 더 자세하게 알아보겠습니다.
 <br><br>
 
 ---
@@ -122,28 +127,14 @@ $$
 $\delta_i$는 인접한 sample 사이 거리로 $\delta_i = t_{i+1} - t_i$를 의미합니다.
 $\alpha_i$는 ~~~로 alpha compositing...? $\alpha_i = 1-\exp(-\sigma_i\delta_i)$...?
 
-
-
-### Volume Rendering 효과
-
-<div>
-  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/b3ba9edf-93bc-4bca-80e0-75bd2a62c738" width="800" height="250">
-</div>
-> Figure 3.
-
-색상 $c$는 $c = RGB$이니, NeRF의 MLP Network $F _{\Theta}$의 목적을 $F _{\Theta} : (\mathrm{x}, \mathrm{d}) \rightarrow (\mathrm{c}, \sigma)$로 표현할 수 있습니다.
-$c$는 지점 $\mathrm{x}$, 시각 방향 $\mathrm{d}$에 관계되며, $\sigma$는 지점 $\mathrm{x}$에 대해서만 관여를 하기 때문에 한 지점을 고정하고 바라보는 시각 방향만 바뀌었을 때에도 연속적으로 표현이 가능합니다.
-
-예시로 Figure 3과 같은 경우를 볼 수 있습니다. 배와 바다가 표현된 하나의 scene에서 (a)와 (b)는 같은 배와 바다를 표현하고 있지만 시각 방향 $\mathrm{d}$가 다른 경우입니다.
-시각 방향이 바뀌었지만 Figure 3의 (c)에서 볼 수 있듯이 연속적인 색상 변화를 볼 수 있습니다?
-
-
 <br><br>
 
 ---
 
 ## More Trick
+복잡한 scene에 대해서 높은 해상도 표현이 가능하도록 NeRF를 최적화하기 위해 2가지 기법을 추가적으로 사용합니다.
 
+MLP가 higher frequency function을 표현할 수 있도록 Positional encoding을 사용해 입력 5D 좌표를 변환합니다. 또한 high-frequency scene representation을 적절하게 샘플링하는 데 필요한 쿼리 수를 줄이기 위해 hierarchical sampling을 사용합니다.
 
 ### Positional encoding
 
@@ -188,16 +179,39 @@ sampling camera ray -> hierarchical sampling -> volume rendering -> computing lo
 Coarse, fine을 MSE loss한 모습.
 loss는 굉장히 단순하나 100-300k iteration에 V100 GPU를 사용해도 1~2일 정도가 소요된다.
 
+<br>
+
 ### Model
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/9af7f9ae-58e2-4073-8e1d-d586d2f585a2" width="800" height="360">
+</div>
+> Figure 7. fully-connected network 구조 시각화.
 
+Figure 7에서 NeRF의 모델 구조를 볼 수 있습니다. 모델에 입력되는 값은 녹색, 출력되는 값은 빨간색으로 표시되어 있으며 검은 실선 화살표는 ReLU activation, 주황색 실선 화살표는 activation이 없고 검은색 점선 화살표는 Sigmoid activation이 있는 layer입니다.
 
+위치 $\mathrm{x}$로만 밀도 $\sigma$를 예측하도록 모델을 제한하기 위해서 밀도 $\sigma$는 중간 layer에서 출력되며, 색상 $\mathrm{c}$는 위치 $\mathrm{x}$와 시각 방향 $\mathrm{d}$를 모두 활용해 예측하도록 합니다.
 
+NeRF는 DeepSDF[32] 구조를 따르며 5번째 layer의 activation과 $\gamma(\mathrm{x})$이 concat되는 skip connection이 있습니다. 중간 출력인 밀도 $\sigma$는 음수가 될 수 없으므로 ReLU가 추가적으로 사용된 후 출력되며, 시각 방향 $\gamma(\mathrm{d})$이 9번째 layer에서 추가로 입력됩니다. 마지막 layer의 ~~~ 이후 색상 RGB 값이 출력됩니다.
+
+```
+sigmoid는 마지막 layer의 channel을 3으로 줄인 후 적용되는가?
+```
+
+<br>
+
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/b3ba9edf-93bc-4bca-80e0-75bd2a62c738" width="800" height="210">
+</div>
+> Figure 3. view-dependent radiance 시각화.
+
+색상 $c$는 $c = RGB$이니, NeRF의 MLP Network $F _{\Theta}$의 목적을 $F _{\Theta} : (\mathrm{x}, \mathrm{d}) \rightarrow (\mathrm{c}, \sigma)$로 표현할 수 있습니다.
+$c$는 지점 $\mathrm{x}$, 시각 방향 $\mathrm{d}$에 관계되며, $\sigma$는 지점 $\mathrm{x}$에 대해서만 관여를 하기 때문에 한 지점을 고정하고 바라보는 시각 방향만 바뀌었을 때에도 연속적으로 표현이 가능합니다.
+
+예시로 Figure 3과 같은 경우를 볼 수 있습니다. 배와 바다가 표현된 하나의 scene에서 (a)와 (b)는 같은 배와 바다를 표현하고 있지만 시각 방향 $\mathrm{d}$가 다른 경우입니다.
+시각 방향이 바뀌었지만 Figure 3의 (c)에서 볼 수 있듯이 연속적인 색상 변화를 볼 수 있습니다?
+<br><br>
 
 ---
-
-
-
-
 
 ## 실험 설정
 
@@ -209,9 +223,9 @@ loss는 굉장히 단순하나 100-300k iteration에 V100 GPU를 사용해도 1~
 
 ### Baseline
 
-- Neural Volumes(NV)
-- Scene Representation Networks(SRN)
-- Local Light Field Fusion(LLFF)
+- <a href="https://github.com/facebookresearch/neuralvolumes" target="_blank">Neural Volumes(NV)</a>
+- <a href="https://github.com/vsitzmann/scene-representation-ne" target="_blank">Scene Representation Networks(SRN)</a>
+- <a href="https://github.com/Fyusion/LLFF" target="_blank">Local Light Field Fusion(LLFF)</a>.
 
 ### Result
 
