@@ -118,6 +118,7 @@ $$
 - $\mathrm{c}$ : RGB
 - $\mathrm{d}$ :
 
+
 stratified sampling을 사용한다면 연속적인 위치(position)가 가능해 연속적인 장면 표현을 나타낼 수 있습니다. Max[26]에서 논의된 quadrature rule로 $C(\mathrm{r})$을 추정한다면 식을 아래와 같이 표현할 수 있습니다.
 
 $$
@@ -138,30 +139,51 @@ MLP가 higher frequency function을 표현할 수 있도록 Positional encoding�
 
 ### Positional encoding
 
-<div>
-  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/a1766a96-0591-493d-a0c1-bea3a4d8d0f5" width="800" height="250">
-</div>
-> Figure 4.
+NeRF 모델 입력인 $xyz\theta\phi$을 사용할 시, 모델이 lower frequency function을 학습하는 것에 편향되어 있다는 것을 발견함.
+[35]의 연구 또한 마찬가지였는데, [35]의 경우 high frequency function을 사용해 입력 값을 더 높은 고차원 공간에 매핑하면 high frequency variation이 포함된 데이터를 더 잘 맞출 수 있음을 보여주었습니다.
 
-high frequency 영역까지 표현할 수 있도록 positional encoding을 사용한다.
+따라서 NeRF 또한 같은 이유로 입력을 고차원 공간으로 매핑하기 위한 $/gamma$를 사용해 모델 $F_{\Theta}$을 $F_\Theta = F_\Theta' \circ \gamma$로 변화시킵니다.
+
+<br>
 
 $$
 \gamma(p) = (\sin(2^0\pi p), \cos(2^0\pi p), \cdots, \sin(2^{L-1}\pi p), \cos(2^{L-1}\pi p))
 $$
 
 하나의 변수($p$)를 사용해 정보를 더 늘리기 쉬워짐.
+
+NeRF에서 $\gamma(\mathrm{d})$에는 $L=4$, \gamma(\mathrm{x})에는 $L=10$을 적용했습니다.
 L이 10이라면 sin, cos이 10개씩 생겨 20개가 됨. -> location 값 x, y, z를 $p$에 넣어 $\gamma$를 계산하면 20개씩 총 60개 차원이 완성됨.
 density $\sigma$는 location에만 의존하는 값이므로 먼저 추출, 추가로 direction에 대한 positional encoding 값을 추가로 넣어 RGB 값을 추출함.
 
 
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/a1766a96-0591-493d-a0c1-bea3a4d8d0f5" width="800" height="250">
+</div>
+> Figure 4. view dependence와 positional encoding에 따른 결과 시각화.
+
+positional encoding을 사용한 경우에 대한 결과 차이를 볼 수 있습니다.
+
+
 ### Hierarchical volume sampling
+
+ray sampling에서 결과 퀄리티를 높이고 싶으면 더 많은 sampling을 진행하는 것이지만, 렌더링된 이미지에 기여하지 않는 물체가 없는 부분(free space), 가려진 부분(occluded region)이 반복적으로 샘플링될 수 있어 비효율적입니다.
+
+NeRF는 volume redering 초기 연구[20]에서 영감을 받아 효율적인 샘플링 방식인 hierarchical representation을 제안합니다. 샘플링을 2번에 나눠서하는 방식으로 첫번째를 coarse network, 두번째를 fine network라 합니다.
+
+coarse network는 stratified sampling을 사용해 $N_c$를 샘플링합니다. coarse network인 $N_c$로 $C(\mathrm{r})$를 생성합니다.
 
 $$
 \hat{C} _c(\mathrm{r}) = \sum ^{N_c} _{i=1}w_ic_i, \quad w_i=T_i(1-\exp(-\sigma_i \delta_i))
 $$
 
-학습을 2번 한다. coarse하게 1번, fine하게 1번
-최종 결과물은 coarse 때 sampling한 $N_c$와 fine 때 샘플링한 $N_f$를 합한 $N_c + N_f$ 샘플을 사용함.
+이 가중치를 $\hat{w}_i = w_i / \sum ^{N_c} _{j=1}w_j$로 normalize하면 piecewise-constant PDF가 생성됩니다. 역변환 샘플링(inverse transform sampling)을 사용해 이 분포에서 두번째 샘플링 $N_f$을 진행합니다.
+
+```
+설명해 추가할 그림
+```
+
+최종적으로 모든 샘플링인 $N_c + N_f$이 fine network가 되며 이를 사용해 $\hat{C} ^f(r)$을 계산합니다. 이를 통해 free space, occluded region이 아닌 object가 포함될 것으로 예상되는 영역에서 더 많은 샘플링이 가능해 효율적인 샘플링이 가능합니다.
 
 <br>
 
@@ -175,8 +197,15 @@ $$
 \mathcal{L} = \sum _{\mathrm{r}\in \mathcal{R}}\left[ \|\hat{C} _c(\mathrm{r}) - C(\mathrm{r})\|^2_2 + \|\hat{C} _f(\mathrm{r}) - C(\mathrm{r})\|^2_2 \right]
 $$
 
+- $\mathcal{R}$ : 각 batch에 ray set
+- $C(\mathrm{r})$ : ray $\mathrm{r}$에 대한 GT
+- $\hat{C} _c(\mathrm{r})$ : coarse volume 예측 값
+- $\hat{C} _f(\mathrm{r})$ : fine volume 예측 값
+
 sampling camera ray -> hierarchical sampling -> volume rendering -> computing loss의 단계를 반복하며 모델을 학습시킨다.
 Coarse, fine을 MSE loss한 모습.
+
+NeRF에서는 $\mathcal{R}$=4096, $N_c$=64, $N_f$=128를 사용했다고 합니다.
 loss는 굉장히 단순하나 100-300k iteration에 V100 GPU를 사용해도 1~2일 정도가 소요된다.
 
 <br>
@@ -193,9 +222,6 @@ Figure 7에서 NeRF의 모델 구조를 볼 수 있습니다. 모델에 입력�
 
 NeRF는 DeepSDF[32] 구조를 따르며 5번째 layer의 activation과 $\gamma(\mathrm{x})$이 concat되는 skip connection이 있습니다. 중간 출력인 밀도 $\sigma$는 음수가 될 수 없으므로 ReLU가 추가적으로 사용된 후 출력되며, 시각 방향 $\gamma(\mathrm{d})$이 9번째 layer에서 추가로 입력됩니다. 마지막 layer의 ~~~ 이후 색상 RGB 값이 출력됩니다.
 
-```
-sigmoid는 마지막 layer의 channel을 3으로 줄인 후 적용되는가?
-```
 
 <br>
 
@@ -208,7 +234,7 @@ sigmoid는 마지막 layer의 channel을 3으로 줄인 후 적용되는가?
 $c$는 지점 $\mathrm{x}$, 시각 방향 $\mathrm{d}$에 관계되며, $\sigma$는 지점 $\mathrm{x}$에 대해서만 관여를 하기 때문에 한 지점을 고정하고 바라보는 시각 방향만 바뀌었을 때에도 연속적으로 표현이 가능합니다.
 
 예시로 Figure 3과 같은 경우를 볼 수 있습니다. 배와 바다가 표현된 하나의 scene에서 (a)와 (b)는 같은 배와 바다를 표현하고 있지만 시각 방향 $\mathrm{d}$가 다른 경우입니다.
-시각 방향이 바뀌었지만 Figure 3의 (c)에서 볼 수 있듯이 연속적인 색상 변화를 볼 수 있습니다?
+시각 방향이 바뀌었지만 Figure 3의 (c)에서 볼 수 있듯이 연속적인 색상 변화를 볼 수 있습니다. <a href="https://ko.wikipedia.org/wiki/%EB%9E%8C%EB%B2%A0%EB%A5%B4%ED%8A%B8_%EB%B0%98%EC%82%AC" target="_blank">Lambertian effect</a>가 적용되었다면, 바라보는 방향이 바뀌었더라도 같은 색상으로 보여야하지만, NeRF의 색상 $\mathrm{c}$는 지점 $\mathrm{x}$과 시각 방향 $\mathrm{d}$에 의존하기 때문에 색상이 바뀌었으며 non-Lambertian임을 나타냅니다.
 <br><br>
 
 ---
@@ -216,33 +242,68 @@ $c$는 지점 $\mathrm{x}$, 시각 방향 $\mathrm{d}$에 관계되며, $\sigma$
 ## 실험 설정
 
 ### Dataset
+NeRF를 학습하기 위해서는 object가 다양한 각도에서 촬영된 이미지와 함께 카메라의 pose, intrinsic parameter, scene bounds에 대한 정보가 필요합니다.
 
-- Diffuse Synthetic 360$^{\circ}$
-- Diffuse Real 360$^{\circ}$
-- Diffuse LLFF
+NeRF는 실제 데이터에 대한 이런 parameter를 추정하기 위해 COLMAP structure-from-motion package[39]를 사용했다고 합니다.
+
+- Diffuse Synthetic 360$^{\circ}$<br>
+  Diffuse Synthetic 360$^{\circ}$는 DeepVoxels[41]데이터로 간단한 구조를 가진 Lambertian 객체 4개가 포함되어 있습니다. 각 객체에는 반구형(hemisphere)에서 시점이 샘플링되며 512x512 픽셀을 가집니다. 객체 하나(scene)의 전체 이미지에서 학습으로 479, 테스트로 100개를 사용합니다.
+
+- Realistic Synthetic 360$^{\circ}$<br>
+  복잡한 구조를 가진 non-Lambertian 객체 8개를 NeRF 팀에서 만들어 사용한 데이터셋입니다. 객체 8개 중 6개 객체는 반구형(hemisphere), 2개는 전체 (full sphere) 시점에서 샘플링되며 800x800 픽셀을 가집니다. 객체 하나(scene)의 전체 이미지에서 학습으로 100, 테스트로 200개를 사용합니다.
+
+- Real Forward-Facing<br>
+  현실의 복잡한 scene 데이터로 핸드폰으로 촬영된 데이터셋입니다. LLFF[28]에서 만든 5개와 NeRF 팀에서 만든 3개 scene이 있으며 1008x756 픽셀을 가집니다. scene 당 20~62개의 이미지가 있으며 이중 1/8을 테스트로 사용합니다.
 
 ### Baseline
 
-- <a href="https://github.com/facebookresearch/neuralvolumes" target="_blank">Neural Volumes(NV)</a>
-- <a href="https://github.com/vsitzmann/scene-representation-ne" target="_blank">Scene Representation Networks(SRN)</a>
-- <a href="https://github.com/Fyusion/LLFF" target="_blank">Local Light Field Fusion(LLFF)</a>.
+NeRF와 비교할 Baseline 모델들입니다. Local Light Field Fusion을 제외한 방법은 scene에 대해 별도의 network를 학습한 다음 test time에 새로운 scene의 입력 이미지를 처리하는 방식입니다.
+
+- <a href="https://github.com/facebookresearch/neuralvolumes" target="_blank">Neural Volumes(NV)</a><br>
+  Neural Volumes(NV)[24]는 deep 3D convolutional network로 1283개의 샘플을 이산화된 RGB$\alpha$ voxel grid와 323개의 3D warp gird 샘플에 대해 예측합니다. 알고리즘은 warped voxel grid를 통해 카메라 광선을 행진하며 새로운 view를 만듭니다.
+
+- <a href="https://github.com/vsitzmann/scene-representation-ne" target="_blank">Scene Representation Networks(SRN)</a><br>
+  Scene Representation Networks(SRN)[42]은 연속적인 scene을 불투명한 표면(opaque surface)로 표현하며, recurrent neural network로 임의의 3D 좌 $(x, y, z)$에서 feature vector를 사용해 다음 step size를 예측합니다. SRN은 DeepVoxels[41]과 동일 저자로 더 나은 성능을 가지는 후속연구이므로 NeRF에서 DeepVoxels를 baseline에 포함하지 않았습니다.
+
+- <a href="https://github.com/Fyusion/LLFF" target="_blank">Local Light Field Fusion(LLFF)</a>.<br>
+  Local Light Field Fusion(LLFF)[28]는 3D convolutional network로 입력에 대해 이산화돤 frustum sampling RGB$\alpha$ grid(multiplane image 또는 MPI[52])를 예측한 다음, 근처 MPIs를 새로운 view로 alpha 합성하고 혼합해 새로운 view를 만듭니다.
 
 ### Result
 
 <div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/8ab76847-2696-449c-94c4-dc7936b7f783" width="800" height="150">
+</div>
+> Table 1. NeRF와 baseline들의 PSNR/SSIM/LPIPS 수치.
+
+NV는 제한된 volume 내의 객체만 구성하기 때문에 Real Forward-Facing 데이터에서 평가할 수 없어 제외되었습니다.
+
+scene 당 별도의 network를 최적화하는 NV와 SRN에 대해서는 모든 수치가 NeRF가 다른 두 모델을 능가함을 볼 수 있습니다.
+LLFF는 Real Forward-Facing 데이터셋 결과에서 LPIPS 수치가 NeRF보다 더 좋지만 NeRF의 저자들은 NeRF의 결과가 더 나은 일관성을 가지고 있으며 더 적은 artifact를 생성한다고 언급합니다.
+
+<br>
+
+<div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/296df67f-d0ff-4580-a2cb-eee3e92a2668" width="800" height="1000">
 </div>
-> Figure 5.
+> Figure 5. Realistic synthetic 데이터셋에 대한 test set 결과 비교.
+
+NeRF는 $Ship$'s rigging, $Lego$'s gear와 treads, $Microphone$'s shiny stand과 mesh grille, $Material$'s non Lambertian reflectance 모두에서 디테일한 점까지 만들어냄을 볼 수 있습니다.
+
+LLFF의 경우 $Microphone$'s stand와 $Material$'s object edges에 banding artifact, $Ship$'s mast와 $Lego$ 내부에 ghosting artifact를 생성했습니다.
+
+SRN은 모든 경우에 흐릿하고 왜곡된 렌더링을 생성했습니다.
+
+Neural Volumes는 $Microphone$'s grille 또는 $Lego$'s gear의 디테일을 생성할 수 없으며, $Ship$'s rigging에 대한 기하학적 구조를 완전히 생성하지 못했습니다.
+
+<br>
 
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/f3415fed-ec3f-4a5e-9c8f-d9bf690daf7d" width="800" height="880">
 </div>
 > Figure 6.
 
-<div>
-  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/8ab76847-2696-449c-94c4-dc7936b7f783" width="800" height="150">
-</div>
-> Table 1.
+
+
 
 
 ### Ablation study
