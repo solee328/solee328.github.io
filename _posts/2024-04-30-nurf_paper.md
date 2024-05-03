@@ -259,6 +259,8 @@ NeRF는 실제 데이터에 대한 이런 parameter를 추정하기 위해 COLMA
 
 NeRF와 비교할 Baseline 모델들입니다. Local Light Field Fusion을 제외한 방법은 scene에 대해 별도의 network를 학습한 다음 test time에 새로운 scene의 입력 이미지를 처리하는 방식입니다.
 
+Baseline들의 가장 큰 tradeoff는 시간(time)과 공간(space)로 scene 하나에 하나의 모델을 사용하는 NV와 SRN은 scene 하나를 학습하는데 최소 12시간이 걸립니다. 대조적으로 LLFF는 작은 입력 데이터 셋을 10분 이내에 처리할 수 있습니다. 하지만 LLFF는 모든 입력 이미지에 대해 거대한 3D voxel grid를 생성하기 때문에 엄청난 저장 공간을 요구합니다. 하나의 Realistic Synthetic scene에 대해서 15GB이 필요합니다.
+
 - <a href="https://github.com/facebookresearch/neuralvolumes" target="_blank">Neural Volumes(NV)</a><br>
   Neural Volumes(NV)[24]는 deep 3D convolutional network로 1283개의 샘플을 이산화된 RGB$\alpha$ voxel grid와 323개의 3D warp gird 샘플에 대해 예측합니다. 알고리즘은 warped voxel grid를 통해 카메라 광선을 행진하며 새로운 view를 만듭니다.
 
@@ -289,20 +291,26 @@ LLFF는 Real Forward-Facing 데이터셋 결과에서 LPIPS 수치가 NeRF보다
 
 NeRF는 $Ship$'s rigging, $Lego$'s gear와 treads, $Microphone$'s shiny stand과 mesh grille, $Material$'s non Lambertian reflectance 모두에서 디테일한 점까지 만들어냄을 볼 수 있습니다.
 
-LLFF의 경우 $Microphone$'s stand와 $Material$'s object edges에 banding artifact, $Ship$'s mast와 $Lego$ 내부에 ghosting artifact를 생성했습니다.
+LLFF의 경우 $Microphone$'s stand와 $Material$'s object edges에 banding artifact, $Ship$'s mast와 $Lego$ 내부에 ghosting artifact를 생성했습니다. LLFF는 입력 view 간 간격(disparity)가 64 픽셀을 넘지 않도록 "sampling guideline"을 제공하기 때문에 view 간격이 최대 400~500 픽셀인 synthetic 데이터셋에서 정확한 기하학적 구조를 추정하지 못하는 경우가 많았다고 합니다.
 
-SRN은 모든 경우에 흐릿하고 왜곡된 렌더링을 생성했습니다.
+SRN은 모든 경우에 흐릿하고 왜곡된 렌더링을 생성했습니다. SRN은 심하게 smooth한 질감을 생성하며 하나의 ray에서 단일 depth와 color만 선택하기 때문에 view synthesis를 위한 표현력이 제한됩니다.
 
-Neural Volumes는 $Microphone$'s grille 또는 $Lego$'s gear의 디테일을 생성할 수 없으며, $Ship$'s rigging에 대한 기하학적 구조를 완전히 생성하지 못했습니다.
+Neural Volumes는 $Microphone$'s grille 또는 $Lego$'s gear의 디테일을 생성할 수 없으며, $Ship$'s rigging에 대한 기하학적 구조를 완전히 생성하지 못했습니다. 1283개의 voxel grid를 사용하는 것이 명시되어 있어 고해상도에서 자세한 디테일을 나타내기 위해 확장할 수 없는 것이 문제가 됩니다.
 
 <br>
 
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/f3415fed-ec3f-4a5e-9c8f-d9bf690daf7d" width="800" height="880">
 </div>
-> Figure 6.
+> Figure 6. real world scene 데이터셋에 대한 test set 결과 비교
 
+LLFF는 실제 환경을 정면으로 촬영한 이 데이터셋을 위해 특별히 설계된 모델입니다.
 
+NeRF는 $Fern$의 잎 부분과 $T-rex$의 skeleton rib와 railing에서 LLFF보다 일관되고 디테일한 정보를 표현할 수 있습니다. 또한 $Fern$의 잎 뒤에 있는 노란색 선반과 $Orchid$ 배경의 녹색 잎과 같이 LLFF가 어려움을 겪는 object에 가려진 영역에 대해서도 올바르게 재구성합니다.
+
+LLFF는 서로 다른 view를 렌더링하기 위해 서로 다른 scene representation 사이에서 블렌딩되는데, 여러 렌더링을 블렌딩하면 LLFF의 $Orchid$의 위쪽 결과와 같이 물체 가장자리 경계가 반복되는 현상이 발생할 수도 있습니다.
+
+SRN은 각 scene에서 low-frequency geometry와 색상 변화(color variation)을 잡아낼 수 있지만 미세한 영역은 재현할 수 없습니다.
 
 
 
@@ -311,14 +319,20 @@ Neural Volumes는 $Microphone$'s grille 또는 $Lego$'s gear의 디테일을 생
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/f9d24bce-f090-4d8e-af9e-f41dcab8fe9d" width="800" height="300">
 </div>
-> Table 2.
+> Table 2. NeRF의 ablation study.
+
+Realistic Synthetic 360$^\circ$에 대한 ablation study 결과를 Table 2에서 볼 수 있습니다.
+
+1행은 Positional Encoding(PE), View Dependence(VD), Hierarchical sampling(H)가 없는 모델을 보여주며, 2~4행에서는 3가지 구성 요소를 하나씩 제거한 모델 결과를 볼 수 있습니다.
+
+5, 6행에서 입력 이미지 수가 감소함에 따른 성능 차이를 볼 수 있고 7, 8행에서 Positional Encoding에 사용되는 maximum frequency $\mathrm{L}$에 따른 성능 차이를 볼 수 있습니다. frequency를 10보다 작게 사용한 7행과 10보다 크게 15를 사용한 8행 모두 성능이 저하되었습니다. 저자들은 maximum frequency가 $2^ {\mathrm{L}}$을 초과하도록 샘플링된다면 $\mathrm{L}$를 늘리는 것의 이점이 제한된다고 합니다.
+
 
 <br>
 
 ---
 
-## 정리
+NeRF 논문 리뷰가 끝났습니다! 끝까지 봐주셔서 감사합니다:)
+모델 구조만 봤을 때는 단순해서 쉽네!라고 생각했지만, 3D 분야를 처음 알게 되니 개념을 익히는 것부터 수학적 공식을 이해하는 것까지 생각보다 어려웠어요...:speak_no_evil:
 
-<br><br>
-
----
+3D 분야의 인기가 점점 높아지는 것 같습니다. 이렇게 조금씩이라도 계속해서 정리해서 트렌드를 따라갈 수 있도록 노력해보겠습니다:wink:
