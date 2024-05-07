@@ -25,7 +25,7 @@ use_math: true
 </div>
 > NeRF 공식 <a href="https://www.matthewtancik.com/nerf" target="_blank">프로젝트 페이지</a>의 영상
 
-NeRF에서 제시한 결과 영상들입니다. 여러 Object들을 360$^\circ$ 회전시키며 마치 3D Object Asset를 보는 것 같지 않나요?<br>
+NeRF에서 제시한 결과 영상들입니다.여러 Object들을 360$^\circ$ 회전시키며 보여주는 결과가 마치 3D Object Asset를 보는 것 같지 않나요?<br>
 
 <br>
 
@@ -35,9 +35,9 @@ NeRF에서 제시한 결과 영상들입니다. 여러 Object들을 360$^\circ$ 
 > Figure 1. 입력 이미지들로부터 연속적인 5D neural radiance field representation scene을 최적화하는 방법.<br>
 volume rendering을 사용해 ray를 따라 scene의 sample을 축적해 모든 시점에서의 scene을 렌더링합니다. 반구에서 무작위로 포착한 드럼 이미지 100개를 시각화하고 최적화된 NeRF에서 렌더링한 새로운 뷰를 보여줍니다.
 
-NeRF는 하나의 2D object에 대해 여러 방향에서 찍힌 이미지들을 학습해 학습하지 않은 방향에 대해서 object 모습을 예측합니다. 3D Object를 생성하는 것이 아니라 object를 어떤 방향에서 바라보는 장면을 생성하는 View Synthesis 기술입니다.
+NeRF는 하나의 2D object에 대해 여러 방향에서 찍힌 이미지들을 학습해 학습하지 않은 방향에 대해서 object 모습을 예측합니다. 3D Object를 생성하는 것이 아니라 object를 새로운 방향에서 바라보는 장면을 생성하는 View Synthesis 기술입니다.
 
-Figure 1에서 Drum에 대한 입력 이미지는 100장이지만 NeRF를 학습해 최적화한 이후에는 학습하지 않았던 새로운 방향에서 본 이미지를 생성할 수 있습니다.
+Figure 1과 프로젝트 공식 영상에서 Drum에 대한 입력 이미지로 NeRF를 학습해 최적화한 이후에는 학습하지 않았던 새로운 방향에서 본 이미지를 생성한 것을 볼 수 있습니다.
 
 <br>
 
@@ -50,32 +50,43 @@ Figure 1에서 Drum에 대한 입력 이미지는 100장이지만 NeRF를 학습
 (c) volume rendering 기술을 이용해 생성한 값을 이미지로 합성<br>
 (d) 합성된 영상과 실제 학습 데이터 사이의 차이를 최소화해 scene representation를 최적화
 
-Figure 2에서 NeRF의 동작 방식을 볼 수 있습니다. Figure 2를 이해하기 위해서 Ray와 5D Input, Ouput에 대해서 간단하게 짚고 넘어가겠습니다.
+NeRF의 동작 방식을 Figure 2에서 볼 수 있습니다. Figure 2에서 표현되어 있는 ray와 입력 데이터 $x, y, z, \theta, \phi$에 대해 간단하게 짚고 넘어가겠습니다!
 
-학습 데이터(2D image)에서 임의의 지점에 ray를 쏩니다. 여기서 ray는 화면 상에 투영되는 이미지를 생성하기 위해 object와 상호 작용되는 빛을 의미합니다. Figure 2의 (a), (b)에서 빨간 선 하나로 표현되어 있는 것이 ray입니다.
+<br>
 
-```
-입력 pixel을 ray로 만드는 방법? 추가적인 데이터가 필요할 거 같은데
-```
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/4809b5ca-3500-4e46-ab75-84846a528a1e" width="800" height="250">
+</div>
+> <a href="https://arxiv.org/abs/2103.13415" target="_blank">Mip-NeRF</a>의 Figure 1.
+
+ray는 화면 상에 투영되는 이미지를 생성하기 위해 object와 상호 작용되는 빛을 의미합니다. $\mathrm{r}(t) = \mathrm{o} + t\mathrm{d}$로 표현하며, 여기서 $\mathrm{o}$는 원점(카메라), $\mathrm{d}$는 시각 방향, $t$는 샘플링되는 지점(원점에서 시각 방향으로 특정 거리만큼 이동)을 의미합니다.
+
+현실에서는 ray가 object가 닿는 순간 어떤 방향으로 반사되는 것까지 계산을 해야하지만, NeRF는 ray가 object가 부딪힐 때 해당 object에 닿는 빛의 양을 추측하는 형태의 radiance field rendering 방식을 사용합니다. radiance field에서 하나의 object는 수많은 작은 입자로 이루어져 있어, 공간의 특정 지점에서 ray가 object와 충돌하는 것은 입자(particle)와 충돌이 발생할 확률로 근사화됩니다. 모든 광선은 입자가 닿을 때까지 field를 통과하며 최종적으로 종료되었을 시 해당 particle에서 카메라를 향새 반사되는 색을 반환합니다.
 
 <br>
 
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/b882d6ff-de14-4e37-ae94-e45369f4d3e0" width="400" height="200">
 </div>
-> 지점($x, y, z$)과 시각 방향($\theta, \phi$)의 시각화.<br>
-$\theta$는 물체를 바라보는 시선을 $xy$ 평면에 projection했을 때 $x$ 축과 이루는 각도를 나타내고, $\phi$는 물체를 바라보는 시선과 $z$축과의 각도를 의미합니다.
+> 지점($x, y, z$)과 시각 방향($\theta, \phi$)의 시각화.
 
-NeRF는 Ray를 정의하기 위해 지점($x, y, z$, position)과 시각 방향($\theta, \phi$, direction)을 사용합니다.
+NeRF는 ray를 정의하기 위해 지점($x, y, z$, position)과 시각 방향($\theta, \phi$, direction)을 사용합니다. $\theta$는 물체를 바라보는 시선을 $xy$ 평면에 projection했을 때 $x$ 축과 이루는 각도를 나타내고, $\phi$는 물체를 바라보는 시선과 $z$축과의 각도를 의미합니다.
 
 <br>
 
-입력 데이터로부터 Figure 2.(a) 처럼 5D Input을 만들고 모델에 입력합니다. 모델은 하나의 Ray를 정의한 5D Input을 입력으로 받아 해당 Ray를 RGB$\sigma$ 표현한 것을 출력합니다. $RGB$는 색상 값, $\sigma$는 밀도를 의미합니다. $\sigma$의 의미는 ~~~입니다. 따라서 모델 $F_{\Theta}$는 위치 $\mathrm{x}=(x, y, z)$와 시각 방향 $\mathrm{d}=(\theta, \phi)$를 입력받아 색상 $\mathrm{c}=$RGB와 밀도 $\sigma$를 출력하는 $F_{\Theta} : (\mathrm{x}, \mathrm{d}) \rightarrow (\mathrm{c}, \sigma)$로 표현할 수 있습니다.
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/53cf4e6a-b869-47c4-ad53-3f93530695c8" width="400" height="390">
+</div>
+> Figure 2.(b) MLP에 좌표를 통과시켜 색상(RGB)와 밀도(density)를 생성
+
+NeRF은 하나의 Ray를 정의한 5D Input을 입력으로 받아 해당 Ray를 RGB$\sigma$ 표현한 것을 출력합니다. Figure 2.(b)에서 모델 $F_{\Theta}$는 위치 $\mathrm{x}=(x, y, z)$와 시각 방향 $\mathrm{d}=(\theta, \phi)$를 입력받아 색상 $\mathrm{c}=$RGB와 밀도 $\sigma$를 출력하는 $F_{\Theta} : (\mathrm{x}, \mathrm{d}) \rightarrow (\mathrm{c}, \sigma)$로 표현할 수 있습니다.
 
 
+$RGB$는 색상 값, $\sigma$는 밀도를 의미하며 radiance field에서 particle이 얼마나 object에 밀집되어 있는지를 표현합니다. 밀도 $\sigma$는 투명도의 역수를 의미하며 밀도가 높은 object는 철과 같은 고체로 선명하게 픽셀에 표현됩니다. 반대로 밀도가 낮은 object는 물과 같은 액체 또는 유리와 같이 투명도가 높은 고체가 해당하며 뒤에 있는 물체까지 픽셀에 표현되어야 하기 때문에 상대적으로 픽셀에 흐릿하게 표현됩니다.
 
-RGB$\sigma$는 고전적인 Volume Rendering 기술을 사용해 2D 이미지도 만들 수 있습니다. 여기서 사용되는 Volume Rendering에 대해서 조금 더 자세하게 알아보겠습니다.
-<br><br>
+radiance field에서 particle과의 충돌은 확률적이기 때문에 ray를 한 방향으로 반복해서 쏘게 된다면 매번 다른 색상이 나타납니다. 따라서 이미지 한 픽셀 당 하나의 ray만 쏴서 색을 찾는 것이 아니라 특정 방향에서 발사된 모든 가능한 예상 색을 계산합니다. Volume Rendering 기술을 사용해 색상을 계산하며 아래에서 더 자세하게 살펴보겠습니다.
+
+<br>
 
 ---
 
@@ -142,7 +153,7 @@ MLP가 higher frequency function을 표현할 수 있도록 Positional encoding�
 NeRF 모델 입력인 $xyz\theta\phi$을 사용할 시, 모델이 lower frequency function을 학습하는 것에 편향되어 있다는 것을 발견함.
 [35]의 연구 또한 마찬가지였는데, [35]의 경우 high frequency function을 사용해 입력 값을 더 높은 고차원 공간에 매핑하면 high frequency variation이 포함된 데이터를 더 잘 맞출 수 있음을 보여주었습니다.
 
-따라서 NeRF 또한 같은 이유로 입력을 고차원 공간으로 매핑하기 위한 $/gamma$를 사용해 모델 $F_{\Theta}$을 $F_\Theta = F_\Theta' \circ \gamma$로 변화시킵니다.
+따라서 NeRF 또한 같은 이유로 입력을 고차원 공간으로 매핑하기 위한 $\gamma$를 사용해 모델 $F_{\Theta}$을 $F_\Theta = F_\Theta' \circ \gamma$로 변화시킵니다.
 
 <br>
 
@@ -152,7 +163,7 @@ $$
 
 하나의 변수($p$)를 사용해 정보를 더 늘리기 쉬워짐.
 
-NeRF에서 $\gamma(\mathrm{d})$에는 $L=4$, \gamma(\mathrm{x})에는 $L=10$을 적용했습니다.
+NeRF에서 $\gamma(\mathrm{d})$에는 $L=4$, $\gamma(\mathrm{x})$에는 $L=10$을 적용했습니다.
 L이 10이라면 sin, cos이 10개씩 생겨 20개가 됨. -> location 값 x, y, z를 $p$에 넣어 $\gamma$를 계산하면 20개씩 총 60개 차원이 완성됨.
 density $\sigma$는 location에만 의존하는 값이므로 먼저 추출, 추가로 direction에 대한 positional encoding 값을 추가로 넣어 RGB 값을 추출함.
 
@@ -327,12 +338,11 @@ Realistic Synthetic 360$^\circ$에 대한 ablation study 결과를 Table 2에서
 
 5, 6행에서 입력 이미지 수가 감소함에 따른 성능 차이를 볼 수 있고 7, 8행에서 Positional Encoding에 사용되는 maximum frequency $\mathrm{L}$에 따른 성능 차이를 볼 수 있습니다. frequency를 10보다 작게 사용한 7행과 10보다 크게 15를 사용한 8행 모두 성능이 저하되었습니다. 저자들은 maximum frequency가 $2^ {\mathrm{L}}$을 초과하도록 샘플링된다면 $\mathrm{L}$를 늘리는 것의 이점이 제한된다고 합니다.
 
-
 <br>
 
 ---
 
-NeRF 논문 리뷰가 끝났습니다! 끝까지 봐주셔서 감사합니다:)
+NeRF 논문 리뷰가 끝났습니다! 끝까지 봐주셔서 감사합니다:) <br>
 모델 구조만 봤을 때는 단순해서 쉽네!라고 생각했지만, 3D 분야를 처음 알게 되니 개념을 익히는 것부터 수학적 공식을 이해하는 것까지 생각보다 어려웠어요...:speak_no_evil:
 
-3D 분야의 인기가 점점 높아지는 것 같습니다. 이렇게 조금씩이라도 계속해서 정리해서 트렌드를 따라갈 수 있도록 노력해보겠습니다:wink:
+3D 관련 task가 최근에 많이 보이는 것 같아요. 이렇게 조금씩 정리해서 3D 분야에도 손을 담궈볼 수 있도록...! 노력해보겠습니다:wink:
