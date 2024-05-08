@@ -119,27 +119,33 @@ n개의 bin으로 나누고 bin 안에서 1개의 점을 random하게 샘플링�
 $$
 C(\mathrm{r}) = \int^{t_f} _{t_n}T(t)\sigma(\mathrm{r}(t))\mathrm{c}(\mathrm{r}(t), \mathrm{d})dt, \  \mathrm{where} \  T(t)=\exp(- \int^t _{t_n}\sigma(\mathrm{r}(s))ds).
 $$
+> $C(\mathrm{r})$ : ray $\mathrm{r}$의 volume rendering 예상 색상 값<br>
+$t$ : 현재 sampling된 위치<br>
+$T(t)$ : 누적 투과도(transmittance)로 ray $\mathrm{r}$가 물체 일부 입자(particle)에 부딪히지 않고 $t$까지 이동할 확률<br>
+$\sigma(\mathrm{r}(t))$ : 밀도로 ray $\mathrm{r}$이 위치 $t$에서 입자와 충돌할 확률<br>
+$\mathrm{d}$ : 시각 방향($\theta, \phi$)<br>
+$\mathrm{c}(\mathrm{r}(t), \mathrm{d})$ : 방향 $\mathrm{d}$인 ray $\mathrm{r}$의 위치 $t$에서의 색상 값<br>
 
-- $C(\mathrm{r})$ : Volume Rendering의 결과인 픽셀 값.
-- $t_n$ : ray 시작점 / $t_f$ : ray 끝점
-- $t$ : 목표 점?
-- $T(t)$ : 누적 투과도(transmittance). 광선이 물체 일부 입자(particle)에 부딪히지 않고 이동할 확률
-- $\sigma(\mathrm{x})$ : 밀도(volume density).
-- $r(t)$ : 광선(ray). $\mathrm{r}(t) = \mathrm{o} + t\mathrm{d}$
-- $\mathrm{c}$ : RGB
-- $\mathrm{d}$ :
+$T(t)$가 ray가 위치 $t$까지 진행하며 다른 입자에 부딪히지 않을 확률이고 $\sigma(\mathrm{r}(t))$가 위치 $t$에서 입자와 ray가 충돌할 확률이니 $T(t)\sigma(\mathrm{r}(t))$는 ray가 위치 $t$에서 입자와 충돌해 ray가 종료될 확률을 의미합니다.
+
+$\mathrm{c}(\mathrm{r}(t), \mathrm{d})$는 방향 $\mathrm{d}$인 ray $\mathrm{r}$의 위치 $t$에서의 색상 값을 의미합니다.
 
 
-stratified sampling을 사용한다면 연속적인 위치(position)가 가능해 연속적인 장면 표현을 나타낼 수 있습니다. Max[26]에서 논의된 quadrature rule로 $C(\mathrm{r})$을 추정한다면 식을 아래와 같이 표현할 수 있습니다.
+stratified sampling을 사용한다면 연속적인 위치(position)가 가능해 연속적인 장면 표현을 나타낼 수 있어 위 수식과 같이 적분을 사용할 수 있습니다. <a href="https://ieeexplore.ieee.org/abstract/document/468400" target="_blank">Optical models for direct volume rendering</a>에서 논의된 quadrature rule을 사용해 유한한 수의 구간(bin) 합으로 $C(\mathrm{r})$을 추정하는 방법을 사용해 위의 식을 아래와 같이 discrete하게 변형했습니다.
+
+<br>
 
 $$
 \hat{C}(\mathrm{r}) = \sum^n _{i=1}T_i(1-\exp(-\sigma_i \delta_i))c_i, \ \mathrm{where} \ T_i=\exp \left( -\sum^{i-1} _{j=1}\sigma_j \delta_i\right)
 $$
+> $i$ : 구간(bins) 순서<br>
+$T_i$ : 이전 bins에 부딪히지 않고 현재 bins까지 이동할 확률<br>
+$\sigma_i$ : i번째 bin의 밀도(=$\sigma(\mathrm{r}(t_i))$)<br>
+$\delta_i$ : i번째 sample과 i+1번째 sample의 거리(=t_{i+1} - t_i)<br>
+$c_i$ : i번째 bin을 나타내는 색상(=$\mathrm{c}(\mathrm{r}(t_i))$)<br>
 
-$\delta_i$는 인접한 sample 사이 거리로 $\delta_i = t_{i+1} - t_i$를 의미합니다.
-$\alpha_i$는 ~~~로 alpha compositing...? $\alpha_i = 1-\exp(-\sigma_i\delta_i)$...?
-
-<br><br>
+$1-\exp(-\sigma_i \delta_i)$은 ray가 이전 충돌과 무관하게 i번째 bin에서 충돌할 확률을 의미합니다.
+<br>
 
 ---
 
