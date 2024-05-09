@@ -92,27 +92,19 @@ radiance field에서 particle과의 충돌은 확률적이기 때문에 ray를 �
 
 ## Volume Rendering
 
-Volume Rendering은 그래픽스 분야에서 3D 데이터를 2D 투시로 보여주는 시각화 기술을 말합니다.
-여러 방식이 있지만 NeRF에서는 Ray Casting 방법을 사용합니다.
-Ray Casting은 ~~~입니다.
+Volume Rendering은 그래픽스 분야에서 3D 데이터를 2D 투시로 보여주는 시각화 기술을 말합니다.<br>
+NeRF는 volume rendering을 하기 위해 radiance field 환경의 ray를 사용하는데, ray에 어떤 지점을 가져와 rendering에 사용할 지 정해야하며 이때 Stratified Sampling을 사용해 지점들을 sampling합니다.
 
-[참고]
-- ZZEN님의 <a href="https://nuguziii.github.io/cg/CG-001/" target="_blank">[구현하기] Volume Ray Casting 개념 및 구현</a>
-- lobotomi님의 <a href="https://lobotomi.tistory.com/35" target="_blank">Volume Rendering</a>
-
-
-### Sampling
-stratified Sampling을 사용
-dicrete하지 않고 continuous sampling을 위함?
-
+### Stratified Sampling
 
 $$
 t_i \sim \mathcal{U} \left[ t_n + \frac{i-1}{N}(t_f - t_n), t_n + \frac{i}{N}(t_f - t_n) \right]
 $$
+> $N$ : bin 개수<br>
+$t_n$ : ray sampling 시작 위치<br>
+$t_f$ : ray sampling 끝 위치
 
-n개의 bin으로 나누고 bin 안에서 1개의 점을 random하게 샘플링함.
-학습할 때마다 sampling되는 point들이 조금씩 달라지기 떄문에 continuous에 대해 학습이 가능함.
-
+ray에서 sampling이 가능한 시작 위치를 $t_n$, 끝 위치를 $t_f$로 두었을 때, 두 값을 뺀 값($t_f - t_n$)을 bin 개수인 $N$으로 나누어 구간을 정합니다(논문에서는 $N=64$ 사용). 이 구간에서 weight 지정 없이 1개의 지점을 random하게 sampling하기 때문에 uniform sampling을 하게 됩니다. uniform sampling이기 때문에 sampling 할 때마다 sampling되는 지점이 계속해서 달라지게 되고 이로 인해 ray에 대해 continuous한 학습이 가능하다고 합니다.
 
 ### Volume Rendering 수식
 
@@ -145,6 +137,9 @@ $\delta_i$ : i번째 sample과 i+1번째 sample의 거리(=t_{i+1} - t_i)<br>
 $c_i$ : i번째 bin을 나타내는 색상(=$\mathrm{c}(\mathrm{r}(t_i))$)<br>
 
 $1-\exp(-\sigma_i \delta_i)$은 ray가 이전 충돌과 무관하게 i번째 bin에서 충돌할 확률을 의미합니다.
+
+이후 alpha compositing(알파 합성)으로 $\alpha_i = 1-\exp(-\sigma_i\delta_i)$을 계산한다....?
+
 <br>
 
 ---
@@ -235,7 +230,7 @@ loss는 굉장히 단순하나 100-300k iteration에 V100 GPU를 사용해도 1~
 
 Figure 7에서 NeRF의 모델 구조를 볼 수 있습니다. 모델에 입력되는 값은 녹색, 출력되는 값은 빨간색으로 표시되어 있으며 검은 실선 화살표는 ReLU activation, 주황색 실선 화살표는 activation이 없고 검은색 점선 화살표는 Sigmoid activation이 있는 layer입니다.
 
-위치 $\mathrm{x}$로만 밀도 $\sigma$를 예측하도록 모델을 제한하기 위해서 밀도 $\sigma$는 중간 layer에서 출력되며, 색상 $\mathrm{c}$는 위치 $\mathrm{x}$와 시각 방향 $\mathrm{d}$를 모두 활용해 예측하도록 합니다.
+위치 $\mathrm{x}$로만 밀도 $\sigma$를 예측하도록 모델을 제한하기 위해서 밀도 $\sigma$는 중간 layer에서 출력되며, 색상 $\mathrm{c}$는 위치 $\mathrm{x}$와 시각 방향 $\mathrm{d}$를 모두 활용해 예측하도록 합니다. 색상은 물체를 바라보는 방향에 따라 영향을 받으며 밀도는 시각 방향에 영향을 받지 않기 때문에 밀도와 관련된 물체의 존재 여부와 물성 또한 영향을 받지 않습니다.
 
 NeRF는 DeepSDF[32] 구조를 따르며 5번째 layer의 activation과 $\gamma(\mathrm{x})$이 concat되는 skip connection이 있습니다. 중간 출력인 밀도 $\sigma$는 음수가 될 수 없으므로 ReLU가 추가적으로 사용된 후 출력되며, 시각 방향 $\gamma(\mathrm{d})$이 9번째 layer에서 추가로 입력됩니다. 마지막 layer의 ~~~ 이후 색상 RGB 값이 출력됩니다.
 
