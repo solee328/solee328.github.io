@@ -149,12 +149,11 @@ $1-\exp(-\sigma_i \delta_i)$은 ray가 이전 충돌과 무관하게 i번째 bin
 
 MLP가 higher frequency function을 표현할 수 있도록 Positional encoding을 사용해 입력 5D 좌표를 변환합니다. 또한 high-frequency scene representation을 적절하게 샘플링하는 데 필요한 쿼리 수를 줄이기 위해 hierarchical sampling을 사용합니다.
 
-### Positional encoding
+### Positional Encoding
 
-NeRF 모델 입력인 $xyz\theta\phi$을 사용할 시, 모델이 lower frequency function을 학습하는 것에 편향되어 있다는 것을 발견함.
-[35]의 연구 또한 마찬가지였는데, [35]의 경우 high frequency function을 사용해 입력 값을 더 높은 고차원 공간에 매핑하면 high frequency variation이 포함된 데이터를 더 잘 맞출 수 있음을 보여주었습니다.
+NeRF는 모델 입력으로 $xyz\theta\phi$을 사용할 시, 모델이 lower frequency function을 학습하는 것에 편향되어 있어 high frequency의 학습이 제대로 이루어지지 않았다고 합니다.
 
-따라서 NeRF 또한 같은 이유로 입력을 고차원 공간으로 매핑하기 위한 $\gamma$를 사용해 모델 $F_{\Theta}$을 $F_\Theta = F_\Theta' \circ \gamma$로 변화시킵니다.
+high frequency function을 사용해 입력 값을 더 높은 고차원 공간에 매핑하면 high frequency variation이 포함된 데이터를 더 잘 맞출 수 있음을 보여준 <a href="https://arxiv.org/abs/1806.08734" target="_blank">On the Spectral Bias of Neural Networks</a>처럼 입력 값을 더 고차원에 매핑하고자 high frequency function인 $\gamma$를 사용해 모델 $F _{\Theta}$을 $F _{\Theta} = F _{\Theta'} \circ \gamma$로 변화시킵니다.
 
 <br>
 
@@ -162,19 +161,22 @@ $$
 \gamma(p) = (\sin(2^0\pi p), \cos(2^0\pi p), \cdots, \sin(2^{L-1}\pi p), \cos(2^{L-1}\pi p))
 $$
 
-하나의 변수($p$)를 사용해 정보를 더 늘리기 쉬워짐.
+$\gamma$는 하나의 변수($p$)가 입력으로 들어가며 수식에서 볼 수 있듯이 입력 값 $p$ 하나가 $L$ * 2(sin, cos 2종류)으로 고차원에 매핑됩니다.
 
-NeRF에서 $\gamma(\mathrm{d})$에는 $L=4$, $\gamma(\mathrm{x})$에는 $L=10$을 적용했습니다.
-L이 10이라면 sin, cos이 10개씩 생겨 20개가 됨. -> location 값 x, y, z를 $p$에 넣어 $\gamma$를 계산하면 20개씩 총 60개 차원이 완성됨.
-density $\sigma$는 location에만 의존하는 값이므로 먼저 추출, 추가로 direction에 대한 positional encoding 값을 추가로 넣어 RGB 값을 추출함.
+NeRF에서 $\gamma(\mathrm{x})$에는 $L=10$, $\gamma(\mathrm{d})$에는 $L=4$을 적용했습니다.<br>
+위치 $\mathrm{x}$에 해당하는 $x, y, z$를 $\gamma$의 입력으로 넣게 되면 $x, y, z$ 3차원 값이 $L$(10) * 2($\sin$, $\cos$) * 3($x, y, z$) = 60으로 60차원이 됩니다.<br>
+시각 방향 $\mathrm{d}$에 해당하는 $\theta, \phi$를 $\gamma$의 입력으로 넣으면 $\theta, \phi$ 2차원 값이 $L$(4) * 2(sin, cos) * 3($\theta, \phi, r$) = 24으로 24차원이 됩니다.
 
+여기서 시각 방향 $\mathrm{d}$가 위에서 설명한 $\theta, \phi$가 아닌 $\theta, \phi, r$인 이유는 NeRF가 사용하는 spherical coordinate는 실제로 $\theta, \phi, r$로 구성되지만 NeRF의 학습 시에는 이를 3d cartessian unit vector로 변형해 사용하기 때문에 $r=1$로 고정시켜 사용하기 때문입니다. 따라서 실제 시각 방향 $\mathrm{d}$는 $\theta, \phi, r$로 3차원이 됩니다.
+
+<br>
 
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/a1766a96-0591-493d-a0c1-bea3a4d8d0f5" width="800" height="250">
 </div>
 > Figure 4. view dependence와 positional encoding에 따른 결과 시각화.
 
-positional encoding을 사용한 경우에 대한 결과 차이를 볼 수 있습니다.
+positional encoding 유무에 대한 결과 차이를 Figure 4에서 볼 수 있습니다. Positional Encoding을 사용하지 않는 가장 오른쪽의 그림은 high frequency에 해당하는 이미지의 디테일들을 제대로 표현하지 못하고 뭉개지는 모습을 볼 수 있습니다. Positional Encoding으로 입력 차원을 고차원으로 매핑하는 것이 얼마나 NeRF에서 중요한지 확실하게 보여주네요.
 
 
 ### Hierarchical volume sampling
@@ -234,6 +236,7 @@ Figure 7에서 NeRF의 모델 구조를 볼 수 있습니다. 모델에 입력�
 
 NeRF는 DeepSDF[32] 구조를 따르며 5번째 layer의 activation과 $\gamma(\mathrm{x})$이 concat되는 skip connection이 있습니다. 중간 출력인 밀도 $\sigma$는 음수가 될 수 없으므로 ReLU가 추가적으로 사용된 후 출력되며, 시각 방향 $\gamma(\mathrm{d})$이 9번째 layer에서 추가로 입력됩니다. 마지막 layer의 ~~~ 이후 색상 RGB 값이 출력됩니다.
 
+density $\sigma$는 location에만 의존하는 값이므로 먼저 추출, 추가로 direction에 대한 positional encoding 값을 추가로 넣어 RGB 값을 추출함.
 
 <br>
 
@@ -342,6 +345,8 @@ Realistic Synthetic 360$^\circ$에 대한 ablation study 결과를 Table 2에서
 <br>
 
 ---
+
+<br>
 
 NeRF 논문 리뷰가 끝났습니다! 끝까지 봐주셔서 감사합니다:) <br>
 모델 구조만 봤을 때는 단순해서 쉽네!라고 생각했지만, 3D 분야를 처음 알게 되니 개념을 익히는 것부터 수학적 공식을 이해하는 것까지 생각보다 어려웠어요...:speak_no_evil:
