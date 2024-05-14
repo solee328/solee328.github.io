@@ -183,21 +183,11 @@ positional encoding 유무에 대한 결과 차이를 Figure 4에서 볼 수 있
 
 ray sampling에서 결과 퀄리티를 높이고 싶으면 더 많은 sampling을 진행하는 것이지만, 렌더링된 이미지에 기여하지 않는 물체가 없는 부분(free space), 가려진 부분(occluded region)이 반복적으로 샘플링될 수 있어 비효율적입니다.
 
-NeRF는 volume redering 초기 연구[20]에서 영감을 받아 효율적인 샘플링 방식인 hierarchical representation을 제안합니다. 샘플링을 2번에 나눠서하는 방식으로 첫번째를 coarse network, 두번째를 fine network라 합니다.
+NeRF는 volume redering 초기 연구인 <a href="https://dl.acm.org/doi/10.1145/78964.78965" target="_blank">Efficient ray tracing of volume data</a>에서 영감을 받아 효율적인 샘플링 방식인 hierarchical volume sampling을 제안합니다. 샘플링을 2번에 나눠서하는 방식으로 2개의 모델을 사용하며 첫번째 모델을 coarse network, 두번째 모델을 fine network라 합니다.
 
-coarse network는 stratified sampling을 사용해 $N_c$를 샘플링합니다. coarse network인 $N_c$로 $C(\mathrm{r})$를 생성합니다.
+coarse network는 위에서 설명했던 Stratified Sampling 방식을 사용합니다. $N$ 수에 따라 bins를 나누고 해당 bins 안에서 uniform random sampling을 통해 샘플링을 진행한 후 Volume Rendering 수식까지 모두 계산합니다. 이때 밀도값이 높은 샘플링 지점은 어떤 물체가 있을 것으로 예상되는 지점이 되며, 픽셀에 표현될 확률이 높은 지점이라고도 할 수 있습니다. 따라서 이 지점들에 대해서 더 샘플링을 진행한다면 더 디테일한 좋은 결과를 얻을 수 있을 것이라 상정해 두번째 fine network 학습 과정을 진행합니다.
 
-$$
-\hat{C} _c(\mathrm{r}) = \sum ^{N_c} _{i=1}w_ic_i, \quad w_i=T_i(1-\exp(-\sigma_i \delta_i))
-$$
-
-이 가중치를 $\hat{w}_i = w_i / \sum ^{N_c} _{j=1}w_j$로 normalize하면 piecewise-constant PDF가 생성됩니다. 역변환 샘플링(inverse transform sampling)을 사용해 이 분포에서 두번째 샘플링 $N_f$을 진행합니다.
-
-```
-설명해 추가할 그림
-```
-
-최종적으로 모든 샘플링인 $N_c + N_f$이 fine network가 되며 이를 사용해 $\hat{C} ^f(r)$을 계산합니다. 이를 통해 free space, occluded region이 아닌 object가 포함될 것으로 예상되는 영역에서 더 많은 샘플링이 가능해 효율적인 샘플링이 가능합니다.
+첫번째 모델의 결과 값 $N_c$를 $w_i=T_i(1-\exp(-\sigma_i \delta_i)$라 할 때, 이를 normalize한 $\hat{w}_i = w_i / \sum ^{N_c} _{j=1}w_j$ piecewise-constant PDF를 생성합니다. 이후 inverse transform sampling(inverse CDF method)를 사용해 밀도 값이 높은 지점을 샘플링합니다. fine network에는 inverse transform sampling으로 샘플링한 지점들과 함께 처음 coarse network에서 샘플링했던 지점들을 모두 함께 사용하며($N_c + N_f$) 최종 렌더링 색상 $\hat{C}^f(r)$을 계산하게 됩니다.
 
 <br>
 
