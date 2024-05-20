@@ -20,12 +20,15 @@ use_math: true
 
 ## 소개
 
-<div>
-  <iframe src="http://cseweb.ucsd.edu/~viscomp/projects/LF/papers/ECCV20/nerf/website_renders/synth_grid_3.mp4" width="700" height="393" frameboarder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+
+<div align="center">
+  <video muted controls width="700" height="393" poster="https://github.com/solee328/solee328.github.io/assets/22787039/2f53e06e-3076-42f1-a515-79bf88f5b06c">
+    <source src="http://cseweb.ucsd.edu/~viscomp/projects/LF/papers/ECCV20/nerf/website_renders/synth_grid_3.mp4" type="video/mp4">
+  </video>
 </div>
 > NeRF 공식 <a href="https://www.matthewtancik.com/nerf" target="_blank">프로젝트 페이지</a>의 영상
 
-NeRF에서 제시한 결과 영상들입니다.여러 Object들을 360$^\circ$ 회전시키며 보여주는 결과가 마치 3D Object Asset를 보는 것 같지 않나요?<br>
+NeRF에서 제시한 결과 영상들입니다.여러 Object들을 360$^\circ$ 회전시키며 보여주는 결과가 마치 3D Object Asset을 보는 것 같지 않나요?<br>
 
 <br>
 
@@ -35,7 +38,7 @@ NeRF에서 제시한 결과 영상들입니다.여러 Object들을 360$^\circ$ �
 > Figure 1. 입력 이미지들로부터 연속적인 5D neural radiance field representation scene을 최적화하는 방법.<br>
 volume rendering을 사용해 ray를 따라 scene의 sample을 축적해 모든 시점에서의 scene을 렌더링합니다. 반구에서 무작위로 포착한 드럼 이미지 100개를 시각화하고 최적화된 NeRF에서 렌더링한 새로운 뷰를 보여줍니다.
 
-NeRF는 하나의 2D object에 대해 여러 방향에서 찍힌 이미지들을 학습해 학습하지 않은 방향에 대해서 object 모습을 예측합니다. 3D Object를 생성하는 것이 아니라 object를 새로운 방향에서 바라보는 장면을 생성하는 View Synthesis 기술입니다.
+NeRF는 하나의 2D object에 대해 여러 방향에서 찍힌 이미지들을 학습해 학습하지 않은 방향에서 바라본 object 모습을 예측합니다. 3D Object 자체를 생성하는 것이 아니라 object를 새로운 방향에서 바라보는 장면을 생성하는 View Synthesis 기술입니다.
 
 Figure 1과 프로젝트 공식 영상에서 Drum에 대한 입력 이미지로 NeRF를 학습해 최적화한 이후에는 학습하지 않았던 새로운 방향에서 본 이미지를 생성한 것을 볼 수 있습니다.
 
@@ -46,22 +49,23 @@ Figure 1과 프로젝트 공식 영상에서 Drum에 대한 입력 이미지로 
 </div>
 > Figure 2. Neural Radiance Field scene representation 개요와 rendering 절차.<br>
 (a) ray를 따라 5D 좌표(위치 + 시각 방향)를 샘플링해 영상을 합성<br>
-(b) MLP에 좌표를 통과시켜 색상(RGB)와 밀도(density)를 생성<br>
-(c) volume rendering 기술을 이용해 생성한 값을 이미지로 합성<br>
-(d) 합성된 영상과 실제 학습 데이터 사이의 차이를 최소화해 scene representation를 최적화
+(b) MLP에 5D 좌표를 통과시켜 색상(RGB)와 밀도(density)를 생성<br>
+(c) volume rendering 기술을 이용해 ray를 픽셀 값으로 합성<br>
+(d) 합성된 픽셀과 실제 학습 데이터 사이의 차이를 최소화해 scene representation를 최적화
 
-NeRF의 동작 방식을 Figure 2에서 볼 수 있습니다. Figure 2에서 표현되어 있는 ray와 입력 데이터 $x, y, z, \theta, \phi$에 대해 간단하게 짚고 넘어가겠습니다!
+NeRF의 동작 방식을 Figure 2에서 볼 수 있습니다. Figure 2에서 표현되어 있는 ray와 입력 데이터로 사용되는 5D 좌표 $x, y, z, \theta, \phi$에 대해 간단하게 짚고 넘어가겠습니다!
 
 <br>
 
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/4809b5ca-3500-4e46-ab75-84846a528a1e" width="800" height="250">
 </div>
-> <a href="https://arxiv.org/abs/2103.13415" target="_blank">Mip-NeRF</a>의 Figure 1.
+> <a href="https://arxiv.org/abs/2103.13415" target="_blank">Mip-NeRF</a>의 Figure 1.<br>
+(a)에서 NeRF의 ray를 설명한 그림을 볼 수 있습니다.
 
-ray는 화면 상에 투영되는 이미지를 생성하기 위해 object와 상호 작용되는 빛을 의미합니다. $\mathrm{r}(t) = \mathrm{o} + t\mathrm{d}$로 표현하며, 여기서 $\mathrm{o}$는 원점(카메라), $\mathrm{d}$는 시각 방향, $t$는 샘플링되는 지점(원점에서 시각 방향으로 특정 거리만큼 이동)을 의미합니다.
+우선 ray가 무엇인지 살펴보겠습니다. ray는 화면 상에 투영되는 이미지를 생성하기 위해 object와 상호 작용되는 빛을 의미합니다. $\mathrm{r}(t) = \mathrm{o} + t\mathrm{d}$로 표현하며, 여기서 $\mathrm{o}$는 원점(카메라), $\mathrm{d}$는 시각 방향, $t$는 샘플링되는 지점(원점에서 시각 방향으로 특정 거리만큼 이동)을 의미합니다.
 
-현실에서는 ray가 object가 닿는 순간 어떤 방향으로 반사되는 것까지 계산을 해야하지만, NeRF는 ray가 object가 부딪힐 때 해당 object에 닿는 빛의 양을 추측하는 형태의 radiance field rendering 방식을 사용합니다. radiance field에서 하나의 object는 수많은 작은 입자로 이루어져 있어, 공간의 특정 지점에서 ray가 object와 충돌하는 것은 입자(particle)와 충돌이 발생할 확률로 근사화됩니다. 모든 광선은 입자가 닿을 때까지 field를 통과하며 최종적으로 종료되었을 시 해당 particle에서 카메라를 향새 반사되는 색을 반환합니다.
+현실에서는 ray가 object가 닿는 순간 어떤 방향으로 반사되는 것까지 계산을 해야하지만, NeRF는 ray가 object가 부딪힐 때 해당 object에 닿는 빛의 양을 추측하는 형태의 radiance field rendering 방식을 사용합니다. radiance field에서 하나의 object는 수많은 작은 입자로 이루어져 있어, 공간의 특정 지점에서 ray가 object와 충돌하는 것은 입자(particle)와 충돌이 발생할 확률로 근사화됩니다. 모든 광선은 입자가 닿을 때까지 field를 통과하며 최종적으로 종료되었을 시 해당 particle에서 카메라를 향해 반사되는 색을 반환합니다.
 
 <br>
 
@@ -70,7 +74,7 @@ ray는 화면 상에 투영되는 이미지를 생성하기 위해 object와 상
 </div>
 > 지점($x, y, z$)과 시각 방향($\theta, \phi$)의 시각화.
 
-NeRF는 ray를 정의하기 위해 지점($x, y, z$, position)과 시각 방향($\theta, \phi$, direction)을 사용합니다. $\theta$는 물체를 바라보는 시선을 $xy$ 평면에 projection했을 때 $x$ 축과 이루는 각도를 나타내고, $\phi$는 물체를 바라보는 시선과 $z$축과의 각도를 의미합니다.
+이런 ray를 정의하기 위해 NeRF는 지점($x, y, z$, position)과 시각 방향($\theta, \phi$, direction)을 사용합니다. $\theta$는 물체를 바라보는 시선을 $xy$ 평면에 projection했을 때 $x$ 축과 이루는 각도를 나타내고, $\phi$는 물체를 바라보는 시선과 $z$축과의 각도를 의미합니다.
 
 <br>
 
@@ -133,10 +137,12 @@ $$
 > $i$ : 구간(bins) 순서<br>
 $T_i$ : 이전 bins에 부딪히지 않고 현재 bins까지 이동할 확률<br>
 $\sigma_i$ : i번째 bin의 밀도(=$\sigma(\mathrm{r}(t_i))$)<br>
-$\delta_i$ : i번째 sample과 i+1번째 sample의 거리(=$t_{i+1} - t_i$)<br>
+$\delta_i$ : i번째 sample과 i+1번째 sample의 거리(=t_{i+1} - t_i)<br>
 $c_i$ : i번째 bin을 나타내는 색상(=$\mathrm{c}(\mathrm{r}(t_i))$)<br>
 
-$1-\exp(-\sigma_i \delta_i)$는 위의 continuous term에서 $\sigma$를 alpha compositing(알파 합성)한 값으로 의미는 $\sigma$와 동일하게 ray가 이전 충돌과 무관하게 i번째 bin에서 충돌할 확률을 의미합니다.
+$1-\exp(-\sigma_i \delta_i)$은 ray가 이전 충돌과 무관하게 i번째 bin에서 충돌할 확률을 의미합니다.
+
+이후 alpha compositing(알파 합성)으로 $\alpha_i = 1-\exp(-\sigma_i\delta_i)$을 계산한다....?
 
 <br>
 
@@ -204,10 +210,13 @@ $$
 - $\hat{C} _c(\mathrm{r})$ : coarse volume 예측 값
 - $\hat{C} _f(\mathrm{r})$ : fine volume 예측 값
 
+sampling camera ray -> hierarchical sampling -> volume rendering -> computing loss의 단계를 반복하며 모델을 학습시킨다.
+Coarse, fine을 MSE loss한 모습.
 
-Hierarchical volume sampling에서 Nerf는 coarse network과 fine network 2개의 모델을 사용하는 것을 설명했었는데, Loss에서도 두 모델이 모두 사용되는 것을 볼 수 있습니다. Loss는 MSE로 volume rendering의 결과로 픽셀 값($\hat{C} _c(\mathrm{r}$, $\hat{C} _f(\mathrm{r})$)이 합성되면 학습 데이터인 $C(r)$과 비교해 loss를 계산합니다.
+NeRF에서는 $\mathcal{R}$=4096, $N_c$=64, $N_f$=128를 사용했다고 합니다.
+loss는 굉장히 단순하나 100-300k iteration에 V100 GPU를 사용해도 1~2일 정도가 소요된다.
 
-NeRF에서는 $\mathcal{R}$=4096, $N_c$=64, $N_f$=128를 사용했으며, loss는 굉장히 단순하나 100-300k iteration에 V100 GPU를 사용해도 1~2일 정도가 소요되었다고 합니다.
+<br>
 
 ### Model
 <div>
@@ -219,7 +228,9 @@ Figure 7에서 NeRF의 모델 구조를 볼 수 있습니다. 모델에 입력�
 
 위치 $\mathrm{x}$로만 밀도 $\sigma$를 예측하도록 모델을 제한하기 위해서 밀도 $\sigma$는 중간 layer에서 출력되며, 색상 $\mathrm{c}$는 위치 $\mathrm{x}$와 시각 방향 $\mathrm{d}$를 모두 활용해 예측하도록 합니다. 색상은 물체를 바라보는 방향에 따라 영향을 받으며 밀도는 시각 방향에 영향을 받지 않기 때문에 밀도와 관련된 물체의 존재 여부와 물성 또한 영향을 받지 않습니다.
 
-NeRF는 <a href="https://arxiv.org/abs/1901.05103" target="_blank">DeepSDF</a> 구조를 따르며 5번째 layer의 activation과 $\gamma(\mathrm{x})$이 concat되는 skip connection이 있습니다. 중간 출력인 밀도 $\sigma$는 음수가 될 수 없으므로 ReLU가 추가적으로 사용된 후 출력되며, 시각 방향 $\gamma(\mathrm{d})$이 9번째 layer에서 추가로 positional encoding이 된 후 입력됩니다. 마지막 layer의 이후 색상 RGB 값이 출력됩니다.
+NeRF는 DeepSDF[32] 구조를 따르며 5번째 layer의 activation과 $\gamma(\mathrm{x})$이 concat되는 skip connection이 있습니다. 중간 출력인 밀도 $\sigma$는 음수가 될 수 없으므로 ReLU가 추가적으로 사용된 후 출력되며, 시각 방향 $\gamma(\mathrm{d})$이 9번째 layer에서 추가로 입력됩니다. 마지막 layer의 ~~~ 이후 색상 RGB 값이 출력됩니다.
+
+density $\sigma$는 location에만 의존하는 값이므로 먼저 추출, 추가로 direction에 대한 positional encoding 값을 추가로 넣어 RGB 값을 추출함.
 
 <br>
 
@@ -228,12 +239,12 @@ NeRF는 <a href="https://arxiv.org/abs/1901.05103" target="_blank">DeepSDF</a> �
 </div>
 > Figure 3. view-dependent radiance 시각화.
 
-중간 출력인 밀도 $\sigma$는 시각 방향 값($\mathrm{d}$) 입력 전, 위치 값($\mathrm{x}$)만을 입력받은 상태에서 출력되므로 위치 값에만 의존한다는 것을 볼 수 있습니다. 논문에서는 이를 view-dependent라 표현하며 $\sigma$는 지점 $\mathrm{x}$에 대해서만 관여를 하기 때문에 한 지점을 고정하고 바라보는 시각 방향만 바뀌었을 때에도 연속적으로 표현이 가능하다고 합니다.
+색상 $c$는 $c = RGB$이니, NeRF의 MLP Network $F _{\Theta}$의 목적을 $F _{\Theta} : (\mathrm{x}, \mathrm{d}) \rightarrow (\mathrm{c}, \sigma)$로 표현할 수 있습니다.
+$c$는 지점 $\mathrm{x}$, 시각 방향 $\mathrm{d}$에 관계되며, $\sigma$는 지점 $\mathrm{x}$에 대해서만 관여를 하기 때문에 한 지점을 고정하고 바라보는 시각 방향만 바뀌었을 때에도 연속적으로 표현이 가능합니다.
 
-Figure 3의 배와 바다가 표현된 하나의 scene에서 (a)와 (b)는 같은 배와 바다를 표현하고 있지만 시각 방향 $\mathrm{d}$가 다른 경우입니다.
+예시로 Figure 3과 같은 경우를 볼 수 있습니다. 배와 바다가 표현된 하나의 scene에서 (a)와 (b)는 같은 배와 바다를 표현하고 있지만 시각 방향 $\mathrm{d}$가 다른 경우입니다.
 시각 방향이 바뀌었지만 Figure 3의 (c)에서 볼 수 있듯이 연속적인 색상 변화를 볼 수 있습니다. <a href="https://ko.wikipedia.org/wiki/%EB%9E%8C%EB%B2%A0%EB%A5%B4%ED%8A%B8_%EB%B0%98%EC%82%AC" target="_blank">Lambertian effect</a>가 적용되었다면, 바라보는 방향이 바뀌었더라도 같은 색상으로 보여야하지만, NeRF의 색상 $\mathrm{c}$는 지점 $\mathrm{x}$과 시각 방향 $\mathrm{d}$에 의존하기 때문에 색상이 바뀌었으며 non-Lambertian임을 나타냅니다.
-
-<br>
+<br><br>
 
 ---
 
@@ -242,10 +253,10 @@ Figure 3의 배와 바다가 표현된 하나의 scene에서 (a)와 (b)는 같�
 ### Dataset
 NeRF를 학습하기 위해서는 object가 다양한 각도에서 촬영된 이미지와 함께 카메라의 pose, intrinsic parameter, scene bounds에 대한 정보가 필요합니다.
 
-NeRF는 실제 데이터에 대한 이런 parameter를 추정하기 위해 <a href="https://openaccess.thecvf.com/content_cvpr_2016/papers/Schonberger_Structure-From-Motion_Revisited_CVPR_2016_paper.pdf" target="_blank">COLMAP structure-from-motion package</a>를 사용했다고 합니다.
+NeRF는 실제 데이터에 대한 이런 parameter를 추정하기 위해 COLMAP structure-from-motion package[39]를 사용했다고 합니다.
 
 - Diffuse Synthetic 360$^{\circ}$<br>
-  Diffuse Synthetic 360$^{\circ}$는 <a href="https://arxiv.org/abs/1812.01024" target="_blank">DeepVoxels</a> 데이터로 간단한 구조를 가진 Lambertian 객체 4개가 포함되어 있습니다. 각 객체에는 반구형(hemisphere)에서 시점이 샘플링되며 512x512 픽셀을 가집니다. 객체 하나(scene)의 전체 이미지에서 학습으로 479, 테스트로 100개를 사용합니다.
+  Diffuse Synthetic 360$^{\circ}$는 DeepVoxels[41]데이터로 간단한 구조를 가진 Lambertian 객체 4개가 포함되어 있습니다. 각 객체에는 반구형(hemisphere)에서 시점이 샘플링되며 512x512 픽셀을 가집니다. 객체 하나(scene)의 전체 이미지에서 학습으로 479, 테스트로 100개를 사용합니다.
 
 - Realistic Synthetic 360$^{\circ}$<br>
   복잡한 구조를 가진 non-Lambertian 객체 8개를 NeRF 팀에서 만들어 사용한 데이터셋입니다. 객체 8개 중 6개 객체는 반구형(hemisphere), 2개는 전체 (full sphere) 시점에서 샘플링되며 800x800 픽셀을 가집니다. 객체 하나(scene)의 전체 이미지에서 학습으로 100, 테스트로 200개를 사용합니다.
@@ -260,13 +271,13 @@ NeRF와 비교할 Baseline 모델들입니다. Local Light Field Fusion을 제�
 Baseline들의 가장 큰 tradeoff는 시간(time)과 공간(space)로 scene 하나에 하나의 모델을 사용하는 NV와 SRN은 scene 하나를 학습하는데 최소 12시간이 걸립니다. 대조적으로 LLFF는 작은 입력 데이터 셋을 10분 이내에 처리할 수 있습니다. 하지만 LLFF는 모든 입력 이미지에 대해 거대한 3D voxel grid를 생성하기 때문에 엄청난 저장 공간을 요구합니다. 하나의 Realistic Synthetic scene에 대해서 15GB이 필요합니다.
 
 - <a href="https://github.com/facebookresearch/neuralvolumes" target="_blank">Neural Volumes(NV)</a><br>
-  Neural Volumes(NV)는 deep 3D convolutional network로 1283개의 샘플을 이산화된 RGB$\alpha$ voxel grid와 323개의 3D warp gird 샘플에 대해 예측합니다. 알고리즘은 warped voxel grid를 통해 카메라 광선을 행진하며 새로운 view를 만듭니다.
+  Neural Volumes(NV)[24]는 deep 3D convolutional network로 1283개의 샘플을 이산화된 RGB$\alpha$ voxel grid와 323개의 3D warp gird 샘플에 대해 예측합니다. 알고리즘은 warped voxel grid를 통해 카메라 광선을 행진하며 새로운 view를 만듭니다.
 
 - <a href="https://github.com/vsitzmann/scene-representation-ne" target="_blank">Scene Representation Networks(SRN)</a><br>
-  Scene Representation Networks(SRN)은 연속적인 scene을 불투명한 표면(opaque surface)로 표현하며, recurrent neural network로 임의의 3D 좌 $(x, y, z)$에서 feature vector를 사용해 다음 step size를 예측합니다. SRN은 DeepVoxels[41]과 동일 저자로 더 나은 성능을 가지는 후속연구이므로 NeRF에서 DeepVoxels를 baseline에 포함하지 않았습니다.
+  Scene Representation Networks(SRN)[42]은 연속적인 scene을 불투명한 표면(opaque surface)로 표현하며, recurrent neural network로 임의의 3D 좌 $(x, y, z)$에서 feature vector를 사용해 다음 step size를 예측합니다. SRN은 DeepVoxels[41]과 동일 저자로 더 나은 성능을 가지는 후속연구이므로 NeRF에서 DeepVoxels를 baseline에 포함하지 않았습니다.
 
 - <a href="https://github.com/Fyusion/LLFF" target="_blank">Local Light Field Fusion(LLFF)</a>.<br>
-  Local Light Field Fusion(LLFF)는 3D convolutional network로 입력에 대해 이산화돤 frustum sampling RGB$\alpha$ grid(multiplane image 또는 MPI[52])를 예측한 다음, 근처 MPIs를 새로운 view로 alpha 합성하고 혼합해 새로운 view를 만듭니다.
+  Local Light Field Fusion(LLFF)[28]는 3D convolutional network로 입력에 대해 이산화돤 frustum sampling RGB$\alpha$ grid(multiplane image 또는 MPI[52])를 예측한 다음, 근처 MPIs를 새로운 view로 alpha 합성하고 혼합해 새로운 view를 만듭니다.
 
 ### Result
 
