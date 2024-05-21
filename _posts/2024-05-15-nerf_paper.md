@@ -104,17 +104,19 @@ NeRF는 volume rendering을 하기 위해 radiance field 환경의 ray를 사용
 $$
 t_i \sim \mathcal{U} \left[ t_n + \frac{i-1}{N}(t_f - t_n), t_n + \frac{i}{N}(t_f - t_n) \right]
 $$
+
 > $N$ : bin 개수<br>
 $t_n$ : ray sampling 시작 위치<br>
 $t_f$ : ray sampling 끝 위치
 
-ray에서 sampling이 가능한 시작 위치를 $t_n$, 끝 위치를 $t_f$로 두었을 때, 두 값을 뺀 값($t_f - t_n$)을 bin 개수인 $N$으로 나누어 구간을 정합니다(논문에서는 $N=64$ 사용). 이 구간에서 weight 지정 없이 1개의 지점을 random하게 sampling하기 때문에 uniform sampling을 하게 됩니다. uniform sampling이기 때문에 sampling 할 때마다 sampling되는 지점이 계속해서 달라지게 되고 이로 인해 ray에 대해 continuous한 학습이 가능하다고 합니다.
+ray에서 sampling이 가능한 시작 위치를 $t_n$, 끝 위치를 $t_f$로 두었을 때, 두 값을 뺀 값($t_f - t_n$)을 bin 개수인 $N$으로 나누어 구간을 정합니다(논문에서는 $N=64$ 사용). 하나의 bin 당 weight 없이 1개의 지점을 random하게 sampling하기 때문에 uniform sampling을 하게 됩니다. 하나의 bin 당 random 하게 하나의 지점을 뽑는 것으로 uniform sampling이기 때문에 샘플링 할 때마다 bin 내에서 샘플링 되는 지점이 계속해서 달라지게 되고 이로 인해 ray에 대해 continuous한 학습이 가능하다고 합니다.
 
 ### Volume Rendering 수식
 
 $$
 C(\mathrm{r}) = \int^{t_f} _{t_n}T(t)\sigma(\mathrm{r}(t))\mathrm{c}(\mathrm{r}(t), \mathrm{d})dt, \  \mathrm{where} \  T(t)=\exp(- \int^t _{t_n}\sigma(\mathrm{r}(s))ds).
 $$
+
 > $C(\mathrm{r})$ : ray $\mathrm{r}$의 volume rendering 예상 색상 값<br>
 $t$ : 현재 sampling된 위치<br>
 $T(t)$ : 누적 투과도(transmittance)로 ray $\mathrm{r}$가 물체 일부 입자(particle)에 부딪히지 않고 $t$까지 이동할 확률<br>
@@ -124,10 +126,10 @@ $\mathrm{c}(\mathrm{r}(t), \mathrm{d})$ : 방향 $\mathrm{d}$인 ray $\mathrm{r}
 
 $T(t)$가 ray가 위치 $t$까지 진행하며 다른 입자에 부딪히지 않을 확률이고 $\sigma(\mathrm{r}(t))$가 위치 $t$에서 입자와 ray가 충돌할 확률이니 $T(t)\sigma(\mathrm{r}(t))$는 ray가 위치 $t$에서 입자와 충돌해 ray가 종료될 확률을 의미합니다.
 
-$\mathrm{c}(\mathrm{r}(t), \mathrm{d})$는 방향 $\mathrm{d}$인 ray $\mathrm{r}$의 위치 $t$에서의 색상 값을 의미합니다.
+$\mathrm{c}(\mathrm{r}(t), \mathrm{d})$는 방향 $\mathrm{d}$인 ray $\mathrm{r}$의 위치 $t$에서의 색상 값을 의미합니다. 이 색상 값이 $T(t)\sigma(\mathrm{r}(t))$와 곱해진 값들의 누적 값이 최종 픽셀 $C(\mathrm{r})$이 됩니다.
 
 
-stratified sampling을 사용한다면 연속적인 위치(position)가 가능해 연속적인 장면 표현을 나타낼 수 있어 위 수식과 같이 적분을 사용할 수 있습니다. <a href="https://ieeexplore.ieee.org/abstract/document/468400" target="_blank">Optical models for direct volume rendering</a>에서 논의된 quadrature rule을 사용해 유한한 수의 구간(bin) 합으로 $C(\mathrm{r})$을 추정하는 방법을 사용해 위의 식을 아래와 같이 discrete하게 변형했습니다.
+stratified sampling을 사용한다면 연속적인 위치(position)가 가능해 연속적인 장면 표현을 나타낼 수 있어 위 수식과 같이 적분을 사용할 수 있습니다. 하지만 학습을 위해 계간하기 위해서는 유한한 수의 구간(bin) 합으로 $C(\mathrm{r})$을 추정해야 하기 때문에 <a href="https://ieeexplore.ieee.org/abstract/document/468400" target="_blank">Optical models for direct volume rendering</a>에서 논의된 quadrature rule을 사용해 위의 식을 아래와 같이 discrete하게 변형했습니다.
 
 <br>
 
@@ -140,9 +142,8 @@ $\sigma_i$ : i번째 bin의 밀도(=$\sigma(\mathrm{r}(t_i))$)<br>
 $\delta_i$ : i번째 sample과 i+1번째 sample의 거리(=t_{i+1} - t_i)<br>
 $c_i$ : i번째 bin을 나타내는 색상(=$\mathrm{c}(\mathrm{r}(t_i))$)<br>
 
-$1-\exp(-\sigma_i \delta_i)$은 ray가 이전 충돌과 무관하게 i번째 bin에서 충돌할 확률을 의미합니다.
+알파 합성(alpha compositing)으로 $\sigma$가 $1-\exp(-\sigma_i \delta_i)$로 변형되며 ray가 이전 충돌과 무관하게 i번째 bin에서 충돌할 확률을 의미하며 continuous일 때 수식의 $\sigma(\mathrm{r}(t))$와 같은 의미를 가집니다.
 
-이후 alpha compositing(알파 합성)으로 $\alpha_i = 1-\exp(-\sigma_i\delta_i)$을 계산한다....?
 
 <br>
 
