@@ -17,6 +17,7 @@ use_math: true
 <br><br>
 
 ---
+---
 
 ## 소개
 
@@ -83,7 +84,7 @@ NeRF의 동작 방식을 Figure 2에서 볼 수 있습니다. Figure 2에서 표
 </div>
 > Figure 2.(b) MLP에 좌표를 통과시켜 색상(RGB)와 밀도(density)를 생성
 
-NeRF은 하나의 Ray를 정의한 5D Input을 입력으로 받아 해당 Ray를 RGB$\sigma$ 표현한 것을 출력합니다. Figure 2.(b)에서 모델 $F_{\Theta}$는 위치 $\mathrm{x}=(x, y, z)$와 시각 방향 $\mathrm{d}=(\theta, \phi)$를 입력받아 색상 $\mathrm{c}=$RGB와 밀도 $\sigma$를 출력하는 $F_{\Theta} : (\mathrm{x}, \mathrm{d}) \rightarrow (\mathrm{c}, \sigma)$로 표현할 수 있습니다.
+NeRF은 하나의 Ray를 정의한 5D Input을 입력으로 받아 해당 Ray를 RGB$\sigma$ 표현한 것을 출력합니다. Figure 2.(b)에서 모델 $F_{\Theta}$는 위치 $\mathrm{x}=(x, y, z)$와 시각 방향 $\mathrm{d}=(\theta, \phi)$를 입력받아 색상 $\mathrm{c}$(=RGB)와 밀도 $\sigma$를 출력하는 $F_{\Theta} : (\mathrm{x}, \mathrm{d}) \rightarrow (\mathrm{c}, \sigma)$로 표현할 수 있습니다.
 
 
 $RGB$는 색상 값, $\sigma$는 밀도를 의미하며 radiance field에서 particle이 얼마나 object에 밀집되어 있는지를 표현합니다. 밀도 $\sigma$는 투명도의 역수를 의미하며 밀도가 높은 object는 철과 같은 고체로 선명하게 픽셀에 표현됩니다. 반대로 밀도가 낮은 object는 물과 같은 액체 또는 유리와 같이 투명도가 높은 고체가 해당하며 뒤에 있는 물체까지 픽셀에 표현되어야 하기 때문에 상대적으로 픽셀에 흐릿하게 표현됩니다.
@@ -92,6 +93,7 @@ radiance field에서 particle과의 충돌은 확률적이기 때문에 ray를 �
 
 <br>
 
+---
 ---
 
 ## Volume Rendering
@@ -136,6 +138,7 @@ stratified sampling을 사용한다면 연속적인 위치(position)가 가능�
 $$
 \hat{C}(\mathrm{r}) = \sum^n _{i=1}T_i(1-\exp(-\sigma_i \delta_i))c_i, \ \mathrm{where} \ T_i=\exp \left( -\sum^{i-1} _{j=1}\sigma_j \delta_i\right)
 $$
+
 > $i$ : 구간(bins) 순서<br>
 $T_i$ : 이전 bins에 부딪히지 않고 현재 bins까지 이동할 확률<br>
 $\sigma_i$ : i번째 bin의 밀도(=$\sigma(\mathrm{r}(t_i))$)<br>
@@ -148,11 +151,12 @@ $c_i$ : i번째 bin을 나타내는 색상(=$\mathrm{c}(\mathrm{r}(t_i))$)<br>
 <br>
 
 ---
+---
 
 ## More Trick
-복잡한 scene에 대해서 높은 해상도 표현이 가능하도록 NeRF를 최적화하기 위해 2가지 기법을 추가적으로 사용합니다.
+복잡한 scene에 대해서 높은 해상도 표현이 가능하도록 NeRF는 2가지 기법을 추가적으로 사용합니다.
 
-MLP가 higher frequency function을 표현할 수 있도록 Positional encoding을 사용해 입력 5D 좌표를 변환합니다. 또한 high-frequency scene representation을 적절하게 샘플링하는 데 필요한 쿼리 수를 줄이기 위해 hierarchical sampling을 사용합니다.
+첫번째는 Positional Encoding으로 모델이 higher frequency function을 표현할 수 있도록 Positional encoding을 사용해 입력 5D 좌표를 고차원으로 변환하는 방법입니다. 두번째는 hierarchical sampling으로 더 좋은 결과를 위해 단순하게 많은 sampling을 진행하는 것이 아닌 high-frequency 부분을 집중해 sampling하기 위한 방법입니다.
 
 ### Positional Encoding
 
@@ -172,7 +176,7 @@ NeRF에서 $\gamma(\mathrm{x})$에는 $L=10$, $\gamma(\mathrm{d})$에는 $L=4$�
 위치 $\mathrm{x}$에 해당하는 $x, y, z$를 $\gamma$의 입력으로 넣게 되면 $x, y, z$ 3차원 값이 $L$(10) * 2($\sin$, $\cos$) * 3($x, y, z$) = 60으로 60차원이 됩니다.<br>
 시각 방향 $\mathrm{d}$에 해당하는 $\theta, \phi$를 $\gamma$의 입력으로 넣으면 $\theta, \phi$ 2차원 값이 $L$(4) * 2(sin, cos) * 3($\theta, \phi, r$) = 24으로 24차원이 됩니다.
 
-여기서 시각 방향 $\mathrm{d}$가 위에서 설명한 $\theta, \phi$가 아닌 $\theta, \phi, r$인 이유는 NeRF가 사용하는 spherical coordinate는 실제로 $\theta, \phi, r$로 구성되지만 NeRF의 학습 시에는 이를 3d cartessian unit vector로 변형해 사용하기 때문에 $r=1$로 고정시켜 사용하기 때문입니다. 따라서 실제 시각 방향 $\mathrm{d}$는 $\theta, \phi, r$로 3차원이 됩니다.
+여기서 시각 방향 $\mathrm{d}$가 위에서 설명한 $\theta, \phi$가 아닌 $\theta, \phi, r$인 이유는 NeRF가 사용하는 spherical coordinate는 실제로 $\theta, \phi, r$로 구성되지만 NeRF의 학습 시에는 이를 3d cartessian unit vector로 변형해 사용하기 때문에 $r=1$로 고정시켜 사용하기 때문입니다. 따라서 실제 시각 방향 $\mathrm{d}$는 $\theta, \phi, r$이기 때문에 계산 시 2차원이 아닌 3차원으로 계산해야 합니다.
 
 <br>
 
@@ -181,12 +185,12 @@ NeRF에서 $\gamma(\mathrm{x})$에는 $L=10$, $\gamma(\mathrm{d})$에는 $L=4$�
 </div>
 > Figure 4. view dependence와 positional encoding에 따른 결과 시각화.
 
-positional encoding 유무에 대한 결과 차이를 Figure 4에서 볼 수 있습니다. Positional Encoding을 사용하지 않는 가장 오른쪽의 그림은 high frequency에 해당하는 이미지의 디테일들을 제대로 표현하지 못하고 뭉개지는 모습을 볼 수 있습니다. Positional Encoding으로 입력 차원을 고차원으로 매핑하는 것이 얼마나 NeRF에서 중요한지 확실하게 보여주네요.
+positional encoding 유무에 대한 결과 차이를 Figure 4에서 볼 수 있습니다. Positional Encoding을 사용하지 않는 가장 오른쪽의 그림은 high frequency에 해당하는 이미지의 디테일들을 제대로 표현하지 못하고 뭉개지는 모습을 볼 수 있습니다. Positional Encoding으로 입력 차원을 고차원으로 매핑하는 것이 얼마나 결과 퀄리티에 차이가 나는지 볼 수 있습니다. 생각한 것보다 훨씬 더 크게 차이가 나네요 :eyes:
 
 
 ### Hierarchical volume sampling
 
-ray sampling에서 결과 퀄리티를 높이고 싶으면 더 많은 sampling을 진행하는 것이지만, 렌더링된 이미지에 기여하지 않는 물체가 없는 부분(free space), 가려진 부분(occluded region)이 반복적으로 샘플링될 수 있어 비효율적입니다.
+ray sampling에서 결과 퀄리티를 높이고 싶으면 더 많은 sampling을 진행하는 방법이 가장 단순하고 쉽지만, 렌더링된 이미지에 기여하지 않는 물체가 없는 부분(free space), 가려진 부분(occluded region)이 반복적으로 샘플링될 수 있어 비효율적입니다.
 
 NeRF는 volume redering 초기 연구인 <a href="https://dl.acm.org/doi/10.1145/78964.78965" target="_blank">Efficient ray tracing of volume data</a>에서 영감을 받아 효율적인 샘플링 방식인 hierarchical volume sampling을 제안합니다. 샘플링을 2번에 나눠서하는 방식으로 2개의 모델을 사용하며 첫번째 모델을 coarse network, 두번째 모델을 fine network라 합니다.
 
@@ -197,6 +201,7 @@ coarse network는 위에서 설명했던 Stratified Sampling 방식을 사용합
 <br>
 
 ---
+---
 
 ## Loss & Model
 
@@ -206,16 +211,12 @@ $$
 \mathcal{L} = \sum _{\mathrm{r}\in \mathcal{R}}\left[ \|\hat{C} _c(\mathrm{r}) - C(\mathrm{r})\|^2_2 + \|\hat{C} _f(\mathrm{r}) - C(\mathrm{r})\|^2_2 \right]
 $$
 
-- $\mathcal{R}$ : 각 batch에 ray set
-- $C(\mathrm{r})$ : ray $\mathrm{r}$에 대한 GT
-- $\hat{C} _c(\mathrm{r})$ : coarse volume 예측 값
-- $\hat{C} _f(\mathrm{r})$ : fine volume 예측 값
+> $\mathcal{R}$ : 각 batch에 ray set<br>
+ $C(\mathrm{r})$ : ray $\mathrm{r}$에 대한 GT<br>
+ $\hat{C} _c(\mathrm{r})$ : coarse volume 예측 값<br>
+ $\hat{C} _f(\mathrm{r})$ : fine volume 예측 값
 
-sampling camera ray -> hierarchical sampling -> volume rendering -> computing loss의 단계를 반복하며 모델을 학습시킨다.
-Coarse, fine을 MSE loss한 모습.
-
-NeRF에서는 $\mathcal{R}$=4096, $N_c$=64, $N_f$=128를 사용했다고 합니다.
-loss는 굉장히 단순하나 100-300k iteration에 V100 GPU를 사용해도 1~2일 정도가 소요된다.
+NeRF의 loss는 MSE로 사용하는 2개의 모델인 coarse network와 fine network의 volume rendering 결과 값을 실제 픽셀 값인 $C(\mathrm{r})$과의 차이를 계산하게 됩니다. 논문에서는 $\mathcal{R}$=4096, $N_c$=64, $N_f$=128를 사용했으며, loss는 굉장히 단순하나 100-300k iteration에 V100 GPU를 사용해도 1~2일 정도가 소요되었다고 합니다.
 
 <br>
 
@@ -229,9 +230,9 @@ Figure 7에서 NeRF의 모델 구조를 볼 수 있습니다. 모델에 입력�
 
 위치 $\mathrm{x}$로만 밀도 $\sigma$를 예측하도록 모델을 제한하기 위해서 밀도 $\sigma$는 중간 layer에서 출력되며, 색상 $\mathrm{c}$는 위치 $\mathrm{x}$와 시각 방향 $\mathrm{d}$를 모두 활용해 예측하도록 합니다. 색상은 물체를 바라보는 방향에 따라 영향을 받으며 밀도는 시각 방향에 영향을 받지 않기 때문에 밀도와 관련된 물체의 존재 여부와 물성 또한 영향을 받지 않습니다.
 
-NeRF는 DeepSDF[32] 구조를 따르며 5번째 layer의 activation과 $\gamma(\mathrm{x})$이 concat되는 skip connection이 있습니다. 중간 출력인 밀도 $\sigma$는 음수가 될 수 없으므로 ReLU가 추가적으로 사용된 후 출력되며, 시각 방향 $\gamma(\mathrm{d})$이 9번째 layer에서 추가로 입력됩니다. 마지막 layer의 ~~~ 이후 색상 RGB 값이 출력됩니다.
+NeRF는 <a href="https://arxiv.org/abs/1901.05103" target="_blank">DeepSDF</a> 구조를 따르며 5번째 layer의 activation과 $\gamma(\mathrm{x})$이 concat되는 skip connection이 있습니다. 중간 출력인 밀도 $\sigma$는 음수가 될 수 없으므로 ReLU가 추가적으로 사용된 후 출력되며, 시각 방향 $\gamma(\mathrm{d})$이 9번째 layer에서 추가로 입력됩니다.
 
-density $\sigma$는 location에만 의존하는 값이므로 먼저 추출, 추가로 direction에 대한 positional encoding 값을 추가로 넣어 RGB 값을 추출함.
+밀도인 $\sigma$는 위치(\mathrm{x})에만 의존하는 값이므로 먼저 추출되며, 색상 $c$은 위치(\mathrm{x})와 시각 방향(\mathrm{d})에 모두 영향을 받기 때문에 모델 중간에 추가로 시각 방향에 대한 positional encoding 값을 추가로 넣어 계산되는 것을 모델 구조를 통해 볼 수 있습니다.
 
 <br>
 
@@ -240,13 +241,14 @@ density $\sigma$는 location에만 의존하는 값이므로 먼저 추출, 추�
 </div>
 > Figure 3. view-dependent radiance 시각화.
 
-색상 $c$는 $c = RGB$이니, NeRF의 MLP Network $F _{\Theta}$의 목적을 $F _{\Theta} : (\mathrm{x}, \mathrm{d}) \rightarrow (\mathrm{c}, \sigma)$로 표현할 수 있습니다.
+색상 $c$는 $c$=RGB로 NeRF의 MLP Network $F _{\Theta}$의 목적을 $F _{\Theta} : (\mathrm{x}, \mathrm{d}) \rightarrow (\mathrm{c}, \sigma)$로 표현할 수 있습니다.
 $c$는 지점 $\mathrm{x}$, 시각 방향 $\mathrm{d}$에 관계되며, $\sigma$는 지점 $\mathrm{x}$에 대해서만 관여를 하기 때문에 한 지점을 고정하고 바라보는 시각 방향만 바뀌었을 때에도 연속적으로 표현이 가능합니다.
 
-예시로 Figure 3과 같은 경우를 볼 수 있습니다. 배와 바다가 표현된 하나의 scene에서 (a)와 (b)는 같은 배와 바다를 표현하고 있지만 시각 방향 $\mathrm{d}$가 다른 경우입니다.
+그 결과를 Figure 3에서 볼 수 있습니다. 배와 바다가 표현된 하나의 scene에서 (a)와 (b)는 같은 배와 바다를 표현하고 있지만 시각 방향 $\mathrm{d}$가 다른 경우입니다.
 시각 방향이 바뀌었지만 Figure 3의 (c)에서 볼 수 있듯이 연속적인 색상 변화를 볼 수 있습니다. <a href="https://ko.wikipedia.org/wiki/%EB%9E%8C%EB%B2%A0%EB%A5%B4%ED%8A%B8_%EB%B0%98%EC%82%AC" target="_blank">Lambertian effect</a>가 적용되었다면, 바라보는 방향이 바뀌었더라도 같은 색상으로 보여야하지만, NeRF의 색상 $\mathrm{c}$는 지점 $\mathrm{x}$과 시각 방향 $\mathrm{d}$에 의존하기 때문에 색상이 바뀌었으며 non-Lambertian임을 나타냅니다.
 <br><br>
 
+---
 ---
 
 ## 실험 설정
@@ -254,31 +256,31 @@ $c$는 지점 $\mathrm{x}$, 시각 방향 $\mathrm{d}$에 관계되며, $\sigma$
 ### Dataset
 NeRF를 학습하기 위해서는 object가 다양한 각도에서 촬영된 이미지와 함께 카메라의 pose, intrinsic parameter, scene bounds에 대한 정보가 필요합니다.
 
-NeRF는 실제 데이터에 대한 이런 parameter를 추정하기 위해 COLMAP structure-from-motion package[39]를 사용했다고 합니다.
+NeRF는 실제 데이터에 대한 이런 parameter를 추정하기 위해 <a href="https://openaccess.thecvf.com/content_cvpr_2016/papers/Schonberger_Structure-From-Motion_Revisited_CVPR_2016_paper.pdf" target="_blank">COLMAP structure-from-motion package</a>를 사용했다고 합니다.
 
 - Diffuse Synthetic 360$^{\circ}$<br>
-  Diffuse Synthetic 360$^{\circ}$는 DeepVoxels[41]데이터로 간단한 구조를 가진 Lambertian 객체 4개가 포함되어 있습니다. 각 객체에는 반구형(hemisphere)에서 시점이 샘플링되며 512x512 픽셀을 가집니다. 객체 하나(scene)의 전체 이미지에서 학습으로 479, 테스트로 100개를 사용합니다.
+  Diffuse Synthetic 360$^{\circ}$는 <a href="https://arxiv.org/abs/1812.01024" target="_blank">DeepVoxels</a>데이터로 간단한 구조를 가진 Lambertian 객체 4개가 포함되어 있습니다. 각 객체에는 반구형(hemisphere)에서 시점이 샘플링되며 512x512 픽셀을 가집니다. 객체 하나(scene)의 전체 이미지에서 학습으로 479, 테스트로 100개를 사용합니다.
 
 - Realistic Synthetic 360$^{\circ}$<br>
   복잡한 구조를 가진 non-Lambertian 객체 8개를 NeRF 팀에서 만들어 사용한 데이터셋입니다. 객체 8개 중 6개 객체는 반구형(hemisphere), 2개는 전체 (full sphere) 시점에서 샘플링되며 800x800 픽셀을 가집니다. 객체 하나(scene)의 전체 이미지에서 학습으로 100, 테스트로 200개를 사용합니다.
 
 - Real Forward-Facing<br>
-  현실의 복잡한 scene 데이터로 핸드폰으로 촬영된 데이터셋입니다. LLFF[28]에서 만든 5개와 NeRF 팀에서 만든 3개 scene이 있으며 1008x756 픽셀을 가집니다. scene 당 20~62개의 이미지가 있으며 이중 1/8을 테스트로 사용합니다.
+  현실의 복잡한 scene 데이터로 핸드폰으로 촬영된 데이터셋입니다. <a href="https://arxiv.org/abs/1905.00889" target="_blank">LLFF</a>에서 만든 5개와 NeRF 팀에서 만든 3개 scene이 있으며 1008x756 픽셀을 가집니다. scene 당 20~62개의 이미지가 있으며 이중 1/8을 테스트로 사용합니다.
 
 ### Baseline
 
 NeRF와 비교할 Baseline 모델들입니다. Local Light Field Fusion을 제외한 방법은 scene에 대해 별도의 network를 학습한 다음 test time에 새로운 scene의 입력 이미지를 처리하는 방식입니다.
 
-Baseline들의 가장 큰 tradeoff는 시간(time)과 공간(space)로 scene 하나에 하나의 모델을 사용하는 NV와 SRN은 scene 하나를 학습하는데 최소 12시간이 걸립니다. 대조적으로 LLFF는 작은 입력 데이터 셋을 10분 이내에 처리할 수 있습니다. 하지만 LLFF는 모든 입력 이미지에 대해 거대한 3D voxel grid를 생성하기 때문에 엄청난 저장 공간을 요구합니다. 하나의 Realistic Synthetic scene에 대해서 15GB이 필요합니다.
+Baseline들의 가장 큰 tradeoff는 시간(time)과 공간(space)로 scene 하나에 하나의 모델을 사용하는 NV와 SRN은 scene 하나를 학습하는데 최소 12시간이 걸립니다. 대조적으로 LLFF는 작은 입력 데이터 셋을 10분 이내에 처리할 수 있습니다. 하지만 LLFF는 모든 입력 이미지에 대해 거대한 3D voxel grid를 생성하기 때문에 엄청난 저장 공간을 요구하며 하나의 Realistic Synthetic scene에 대해서 약 15GB이 필요하다고 합니다.
 
 - <a href="https://github.com/facebookresearch/neuralvolumes" target="_blank">Neural Volumes(NV)</a><br>
-  Neural Volumes(NV)[24]는 deep 3D convolutional network로 1283개의 샘플을 이산화된 RGB$\alpha$ voxel grid와 323개의 3D warp gird 샘플에 대해 예측합니다. 알고리즘은 warped voxel grid를 통해 카메라 광선을 행진하며 새로운 view를 만듭니다.
+  Neural Volumes(NV)는 deep 3D convolutional network로 1283개의 샘플을 이산화된 RGB$\alpha$ voxel grid와 323개의 3D warp gird sample에 대해 예측합니다. warped voxel grid의 ray를 통해 새로운 view를 만듭니다.
 
 - <a href="https://github.com/vsitzmann/scene-representation-ne" target="_blank">Scene Representation Networks(SRN)</a><br>
-  Scene Representation Networks(SRN)[42]은 연속적인 scene을 불투명한 표면(opaque surface)로 표현하며, recurrent neural network로 임의의 3D 좌 $(x, y, z)$에서 feature vector를 사용해 다음 step size를 예측합니다. SRN은 DeepVoxels[41]과 동일 저자로 더 나은 성능을 가지는 후속연구이므로 NeRF에서 DeepVoxels를 baseline에 포함하지 않았습니다.
+  Scene Representation Networks(SRN)은 연속적인 scene을 불투명한 표면(opaque surface)로 표현하며, recurrent neural network로 임의의 3D 좌표 $(x, y, z)$에서 feature vector를 사용해 다음 step size를 예측합니다. SRN은 DeepVoxels과 동일 저자로 더 나은 성능을 가지는 후속연구이므로 NeRF에서 DeepVoxels를 baseline에 포함하지 않았습니다.
 
 - <a href="https://github.com/Fyusion/LLFF" target="_blank">Local Light Field Fusion(LLFF)</a>.<br>
-  Local Light Field Fusion(LLFF)[28]는 3D convolutional network로 입력에 대해 이산화돤 frustum sampling RGB$\alpha$ grid(multiplane image 또는 MPI[52])를 예측한 다음, 근처 MPIs를 새로운 view로 alpha 합성하고 혼합해 새로운 view를 만듭니다.
+  Local Light Field Fusion(LLFF)는 3D convolutional network로 입력에 대해 이산화돤 frustum sampling RGB$\alpha$ grid(multiplane image 또는 <a href="https://arxiv.org/abs/1805.09817" target="_blank">MPI</a>)를 예측한 다음, 근처 MPIs를 새로운 view로 alpha compositing(알파 합성)을 통해 새로운 view를 만듭니다.
 
 ### Result
 
@@ -339,6 +341,7 @@ Realistic Synthetic 360$^\circ$에 대한 ablation study 결과를 Table 2에서
 
 <br>
 
+---
 ---
 
 <br>
