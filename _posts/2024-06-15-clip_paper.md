@@ -60,14 +60,31 @@ CLIP에서는 Vision 모델이지만 large scale의 데이터셋을 사용하며
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/0eacecde-f651-4ebc-b240-973472ef6a10" width="700" height="500">
 </div>
+> Figure 1.(1). 일반적인 이미지 모델은 image feature extractor와 linear classifier를 학습시키지만, CLIP은 image encoder와 text encoder를 동시에 학습시키며 올바른 (image, text) 페어 예측하는 방식을 사용합니다.
 
-Contrative learning은 ConVIRT의 단순화된 버전을 사용합니다.
+Contrastive learning은 self-supervised representation learning에서 사용되는 방법으로 유사한 것끼리는 가깝도록, 다른 것끼리는 멀리 있도록 representation space를 학습하는 방법입니다.
 
-CLIP은 image encoder와 text encoder를 동시에 학습하며 (image, text)
+CLIP은 (image, text) 페어로 구성된 데이터셋을 사용하니 서로 가깝게 있어야 할 대상은 페어로 된 데이터입니다. 따라서 이미지 $I_i$는 텍스트 $T_i$와 가까워야 합니다. 반대로 이미지 $I_i$는 텍스트 $T_i$가 아닌 모든 텍스트와 멀리 떨어져 있어야 합니다. 이를 시각화하면 Figure 1.(1).과 같아집니다.
+
+(image, text) 페어 데이터셋은 각각 pre-train된 Image, Text encoder에 입력되어 image, text embedding을 계산하게 됩니다. 이를 linear projection 시켜 $[I_1, ..., I_N]$과 $[T_1, ..., T_N]$를 구합니다. 각각의 페어 데이터에 해당하는 $(I_i, T_i)$의 값은 최대가 되도록, 그 외의 페어에 대해서는 최소가 되도록 학습하는 방식입니다.
+
+<br>
 
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/fbe7d60f-e688-4415-802f-5a4f7fbdea47" width="500" height="500">
 </div>
+> Figure 3. CLIP 학습을 위한 pseudo code
+
+ConVIRT에서는 INFONCE loss를 사용했지만 CLIP에서는 cross entropy loss를 사용하는 것이 차이점입니다. 논문에서는 symmetric cross entropy를 사용한다고 언급되는데 image 관점에서의 loss인 loss_i와 text 관점에서의 loss인 loss_t 모두에 대해 CE loss를 계산하기 때문이라고 이해했습니다.
+
+Figure 3에서 CLIP 구현에 대한 pseudo 코드를 확인할 수 있습니다.
+
+image, text encoder로 각각 image embedding(I_f), text embedding(T_f)을 생성합니다. 이후 `np.dot`으로 행렬곱을 계산해 linear projection을 수행합니다. batch 개수(n)만큼 linear embedding이 생성되며 생성된 두 embedding을 행렬곱을 통해 $n \times n$ 행렬로 생성합니다.
+
+joint multimodal embedding 과정에서 `L2_normalize`를 수행했기 때문에 `np.dot`의 결과가 [-1, 1] 범위로 나오게 되고 이 값을 cosine similarity 값이 됩니다. L2_normalize로 값의 범위를 제한했기 때문에 `np.exp(t)`로 다시 [-$\infty$, $\infty$]로 scaling해주며 t 또한 학습 가능한 learnable parameter입니다.
+
+하나의 이미지를 설명하는 하나의 텍스트가 (image, text) 형태로 batch에 들어가기 때문에 같은 index에 존재하는 이미지와 텍스트가 실제 정답 값이 되기 때문에 `np.arange(n)`으로 라벨을 생성합니다. `np.arange(n)`으로 생성한 라벨 값과 `cross_entropy_loss`를 계산해 loss를 계산합니다.
+
 
 <br>
 
