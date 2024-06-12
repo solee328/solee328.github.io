@@ -44,7 +44,7 @@ CLIP에서는 Vision 모델이지만 large scale의 데이터셋을 사용하며
 고품질의 라벨링 데이터셋으로는 MS-COCO (Lin et al., 2014), Visual Genome (Krishna et al., 2017)이 있지만 각각 약 100,000장으로 데이터셋 크기가 작습니다. 다른 데이터셋으로 35억개의 인스타 그램 사진(Mahajan et al., 2018), 1억개의 사진 YFCC100M (Thomee et al., 2016)이 있지만 각 이미지마다 품질 차이가 크며 많은 이미지가 "20160716_113957.JPG"와 같이 자동으로 생성된 이름("title") 또는 카메라 설정에 대한 메타 데이터("description")를 가지고 있습니다. CLIP은 (image, text) 페어 데이터셋을 사용하기 때문에 이미지에 대한 정보가 담긴 텍스트가 포함되어 있어야 합니다. 영어로 표시된 title 또는 description을 가진 이미지들만 남기도록 필터링했을 때 데이터셋은 600~1500만 장으로 크기가 크게 줄어들었다고 합니다.
 
 <div>
-  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/cb4a35d0-1103-46e1-b471-e0a16a0d79c5" width="350" height="550">
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/cb4a35d0-1103-46e1-b471-e0a16a0d79c5" width="300" height="500">
 </div>
 
 따라서 CLIP은 공개적으로 사용 가능한 다양한 소스들에서 데이터 셋을 모아 4억개의 (image, text) 페어 데이터셋을 구축합니다. 영어 위키 데이터셋에서 최소 100번 이상 발생하는 모든 단어와 WordNet synset을 합쳐 만든 500,000개 쿼리 목록을 만들고 해당 쿼리 목록에서 적어도 하나를 포함하는 (이미지, 텍스트) 객체를 만들었다고 합니다. 쿼리 하나 당 최대 20,000개의 (이미지, 텍스트) 객체가 나오며 이 데이터 셋은 GPT-2를 학습하는 데 사용되는 WebbText 데이터 셋과 유사한 총 단어 수를 갖기 때문에 저자들은 이 데이터셋을 WIT(WebImageText)라 부릅니다.
@@ -58,12 +58,16 @@ CLIP에서는 Vision 모델이지만 large scale의 데이터셋을 사용하며
 ## Contrastive learning
 
 <div>
-  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/0eacecde-f651-4ebc-b240-973472ef6a10" width="800" height="600">
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/0eacecde-f651-4ebc-b240-973472ef6a10" width="700" height="500">
 </div>
 
 Contrative learning은 ConVIRT의 단순화된 버전을 사용합니다.
 
-CLIP은 image encoder와 text encoder를 동시에 학습하며 (image, text) 예측
+CLIP은 image encoder와 text encoder를 동시에 학습하며 (image, text)
+
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/fbe7d60f-e688-4415-802f-5a4f7fbdea47" width="500" height="500">
+</div>
 
 <br>
 
@@ -72,10 +76,10 @@ CLIP은 image encoder와 text encoder를 동시에 학습하며 (image, text) �
 ## Zero-shot
 
 <div>
-  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/ae00c1d4-2f11-4643-8fc8-2042aa287f87" width="800" height="600">
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/ae00c1d4-2f11-4643-8fc8-2042aa287f87" width="700" height="500">
 </div>
 
-모델 학습 이후 classification에 사용할 시에는 클래스 이름을 임베딩해 zero-shot linear classifier를 만들어 사600
+모델 학습 이후 classification에 사용할 시에는 클래스 이름을 임베딩해 zero-shot linear classifier를 만들어 사
 
 
 
