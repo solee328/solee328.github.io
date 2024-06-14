@@ -3,7 +3,7 @@ layout: post
 title: CLIP - 논문 리뷰
 # subtitle:
 categories: gan
-tags: [clip, zero-shot, representation learning, contrastive learning, 논문 리뷰]
+tags: [clip, contrastive learning, zero-shot transfer, representation learning, 논문 리뷰]
 # sidebar: []
 use_math: true
 ---
@@ -231,17 +231,53 @@ text encoder의 capacity가 CLIP의 성능에는 큰 영향을 미치지 않았�
 
 ## 결과
 
-### Task Learning(zero-shot)
+### Zero-shot Transfer
+image classification task에서 zero-shot은 학습하지 않은 클래스의 이미지에 대해 unseen category로 분류하는 것을 의미합니다. CLIP에서는 조금 다르게 특정 데이터셋에 대한 fine-tuning 없이 task를 수행하는 zero-shot transfer로 더 넓은 의미의 zero-shot을 수행합니다.
+
+CLIP은 (image, text) 데이터에 대해 cross entropy로 학습되기 때문에 이미지가 어떤 텍스트랑, 반대로 텍스트가 어떤 이미지랑 서로 가장 관련이 깊은지 예측이 가능합니다. 이를 사용해 Zero-shot transfer task로 image classification을 시도합니다.
+
+<br>
 
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/ae00c1d4-2f11-4643-8fc8-2042aa287f87" width="700" height="500">
 </div>
+> Figure 1.(2). 입력 이미지와 클래스 이름들을 embedding해 zero-shot classification이 가능합니다.
 
-모델 학습 이후 classification에 사용할 시에는 클래스 이름을 임베딩해 zero-shot linear classifier를 만들어 사
+Zero-shot classification에 대해서 위의 그림이 잘 표현해주고 있습니다. 모델은 pre-train된 CLIP을 사용하며 주어진 이미지를 image encoder로 embedding할 때 사용합니다. 정답이 될 클래스 이름들 또한 하나의 문장으로 취급해 이미지와 마찬가지로 pre-train된 CLIP의 text encoder로 embedding해 클래스 별 representation 값을 추출합니다. 이후 두 embedding의 cosine similarity를 계산하고 temperature parameter $\tau$로 스케일링을 한 이후, softmax를 통해 normalize합니다. 가장 높은 확률을 가진 값의 위치(index)와 text embedding에서 같은 위치에 높인 클래스 값이 입력 이미지와 가장 관련이 높다고 판단되어 해당 클래스를 답으로 출력하는 방식입니다.
+
+데이터 셋이 고정되어 있다면 클래스 값 또한 고정되어 있기 때문에 text encoder에 의해 embedding된 클래스 값 또한 변하지 않습니다. 따라서 한번 생성하고 나면 이후에는 image encoder만 계산하는 방식으로 최적화했다고 합니다.
 
 <br>
 
+#### Prompt Engineering
+```
+figure 4
+```
+
+
+#### zero-shot 결과
+```
+table1
+```
+
+
+```
+figure5
+```
+
+
+```
+figure6
+```
+
+
+<br>
+
+
+
 ### Representation Learning
 
+
+### Limitation
 
 ---
