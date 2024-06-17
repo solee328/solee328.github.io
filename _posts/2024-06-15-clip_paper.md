@@ -250,26 +250,58 @@ Zero-shot classification에 대해서 위의 그림이 잘 표현해주고 있�
 <br>
 
 #### Prompt Engineering
-```
-figure 4
-```
+
+Figure 1.(2)의 그림에서 설명하지 않은 것이 하나 있습니다! 클래스 값들을 CLIP의 text encoder에 넣기 전에 하나의 단계를 추가합니다. 모든 텍스트를 "A photo of a {object}" 형태로 변경해주는 과정인데, 단순해 보이는 이 과정의 효과가 굉장히 컸습니다.
+
+<br>
+
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/ff0fe258-d258-4730-971d-0c2d147f8d63" width="650" height="630">
+</div>
+> Figure 4. Prompt engineering과 ensemble은 zero-shot 성능을 향상시킵니다.
+
+Figure 4는 입력 텍스트의 형태를 변경하는 prompt engineering과 ensemble을 적용했을 때의 결과를 보여줍니다. ensemble은 다양한 프롬프트(“A photo of a big {label}”, “A photo of a small {label}”)를 적용해 학습한 embedding space를 ensemble하는 방식으로 평균 text embedding을 사용하며 평균 embedding을 사용하니 test time에는 계산 비용이 추가로 들지 않는 것이 장점이 됩니다.
+
+prompt engineering을 사용한 경우 ImageNet 기준 1.3%의 정확도가 올라갔으며, ensemble까지 추가 사용한 경우 3.5% 정확도가 올라갔다고 합니다. Figure 4에서 RN50x16 기준 5%가 올라간 것을 볼 수 있으며, 9.9GFLOPs인 RN101가 prompt engineering+ensemble로 21.5GFLOPs인 기본 RN50x4의 성능보다도 좋아져 계산 효율까지 좋아진것을 볼 수 있습니다.
+
+prompt engineering은 단어 다의성(polysemy) 문제를 해결하기 위해서도 필요합니다. Oxford-IIIT Pet 데이터셋에는 "Boxer" 클래스가 있습니다. Pet 데이터셋이기 때문에 여기서 "Boxer"는 복서라 불리는 강아지 종에 대한 이미지를 나타내지만 이런 정보를 가지지 못한채 "Boxer"라는 단어를 받은 text encoder는 권투 선수 의미로 단어를 받아들일 수 있게 됩니다. 저자들은 context 제공을 위해 "A Photo of a {label}, a type of pet"을 사용해 잘 작동되는 것을 확인했으며 classification 뿐만 아니라 OCR의 경우 텍스트나 숫자에 따옴표(quote)를 넣게 되면 성능이 향상되었다고 합니다.
 
 
-#### zero-shot 결과
-```
-table1
-```
 
+#### Zero-shot 결과
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/5850edb1-46e9-4f1e-a230-b9e4cbf3d942" width="600" height="170">
+</div>
+> Table 1. CLIP 이전 zero-shot transfer image classification 모델인 Visual N-Grams와의 결과 비교
 
-```
-figure5
-```
+Table 1에서 image classification 데이터셋에 대한 zero-shot transfer를 연구한 논문인 <a href="https://arxiv.org/abs/1612.09161" target="_blank">Visual N-Grams</a>과 CLIP의 성능을 비교합니다. CLIP은 Yahoo, ImageNet, SUN 데이터셋 모두에 대해서 Visual N-Grams보다 성능이 뛰어남을 볼 수 있지만, CLIP은 Visual N-Grams 때에 존재하지 않았던 transformer 기반 모델이며 10배 더 큰 데이터셋을 사용해 학습되었으며 예측 당 거의 100배 더 많은 계산이 필요한 모델이기 때문에 Visual N-Grams와 직접적인 성능 차이보다 CLIP의 zero-shot 성능이 좋다 정도를 봐야 한다고 언급합니다.
 
+CLIP은 ImageNet에서 76.2%의 정확도를 기록했으며 이 수치는 ImageNet은 supervised로 학습한 original ResNet-50의 성능과 일치하며 Top-1이 아닌 Top-5일 경우 CLIP의 정확도는 95%로 Inception-V4와 일치합니다.
 
-```
-figure6
-```
+<br>
 
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/820d163d-9b20-4a22-85e0-250cd98b80b7" width="650" height="630">
+</div>
+> Figure 5. Zero-shot CLIP과 fully supervised baseline인 ResNet-50과의 성능 비교.
+
+더 자세한 성능을 살펴보기 위해 supervised ResNet-50과의 데이터셋 별 성능을 비교합니다.
+
+CLIP은 전체 27개 데이터셋 중 16개 데이터셋에 대해서 ResNet보다 성능이 앞섰습니다. Zero-Shot CLIP의 성능이 현저하게 떨어지는 부분은 위성 이미지 분류(EuroSAT, RESISC45), 림프절 종양 탐지(PatchCamelyon), counting objects(CLEVRCounts), 독일 표지판 인식(GTSRB), 거리 인식(KITTI Distance)로 전문적이고 복잡한 작업이 필요한 경우들이였습니다.
+
+반대로 CLIP은 사람 행동이 표현된 비디오 데이터셋인 Kinetics700, UCF101에서 ResNet보다 각각 14.5%, 7.7%을 능가하는데 CLIP이 학습한 자연어가 명사 중심의 Image Classification에 비해 동사와 관련된 visual concept에 대해 더 넓게 학습했기 때문이라 저자들은 추측했습니다.
+
+Image Classification에 대해서는 CLIP이 더 좋은 성능을 보인 경우(Stanford Cars, Food101), 비슷한 경우(OxfordPets, Birdsnap), 성능이 떨어지는 경우(Flowers102, FGVC Aircraft)로 나뉘며 데이터셋에 따라 성능 차이가 컸습니다. 이런 차이는 classification 하고자 하는 특정 object에 대해 CLIP이 학습한 WIT가 가지고 있는 수와 데이터셋이 가진 수, 즉 supervision 양이 다르기 때문이라고 언급되며 일반적인 object classification인 ImageNet, CIFAR10/100, STL10, PascalVOC2007에 대해서는 성능이 비교적 유사하며 모든 경우에 대해서 Zero-shot CLIP이 조금 더 좋았다고 합니다.
+
+<br>
+
+#### Zero-shot vs Few-shot
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/f15e6a27-4b26-47f0-82d8-dddd89754a07" width="650" height="630">
+</div>
+> Figure 6.Zero-shot CLIP은 동일한 feature space에서 학습한 4-shot linear classifier의 평균 성능과 일치하며 BiT-M(ImageNet-21K)의 16-shot linear classifier와 거의 일치합니다.
+
+dd
 
 <br>
 
