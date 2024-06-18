@@ -311,10 +311,17 @@ few-shot은 clssification을 위한 initialize된 linear layer를 모든 모델 
 
 #### Scaling in Zero-shot
 
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/443ba504-ba5b-42ea-81fd-5bbfece3995b" width="650" height="430">
+</div>
+> Figure 9. Zero-shot CLIP의 성능은 model computing 성능에 따라 scaling됩니다.
 
+지난 몇 년간 딥러닝에 대한 경험적 연구들에 따르면 학습에 사용되는 컴퓨터 자원 및 데이터 셋 크기가 커진다면 성능 또한 좋아졌습니다. CLIP은 Image Encoder를 변경해 컴퓨터 자원(GFLOPs)를 늘렸을 때 성능 변화에 대해 실험했으며 이 결과를 Figure 9에서 볼 수 있습니다. 36개 데이터셋에 대해 5개의 ResNet CLIP 모델의 평균 error rate를 확인했을 때 GFLOPs가 44배 증가하는 동안 log-log linear scaling trend가 있음을 발견했다고 합니다.
 
 
 ### Representation Learning
+
+
 
 
 ### Limitation
