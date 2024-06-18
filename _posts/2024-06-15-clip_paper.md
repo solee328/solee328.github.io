@@ -9,7 +9,7 @@ use_math: true
 ---
 
 안녕하세요:lemon: 이번에 다룰 논문은 CLIP입니다!
-논문 전체 이름은 <a href="https://arxiv.org/abs/2103.00020"_blank">Learning Transferable Visual Models From Natural Language Supervision target</a>으 GPT와 같이 자연어 분야에서 이뤄지던 대규모 데이터를 학습해 pre-training 후 다양한 task로 zero-shot transfer를 실험한 것으로 유명합니다.
+논문 전체 이름은 <a href="https://arxiv.org/abs/2103.00020" target="_blank">Learning Transferable Visual Models From Natural Language Supervision target</a>으로 GPT와 같이 자연어 분야에서 이뤄지던 대규모 데이터를 학습해 pre-training 후 다양한 task로 zero-shot transfer를 실험한 것으로 유명합니다.
 
 여러 Diffusion 모델에서 이미지를 임베딩할 때는 다들 CLIP 모델을 사용하길래 알게 되어서 논문을 살펴보게 되었습니다. 어떤 구조를 가지고 있기래 모두 CLIP 모델을 사용하는지 지금부터 살펴보게 되었습니다:eyes:
 
@@ -318,12 +318,34 @@ few-shot은 clssification을 위한 initialize된 linear layer를 모든 모델 
 
 지난 몇 년간 딥러닝에 대한 경험적 연구들에 따르면 학습에 사용되는 컴퓨터 자원 및 데이터 셋 크기가 커진다면 성능 또한 좋아졌습니다. CLIP은 Image Encoder를 변경해 컴퓨터 자원(GFLOPs)를 늘렸을 때 성능 변화에 대해 실험했으며 이 결과를 Figure 9에서 볼 수 있습니다. 36개 데이터셋에 대해 5개의 ResNet CLIP 모델의 평균 error rate를 확인했을 때 GFLOPs가 44배 증가하는 동안 log-log linear scaling trend가 있음을 발견했다고 합니다.
 
+#### Other task
+Optical Character Recognition
+Appendix E.2
 
-### Representation Learning
+Action Recognition in Videos
+E.3
 
+Geolocalization
+E.4
+
+
+### CLIP IS THE BEST
+ㅇㅇ
+
+Representation Learning
+ㅇㅇ
+
+
+Robustness
+ㅇㅇ
 
 
 
 ### Limitation
+ㅇㅇ
 
 ---
+
+CLIP 리뷰가 끝이 났습니다!	끝까지 봐주셔서 감사합니다:satisfied:
+
+긴 논문이지만 GPT에서 사용하던 web scale 데이터셋을 이미지 관련 모델에 적용한 첫번째 모델이다보니 모델 자체에 관한 내용보다는 task에 대한 결과 분석 내용이 훨씬 더 많았던 거 같아요. 리뷰에서 넣을까 말까 고민하다 뺀 내용이 "7. Broader Impacts" 내용인데 인종, 나이, surveillance task처럼 사회적 민감성이 있는 부분들에 대해서 모델을 분석한 부분이였습니다. 해당 부분에 대해서는 <a href="https://arxiv.org/abs/2103.00020" target="_blank">CLIP 논문</a>을 확인해주시면 감사하겠습니다:wink:
