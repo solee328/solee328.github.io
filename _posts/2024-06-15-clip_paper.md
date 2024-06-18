@@ -301,9 +301,16 @@ Image Classification에 대해서는 CLIP이 더 좋은 성능을 보인 경우(
 </div>
 > Figure 6.Zero-shot CLIP은 동일한 feature space에서 학습한 4-shot linear classifier의 평균 성능과 일치하며 BiT-M(ImageNet-21K)의 16-shot linear classifier와 거의 일치합니다.
 
-dd
+기존 classification 모델들이 zero-shot 모델들이 아니다보니 few-shot을 이용한 기존 모델들과 CLIP의 zero-shot, few-shot에 대해 비교합니다.
+
+few-shot은 clssification을 위한 initialize된 linear layer를 모든 모델 끝에 추가하고 클래스 당 {1, 2, 4, 8, 16}개의 이미지로 해당 layer를 학습하는 방식을 사용합니다. 새로운 layer를 모델에 추가해 학습하는 방식을 사용하다보니 layer를 학습시키기에 클래스 당 1, 2장은 굉장히 작은 숫자이기 때문에 CLIP의 few-shot(1-shot, 2-shot) 성능이 zero-shot 보다 일때보다 더 나빠지는 것을 볼 수 있습니다.
+
+기존 classification 모델들에도 같은 방식으로 few-shot 능력을 측정했습니다. 가장 성능이 좋은 ImageNet-21K에서 학습한 BiT-M(ResNet-152x2)의 16-shot과 zero-shot CLIP의 성능이 비슷했으며 더 큰 데이터 셋인 JFT-300M로 학습한 BiT-M의 성능이 더 좋을 것이라 생각되어 사용하고 싶었지만 공개되지 않아 실험까지 이어지지 못했다고 합니다.
 
 <br>
+
+#### Scaling in Zero-shot
+
 
 
 
