@@ -213,7 +213,7 @@ class VisionTransformer(nn.Module):
 <a href="https://arxiv.org/abs/2010.11929" target="_blank">ViT</a>를 기반으로 layer normalization을 추가했다고 합니다.
 
 #### 학습 설정
-Image encoder는 <a href="https://arxiv.org/abs/1905.11946" target="_blank">EfficientNet</a> 접근 방식처럼 with, depth, resolution을 높여 연산 수를 늘린 모델을 함께 비교합니다. ResNet-50 연산의 4배, 16배, 64배인 모델 3개를 추가 학습했으며 각각을 RN50x4, RN50x16, RN50x64로 표기합니다. ViT도 마찬가지로 3개 모델을 추가학습해 각각을 ViT-B/32, ViT-B/16, ViT-L/14로 표기합니다. ViT-L/14의 경우 더 높은 336 pixel 해상도로 학습한 ViT-L/14@336px로 표기한 모델을 추가 학습했으며 가장 좋은 결과를 가진다고 합니다.
+Image encoder는 <a href="https://arxiv.org/abs/1905.11946" target="_blank">EfficientNet</a> 접근 방식처럼 with, depth, resolution을 높여 연산 수를 늘린 모델을 함께 비교합니다. ResNet-50 연산의 4배, 16배, 64배인 모델 3개를 추가 학습했으며 각각을 RN50x4, RN50x16, RN50x64로 표기합니다. ViT도 마찬가지로 3개 모델을 추가학습해 각각을 ViT-B/32, ViT-B/16, ViT-L/14로 표기합니다. ViT-L/14의 경우 더 높은 해상도로 학습한 ViT-L/14@336px로 표기한 모델을 추가 학습했으며 가장 좋은 결과를 가진다고 합니다.
 
 모든 모델은 32 epoch 학습되며 <a href="https://arxiv.org/abs/1711.05101" target="_blank">decoupled weight decay regularization</a>이 적용된 <a href="https://arxiv.org/abs/1412.6980" target="_blank">Adam optimizer</a>와 <a href="https://arxiv.org/abs/1608.03983" target="_blank">cosine scheduler</a>를 사용했다고 합니다. 또한 학습 가능한 <a href="https://arxiv.org/abs/1805.01978" target="_blank">temperature parameter $\tau$</a>는 0.07로 초기화되어 학습되며 불안정성을 방지하기 위해 100 이상이 되는 경우 clip 했습니다. 32,768 mini batch를 사용하는데 메모리를 절악하고 학습을 가속화하기 위해 <a href="https://arxiv.org/abs/1710.03740" target="_blank">mixed-precision</a>을 사용하고 추가적인 메모리 절약을 위해 <a href="https://arxiv.org/abs/1604.06174" target="_balnk">gradient checkpointing</a>과 <a href="https://arxiv.org/abs/2005.00341" target="_blank">half-precision Adam ststistics</a>를 사용했습니다.
 
@@ -295,7 +295,16 @@ Image Classification에 대해서는 CLIP이 더 좋은 성능을 보인 경우(
 
 <br>
 
-#### Zero-shot vs Few-shot
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/4d45f0bb-d35f-4790-be80-13394c241622" width="700" height="400">
+</div>
+> Figure 21의 일부. Zero-shot CLIP의 예측 시각화.
+
+Figure 21에서 Zero-shot CLIP의 결과와 prompt 값을 함께 확인할 수 있습니다. Figure21이 너무 큰 이미지여서 일부만 가지고 왔으며 전체 Figure에는 geolocalization, optical character recognition, facial emotion recognition, action recognition task가 포함되어 있습니다. 이미지 위에 데이터셋 이름, 정답 라벨, 모델의 정답 라벨 예측 확률이 표시되며 ground truth 라벨은 녹색, 예측이 잘못된 경우 주황색으로 표시됩니다. CIFAR-100의 뱀 사진은 화질이 좋지 않은데도 모델이 잘 예측하는 걸 볼 수 있습니다.
+
+<br>
+
+#### Zero vs Few
 <div>
   <img src="https://github.com/solee328/solee328.github.io/assets/22787039/f15e6a27-4b26-47f0-82d8-dddd89754a07" width="650" height="630">
 </div>
@@ -318,34 +327,66 @@ few-shot은 clssification을 위한 initialize된 linear layer를 모든 모델 
 
 지난 몇 년간 딥러닝에 대한 경험적 연구들에 따르면 학습에 사용되는 컴퓨터 자원 및 데이터 셋 크기가 커진다면 성능 또한 좋아졌습니다. CLIP은 Image Encoder를 변경해 컴퓨터 자원(GFLOPs)를 늘렸을 때 성능 변화에 대해 실험했으며 이 결과를 Figure 9에서 볼 수 있습니다. 36개 데이터셋에 대해 5개의 ResNet CLIP 모델의 평균 error rate를 확인했을 때 GFLOPs가 44배 증가하는 동안 log-log linear scaling trend가 있음을 발견했다고 합니다.
 
-#### Other task
-Optical Character Recognition
-Appendix E.2
 
-Action Recognition in Videos
-E.3
+### Representation
+모델이 학습을 통해 입력의 Representation을 얼마나 잘 만들어내는가에 대한 평가를 진행합니다. classification task에서는 모델에 linear layer를 추가해 classifier로 사용하는 방법과 end-to-end fine-tuning을 사용하는 방법이 있습니다. fine-tuning을 사용하는 것이 linear classifier를 사용하는 것보다 성능이 뛰어나지만 fine-tuning 과정에서 pre-train된 모델의 representation을 데이터셋에 맞게 변형하게 되어 평가가 어려워진다는 단점이 있습니다. 또한 CLIP의 경우 27개의 데이터셋과 baseline까지 66개의 서로 다른 모델에 대한 다양한 기술들에 대해 공정하게 평가하는 것이 어렵고 계산 비용이 크다는 이유로 linear classifier 방식을 선택했습니다.
 
-Geolocalization
-E.4
+<br>
 
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/36e19b46-94be-45dd-a568-1e1896155619" width="800" height="400">
+</div>
+> Figure 10. state-of-the-art computer vision 모델과 CLIP의 Linear probe 성능 비교.
 
-### CLIP IS THE BEST
-ㅇㅇ
+EfficientNet, MoCo, ResNeXt, BiT, ViT, SimCLRv2, BYOL 등 sota vision 모델과 CLIP 모델에 linear classifier 방식으로 Representation Learning의 성능을 실험해 Figure 10에서 결과를 볼 수 있습니다. Figure 10의 왼쪽은 12개 데이터 셋에 대한 평균, 오른쪽은 27개 데이터셋에 대한 평균입니다.
 
-Representation Learning
-ㅇㅇ
+CLIP의 작은 크기의 image encoder인 ResNet-50과 ResNet101의 경우 ImageNet-1K에서 학습된 다른 ResNet(BiT-S)들보다 성능이 뛰어나지만 ImageNet-21K에서 학습된 ResNet(BiT-M)보다는 성능이 낮습니다. CLIP의 image encoder 중 가장 큰 모델인 ResNet-50x64는 점수와 계산 효율성 모두에서 당시 SOTA 모델인 a Noisy Student EfficientNet-L2보다 성능이 좋았으며 Transformer인 ViT encoder가 ResNet encoder보다 더 좋은 계산 효율성과 성능을 보였습니다.
 
 
-Robustness
-ㅇㅇ
+### Robustness
+Image Classification의 대표적인 데이터셋인 ImageNet에 대해서 딥러닝 모델은 사람의 성능을 뛰어넘었다고 하지만 연구들의 대부분이 ImageNet에서 학습된 모델을 사용해 평가했으며 다른 데이터셋에서 성능이 크게 저하됩니다. CLIP은 매우 큰 데이터셋인 WIT에서 학습되었으며 zero-shot이 가능해 다른 각도에서 모델을 평가합니다.
 
+Robustness 연구를 한 <a href="https://arxiv.org/abs/2007.00644" target="_blank">Measuring Robustness to Natural Distribution Shifts in Image Classification</a>는 effective robustness와 relative robustness 모두에 대해서 개선할 수 있어야 한다고 제안합니다. effective robustness는 학습한 데이터 셋에 대한 in-distribution 성능과 그 외 데이터셋인 out-of-distribution에 대한 예측되는 정확도를 초과하는 지 측정합니다. 데이터셋에 변경되어 distribution shift가 되는 상황에서 예측되는 정확도보다 높게 나올 때 effective robustness하다고 할 수 있습니다. relative robustness는 in-distribution과 무관하게 out-of-distribution 성능 개선에 대해서만 측정합니다.
+
+<br>
+
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/8e0f83d8-da1d-41de-aa7b-ecc50da30fa1" width="650" height="600">
+</div>
+> Figure 15. Few-shot CLIP은 기존 ImageNet 모델보다 effective robustness가 증가하지만 Zero-shot CLIP보다는 감소합니다.
+
+robustness를 파악하기 위해 ImageNet 데이터에 대해 0-shot, 1-shot, 2-shot, 4-shot, ..., 128-shot부터 fully supervised(all)까지 성능을 시각화합니다. ImageNet 데이터셋의 학습 데이터 양을 최소화하면 relative robustness가 감소하는 대신 effective robustness가 증가합니다.
+
+<br>
+
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/e8c536a1-b1fd-458f-b225-b457b03cf478" width="800" height="330">
+</div>
+> Figure 13. Zero-shot CLIP은 ResNet101보다 distribution shift에 대해 robust합니다.
+
+CLIP의 effective robustness에 대해서는 Figure 13에서 성능을 확인할 수 있습니다. ImageNet 뿐만 아니라 관련된 다른 데이터셋인 ImageNetV2, ImageNet-R, ObjectNet, ImageNet Sketch, ImageNet-A에 대해서 성능을 확인해 distribution shift에 대한 성능을 실험했습니다. Zero-shot CLIP은 기존 모델에 비해 effective robustness를 크게 향상시켜 distribution shift 발생에도 정확도 사이 간격을 74.4%까지 줄였습니다.
 
 
 ### Limitation
-ㅇㅇ
+논문에는 CLIP의 겪고 있는 한계에 대해서 정리해놓았습니다.
+
+우선 CLIP은 scaling으로 더 많은 데이터셋, 더 많은 컴퓨팅(큰 모델)로 꾸준히 성능을 개선했지만 zero-shot CLIP이 전체적인 state-of-the-art에 도달하기 위해서는 약 100배의 컴퓨팅 자원이 필요할 것으로 예상한다고 합니다. CLIP의 계산 및 데이터 효율성 향상에 대한 추가 연구가 필요합니다.
+
+<div>
+  <img src="https://github.com/solee328/solee328.github.io/assets/22787039/a1e3c28d-a505-4b4d-b616-7e68f0223f70" width="650" height="330">
+</div>
+> Table 14. 5개 데이터셋에 대한 OCR 성능.
+
+CLIP의 pre-train 데이터셋에 포함될 가능성이 높은 ImageNet과 같은 단순 Classification에 대해서는 Zero-shot CLIP의 성능이 좋지만, 반대로 pre-train 데이터셋에 포함될 가능성이 낮은 추상적이고 체계적인 task에 대해서는 CLIP의 성능은 보장되지 않습니다. 예시로 OCR task에서 CLIP은 단순한 logistic regression basline보다 성능이 낮아 MNIST 숫자에 대해 오직 88% 정확도를 달성했으며 결과 테이블을 Table 14에서 볼 수 있습니다. 저자들은 nearest-duplicate nearset neighborhood retrieval을 통해 pre-trian 데이터셋에서 MNIST와 유사한 이미지가 거의 없음을 확인했습니다. 이는 CLIP이 딥러닝 모델의 일반화에 약한 brittle generalization이라는 근본적인 문제를 해결하지 못함을 시사합니다.
+
+다른 문제로는 Zero-shot evaluate가 있습니다. CLIP은 Zero-shot 평가를 위해 기존 supervised 데이터셋을 사용했으며 이는 평가 데이터셋으로 구축된 것이 아니기 때문에 적합하지 않으며 fine-tuning 방식에서는 validation set의 많은 샘플들에서도 반복적으로 학습되어 Zero-shot 평가가 제대로 이루어지지 않았다고 합니다. Zero-shot transfer 기능을 평가하기 위한 새로운 벤치마크의 필요성을 언급합니다. 또한 CLIP의 학습이 인터넷의 다양한 source들을 가지고 오기 때문에 사회적 편견(인종, 나이)을 학습하게 된다는 문제가 있다고 합니다.
+
+<br>
 
 ---
 
+<br>
+
 CLIP 리뷰가 끝이 났습니다!	끝까지 봐주셔서 감사합니다:satisfied:
 
-긴 논문이지만 GPT에서 사용하던 web scale 데이터셋을 이미지 관련 모델에 적용한 첫번째 모델이다보니 모델 자체에 관한 내용보다는 task에 대한 결과 분석 내용이 훨씬 더 많았던 거 같아요. 리뷰에서 넣을까 말까 고민하다 뺀 내용이 "7. Broader Impacts" 내용인데 인종, 나이, surveillance task처럼 사회적 민감성이 있는 부분들에 대해서 모델을 분석한 부분이였습니다. 해당 부분에 대해서는 <a href="https://arxiv.org/abs/2103.00020" target="_blank">CLIP 논문</a>을 확인해주시면 감사하겠습니다:wink:
+긴 논문이지만 GPT에서 사용하던 web scale 데이터셋을 이미지 관련 모델에 적용한 첫번째 모델이다보니 모델 자체에 관한 내용보다는 task에 대한 결과 분석 내용이 훨씬 더 많았던 거 같아요. 리뷰에서 넣을까 말까 고민하다 뺀 내용이 CLIP의 한계에서 언급된 부분으로 "7. Broader Impacts" 내용인데 인종, 나이, surveillance task처럼 사회적 민감성이 있는 부분들에 대해서 모델을 분석한 부분이였습니다. 해당 부분에 대해서는 <a href="https://arxiv.org/abs/2103.00020" target="_blank">CLIP 논문</a>을 확인해주시면 감사하겠습니다:wink:
