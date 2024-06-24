@@ -59,4 +59,4 @@ Nerf<br>
 [<a href="https://solee328.github.io/gan/2024/05/15/nerf_paper.html" target="_blank">paper_post</a>]
 
 CLIP<br>
-[]
+[<a href="https://solee328.github.io/gan/2024/06/15/clip_paper.html" target="_blank">paper_post</a>]
