@@ -18,7 +18,7 @@ use_math: true
 ---
 
 ## 소개
-자연어 분야에서 모델이 raw text를 학습하는 방법을 사용하며 GPT-3와 같은 너무나도 유명한 모델들이 개발되었으며 text-to-text task의 경우 해당 task에 맞춰 출력 head를 설정하거나 다른 데이터셋을 학습할 필요 없이 zero-shot transfer가 가능한 것이 특징입니다.
+자연어 분야에서 모델이 raw text를 학습하는 방법을 사용하며 GPT-3와 같은 너무나도 유명한 모델들이 개발되었고 이런 모델들은 text-to-text task 분야에 한해서라면 task에 맞춰 출력 head를 설정하거나 다른 데이터셋을 학습할 필요 없이 zero-shot transfer가 가능한 것이 특징입니다.
 
 <details>
 <summary>zero-shot transfer</summary>
@@ -28,13 +28,13 @@ use_math: true
 </details>
 
 <br>
-이런 자연어 분야와는 다르게 Vision 분야에서는 ImageNet처럼 라벨링된 데이터셋으로 모델을 학습하는 방법을 주로 사용하기 때문에 task 별로 task에 맞는 데이터셋을 모델에 학습시켰습니다. 문제는 데이터셋 라벨링에는 큰 노력이 필요하다는 것으로 대표적인 데이터셋인  ImageNet의 경우 1,400만개 이미지에 주석을 달기 위해 25,000명 이상의 작업자가 필요했습니다. 이런 문제를 회피하기 위해 CLIP은 Vision 분야에도 자연어 분야처럼 raw text를 학습하는 방법을 사용해 추가적인 라벨링 비용이 들지 않고 높은 성능을 얻고자 합니다.
+이런 자연어 분야와는 다르게 Vision 분야에서는 ImageNet처럼 라벨링된 데이터셋으로 모델을 학습하는 방법을 주로 사용하기 때문에 task 별로 task에 맞는 데이터셋을 모델에 학습시켰습니다. 문제는 데이터셋 라벨링에는 큰 노력이 필요하다는 것으로 대표적인 데이터셋인  ImageNet의 경우 1,400만개 이미지에 주석을 달기 위해 25,000명 이상의 작업자가 필요했습니다. 이런 문제를 회피하기 위해 CLIP은 Vision 분야에도 자연어 분야처럼 raw text를 학습하는 방법을 사용해 추가적인 라벨링 비용이 들지 않고 높은 성능을 얻고자 했습니다.
 
 유사하게 자연어에서 직접 이미지 representation을 학습하는 연구들이 있었으며 Bert를 사용해 추출한 text representation을 visual representation로 변환하는 <a href="https://arxiv.org/abs/2006.06666" target="_blank">VirTex</a>와 masked language modeling으로 이미지에서 마스킹된 단어를 예측하는 <a href="https://arxiv.org/abs/2008.01392" target="_blank">ICMLM</a>, 의료이미지에 contrastive objective를 활용한 <a href="https://arxiv.org/abs/2010.00747" target="_blank">ConVIRT</a>가 대표적입니다. 세 모델들 모두 텍스트로 이미지 representation을 학습하는 가능성을 입증했지만 모두 1~20만개의 이미지를 사용해 자연어 분야에서 사용하는 데이터양에 비하면 굉장히 작은 숫자입니다.
 
 CLIP에서는 Vision 모델이지만 large scale의 데이터셋을 사용하며 약 4억 개의 (image, text) 페어 데이터셋을 새롭게 구성하고 Contrastive Language-Image 방법을 사용해 모델을 학습합니다. GPT 모델과 유사하게 CLIP이 pre-train으로 OCR, geo-localization, action recognition 등 다양한 task를 수행하는 zero-shot이 가능한 것이 특징입니다.  
 
-CLIP의 모델 구조, 학습 방법과 결과에 대해서 지금부터 자세하게 살펴보겠습니다:stuck_out_tongue_winking_eye:
+CLIP의 모델 구조, 학습 방법과 결과에 대해서 지금부터 자세하게 살펴보겠습니다 :stuck_out_tongue_winking_eye:
 
 <br>
 
@@ -43,7 +43,7 @@ CLIP의 모델 구조, 학습 방법과 결과에 대해서 지금부터 자세�
 ## Dataset
 
 
-고품질의 라벨링 데이터셋으로는 <a href="https://arxiv.org/abs/1405.0312" target="_blank">MS-COCO</a>, <a href="https://arxiv.org/abs/1602.07332" target="_blank">Visual Genome</a>이 있지만 각각 약 100,000장으로 데이터셋 크기가 작습니다. 다른 데이터셋으로 35억개의 인스타그램 사진 데이터셋인 <a href="https://arxiv.org/abs/1805.00932" target="_blank">IG-3.5B-17.K</a>, 1억개의 사진 <a href="https://arxiv.org/abs/1503.01817" target="_blank">YFCC100M</a>이 있지만 각 이미지마다 품질 차이가 크며 많은 이미지가 "20160716_113957.JPG"와 같이 자동으로 생성된 이름("title") 또는 카메라 설정에 대한 메타 데이터("description")를 가지고 있습니다.
+고품질의 라벨링 데이터셋으로는 <a href="https://arxiv.org/abs/1405.0312" target="_blank">MS-COCO</a>, <a href="https://arxiv.org/abs/1602.07332" target="_blank">Visual Genome</a>이 있지만 각각 약 100,000장으로 데이터셋 크기가 상대적으로 작았습니다. 다른 데이터셋으로 35억개의 인스타그램 사진 데이터셋인 <a href="https://arxiv.org/abs/1805.00932" target="_blank">IG-3.5B-17.K</a>, 1억개의 사진 <a href="https://arxiv.org/abs/1503.01817" target="_blank">YFCC100M</a>이 있지만 각 이미지마다 품질 차이가 크며 많은 이미지가 "20160716_113957.JPG"와 같이 자동으로 생성된 이름("title") 또는 카메라 설정에 대한 메타 데이터("description")를 가지고 있습니다.
 
 CLIP은 (image, text) 페어 데이터셋을 사용하기 때문에 이미지에 대한 정보가 담긴 텍스트가 포함되어 있어야 하기 때문에 정보가 되지 않는 텍스트에 대해서는 필터링이 필요합니다. 영어로 표시된 title 또는 description을 가진 이미지들만 남기도록 필터링했을 때 데이터셋은 600~1500만 장으로 크기가 크게 줄어들었다고 합니다.
 
@@ -54,9 +54,9 @@ CLIP은 (image, text) 페어 데이터셋을 사용하기 때문에 이미지에
 </div>
 > Figure 1.(1). 텍스트와 이미지가 batch마다 pair로 입력되는 것을 볼 수 있습니다.
 
-따라서 CLIP은 공개적으로 사용 가능한 다양한 소스들에서 데이터 셋을 모아 4억개의 (image, text) 페어 데이터셋을 구축합니다. 영어 위키 데이터셋에서 최소 100번 이상 발생하는 모든 단어와 WordNet synset을 합쳐 만든 500,000개 쿼리 목록을 만들고 해당 쿼리 목록에서 적어도 하나를 포함하는 (이미지, 텍스트) 객체를 만들었다고 합니다. 쿼리 하나 당 최대 20,000개의 (이미지, 텍스트) 객체가 나오며 이 데이터 셋은 GPT-2를 학습하는 데 사용되는 WebbText 데이터 셋과 유사한 총 단어 수를 갖기 때문에 저자들은 이 데이터셋을 WIT(WebImageText)라 부릅니다.
+따라서 CLIP은 공개적으로 사용 가능한 다양한 소스들에서 데이터 셋을 모아 4억개의 (image, text) 페어 데이터셋을 새롭게 구축했습니다. 영어 위키 데이터셋에서 최소 100번 이상 발생하는 모든 단어와 WordNet synset을 합쳐 만든 500,000개 쿼리 목록을 만들고 해당 쿼리 목록에서 적어도 하나를 포함하는 (이미지, 텍스트) 객체를 만들었다고 합니다. 쿼리 하나 당 최대 20,000개의 (이미지, 텍스트) 객체가 나오며 이 데이터 셋은 GPT-2를 학습하는 데 사용되는 WebbText 데이터 셋과 유사한 총 단어 수를 갖기 때문에 저자들은 이 데이터셋을 WIT(WebImageText)라 부릅니다.
 
-공개된 데이터로만 만들었다고 해서 혹시나 WIT를 공개했나 싶어서 찾아봤더니 다른 <a href="https://github.com/google-research-datasets/wit" target="_blank">WIT(Wikipedia-based Image Text Dataset)</a>이 나오네요... CLIP의 4억개까지는 도달하지 못하지만 약 3700만개의 image-text 데이터셋입니다. 다른 유사 데이터셋으로느 CLIP implementation인 <a href="https://github.com/mlfoundations/open_clip?tab=readme-ov-file" target="_blank">OpenCLIP</a>에서 사용한 데이터셋인 LAION(<a href="https://arxiv.org/abs/2111.02114" target="_blank">LAION-400M</a>, <a href="https://arxiv.org/abs/2210.08402" target="_blank">LAION-5B</a>)과 <a href="https://arxiv.org/abs/2304.14108" target="_blank">DataComp</a>가 있습니다.
+공개된 데이터로만 만들었다고 해서 혹시나 WIT를 공개했나 싶어서 찾아봤더니 다른 <a href="https://github.com/google-research-datasets/wit" target="_blank">WIT(Wikipedia-based Image Text Dataset)</a>이 나오네요... CLIP의 4억개까지는 도달하지 못하지만 약 3700만개의 image-text 데이터셋입니다. 다른 유사 데이터셋으로는 CLIP implementation인 <a href="https://github.com/mlfoundations/open_clip?tab=readme-ov-file" target="_blank">OpenCLIP</a>에서 사용한 데이터셋인 LAION(<a href="https://arxiv.org/abs/2111.02114" target="_blank">LAION-400M</a>, <a href="https://arxiv.org/abs/2210.08402" target="_blank">LAION-5B</a>)과 <a href="https://arxiv.org/abs/2304.14108" target="_blank">DataComp</a>가 있습니다.
 
 <br>
 
@@ -109,7 +109,7 @@ contrastive learning에 대해 살펴봤으니 이제 CLIP이 사용하는 Image
 </div>
 > ResNet-D의 구조
 
-<a href="https://arxiv.org/abs/1512.03385" target="_blank">ResNet-50</a>를 기반으로 <a href="https://arxiv.org/abs/1812.01187" target="_blank">ResNet-D</a>를 사용합니다. ResNet이 1x1 patch 2 stride의 convolution이 feature map의 3/4에 대해 계산하지 않고 넘어가기 때문에, ResNet-D는 1x1 convolution 전에 2x2 average pooling layer를 추가하고 1x1 convolution의 stride를 1로 변경한 구조를 사용합니다.
+ResNet 모델로는 <a href="https://arxiv.org/abs/1512.03385" target="_blank">ResNet-50</a>을 기반으로 한 <a href="https://arxiv.org/abs/1812.01187" target="_blank">ResNet-D</a>를 사용합니다. ResNet이 1x1 patch 2 stride의 convolution이 feature map의 3/4에 대해 계산하지 않고 넘어가기 때문에, ResNet-D는 1x1 convolution 전에 2x2 average pooling layer를 추가하고 1x1 convolution의 stride를 1로 변경한 구조를 사용합니다.
 
 <br>
 
@@ -129,15 +129,15 @@ contrastive learning에 대해 살펴봤으니 이제 CLIP이 사용하는 Image
 
 
 #### 학습 설정
-Image encoder는 <a href="https://arxiv.org/abs/1905.11946" target="_blank">EfficientNet</a> 접근 방식처럼 with, depth, resolution을 높여 연산 수를 늘린 모델을 함께 비교합니다. ResNet-50 연산의 4배, 16배, 64배인 모델 3개를 추가 학습했으며 각각을 RN50x4, RN50x16, RN50x64로 표기합니다. ViT도 마찬가지로 3개 모델을 추가학습해 각각을 ViT-B/32, ViT-B/16, ViT-L/14로 표기합니다. ViT-L/14의 경우 더 높은 해상도로 학습한 ViT-L/14@336px로 표기한 모델을 추가 학습했으며 가장 좋은 결과를 가진다고 합니다.
+Image encoder는 <a href="https://arxiv.org/abs/1905.11946" target="_blank">EfficientNet</a> 접근 방식처럼 width, depth, resolution을 높여 연산 수를 늘린 모델을 함께 비교합니다. ResNet-50 연산의 4배, 16배, 64배인 모델 3개를 학습시켜 각각을 RN50x4, RN50x16, RN50x64로 표기합니다. ViT도 마찬가지로 3개 모델을 학습시켜 각각을 ViT-B/32, ViT-B/16, ViT-L/14로 표기합니다. ViT-L/14의 경우 더 높은 해상도로 학습한 ViT-L/14@336px로 표기한 모델을 추가 학습했으며 가장 좋은 결과를 가진다고 합니다.
 
 모든 모델은 32 epoch 학습되며 <a href="https://arxiv.org/abs/1711.05101" target="_blank">decoupled weight decay regularization</a>이 적용된 <a href="https://arxiv.org/abs/1412.6980" target="_blank">Adam optimizer</a>와 <a href="https://arxiv.org/abs/1608.03983" target="_blank">cosine scheduler</a>를 사용했다고 합니다. 또한 학습 가능한 <a href="https://arxiv.org/abs/1805.01978" target="_blank">temperature parameter $\tau$</a>는 0.07로 초기화되어 학습되며 불안정성을 방지하기 위해 100 이상이 되는 경우 clip 했습니다. 32,768 mini batch를 사용하는데 메모리를 절악하고 학습을 가속화하기 위해 <a href="https://arxiv.org/abs/1710.03740" target="_blank">mixed-precision</a>을 사용하고 추가적인 메모리 절약을 위해 <a href="https://arxiv.org/abs/1604.06174" target="_balnk">gradient checkpointing</a>과 <a href="https://arxiv.org/abs/2005.00341" target="_blank">half-precision Adam ststistics</a>를 사용했습니다.
 
-이후 논문 결과에서 추가로 명시하지 않은 "CLIP"으로 표시된 결과는 가장 잘 수행되었던 ViT-L/14@336px를 의미합니다.
+이후 논문 결과에서 추가로 명시하지 않은 "CLIP"으로 표시된 결과는 가장 좋은 결과를 가졌던 ViT-L/14@336px를 의미합니다.
 
 
 ### Text encoder
-다음은 Text encoder입니다.  Text encoder는 <a href="https://arxiv.org/abs/1706.03762" target="_blank">Transformer</a>를 기반으로 <a href="https://d4mucfpksywv.cloudfront.net/better-language-models/language_models_are_unsupervised_multitask_learners.pdf" target="_blank">GPT-2</a>의 구조를 사용합니다. CLIP이 사용한 기본 크기는 8개의 attention heads가 있는 63M parameter 12-layer 512-wide 모델입니다. transformer는 49,152 vocab 크기의 text를 <a href="https://arxiv.org/abs/1508.07909" target="_blank">lower-cased byte pair encoding(BPE) representation</a>으로 표현하며 계산 효율성을 위해 sequence lenth는 76으로 제한되었습니다.
+다음은 Text encoder입니다.  Text encoder는 <a href="https://arxiv.org/abs/1706.03762" target="_blank">Transformer</a>를 기반으로 <a href="https://d4mucfpksywv.cloudfront.net/better-language-models/language_models_are_unsupervised_multitask_learners.pdf" target="_blank">GPT-2</a>의 구조를 사용합니다. CLIP이 사용한 기본 모델은 8개의 attention heads가 있는 63M parameter 12-layer 512-wide 모델입니다. transformer는 49,152 vocab 크기의 text를 <a href="https://arxiv.org/abs/1508.07909" target="_blank">lower-cased byte pair encoding(BPE) representation</a>으로 표현하며 계산 효율성을 위해 sequence lenth는 76으로 제한되었습니다.
 
 추가로 Text encoder 또한 scaling 작업으로 여러 크기의 모델을 학습하지만 Text encoder의 capacity가 CLIP의 성능에는 큰 영향을 미치지 않았기 때문에 모델의 width를 image encoder의 width 증가에 비례하도록 계산하지만 depth는 확장하지 않았다고 합니다.
 
