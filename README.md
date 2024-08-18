@@ -49,7 +49,7 @@ GANimation(GANimation: Anatomically-aware Facial Animation from a Single Image)<
 SAGAN(Self-Attention Generative Adversarial Networks)<br>
 [<a href="https://solee328.github.io/gan/2023/09/27/sagan_paper.html" target="_blank">paper_post</a>]
 
-BigGAN<br>
+BigGAN(Large Scale GAN Training for High Fidelity Natural Image Synthesis)<br>
 [<a href="https://solee328.github.io/gan/2023/11/03/biggan_paper.html" target="_blank">paper post</a>]
 
 FUNIT<br>
